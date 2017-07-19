@@ -6,15 +6,30 @@
  */
 
 #include "Types.h"
+#include "Keyboard.h"
 
 // 함수 선언
 void setPrint(int x, int y, BYTE color, const char *str);
 
 // 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
-	setPrint(53, 11, 0x0A, "[  Hit  ]");
-	setPrint(3, 13, 0x0F, "IA-32e C Language Kernel Start....................");
-	while(1);
+	char temp[2] = {0,};
+	BYTE flag, tmp;
+	int i = 0;
+
+	setPrint(53, 8, 0x0A, "[  Hit  ]");
+	setPrint(3, 9, 0x0F, "Keyboard Activate.................................");
+	if(activeKeyboard() == TRUE) {
+		setPrint(53, 9, 0x0A, "[  Hit  ]");
+		changeLED(FALSE, FALSE, FALSE);
+	} else {
+		setPrint(53, 9, 0x0C, "[  Err  ]");
+		while(1);
+	}
+	while(1) if(outputBufCheck() == TRUE) {
+			tmp = getScanCode();
+			if(convertCode(tmp, &(temp[0]), &flag) == TRUE) if(flag & KEY_FLAGS_DOWN) setPrint(i++, 13, 0x0F, temp);
+		}
 }
 
 // 문자열을 X, Y 위치에 출력
