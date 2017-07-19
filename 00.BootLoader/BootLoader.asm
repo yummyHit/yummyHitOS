@@ -18,8 +18,6 @@ KERNEL32SECTORCOUNT: dw 0x02	; 보호 모드 커널의 총 섹터 수
 START:
 	mov ax, 0x07C0	; 부트 로더의 시작 어드레스(0x7C00)를 세그머느 레지스터 값으로 변환
 	mov ds, ax		; DS 세그먼트 레지스터에 설정
-	mov ax, 0xB800	; 비디오 메모리의 시작 어드레스(0xB800)를 세그먼트 레지스터 값으로 변환
-	mov es, ax		; ES 세그먼트 레지스터에 설정
 
 	; 스택을 0x0000:0000~0x0000:FFFF 영역에 64KB 크기로 생성
 	mov ax, 0x0000	; 스택 세그먼트의 시작 어드레스(0x0000)를 세그먼트 레지스터 값으로 변환
@@ -31,32 +29,41 @@ START:
 	;	화면을 모두 지우고, 속성값을 녹색으로 설정
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	mov si,		0	; SI 레지스터(문자열 원본 인덱스 레지스터)를 초기화
+	call MONITORCLEAR
 
-.SCREENCLEARLOOP:	; 화면을 지우는 루프
-	mov byte [ es: si ], 0			; 비디오 메모리의 문자가 위치하는 어드레스에 0을 복사하여 문자 삭제
-	mov byte [ es: si + 1 ], 0x0A	; 비디오 메모리의 속성이 위치하는 어드레스에 0x0A(검은 바탕에 밝은 녹색)을 복사
-	add si, 2						; 문자와 속성을 설정했으니 다음 위치로 이동
-	cmp si, 80 * 25 * 2				; 화면의 전체 크기는 80문자 * 25라인
-									; 출력한 문자의 수를 의미하는 SI 레지스터와 비교
-	jl .SCREENCLEARLOOP				; SI 레지스터가 80*25*2보다 작다면 아직 지우지 못한 영역이 있으니 다시 위로 이동
+	; YummyHit's OS
+	push MADEBYMSG
+	push 0x0B		; 파란색
+	push 25
+	push 1
+	call PRINTMSG
+	add sp, 8
+
+	push LOADINGMSG
+	push 0x0F		; 회색
+	push 3
+	push 3
+	call PRINTMSG
+	add sp, 8
+
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;	화면 상단에 시작 메시지 출력
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	push MESSAGE1		; 출력할 메시지의 어드레스를 스택에 삽입
-	push 0				; 화면 Y 좌표(0)를 스택에 삽입
-	push 0				; 화면 X 좌표(0)를 스택에 삽입
-	call PRINTMESSAGE	; PRINTMESSAGE 함수 호출
-	add sp, 6			; 삽입한 파라미터 제거
+	;push MESSAGE1		; 출력할 메시지의 어드레스를 스택에 삽입
+	;push 0				; 화면 Y 좌표(0)를 스택에 삽입
+	;push 0				; 화면 X 좌표(0)를 스택에 삽입
+	;call PRINTMSG		; PRINTMSG 함수 호출
+	;add sp, 6			; 삽입한 파라미터 제거
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;	OS 이미지를 로딩한다는 메시지 출력
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	push IMAGELOADINGMESSAGE	; 출력할 메시지의 어드레스를 스택에 삽입
-	push 1						; 화면 Y 좌표(1)를 스택에 삽입
-	push 0						; 화면 X 좌표(0)를 스택에 삽입
-	call PRINTMESSAGE			; PRINTMESSAGE 함수 호출
-	add sp, 6					; 삽입한 파라미터 제거
+	;push IMAGELOADINGMESSAGE	; 출력할 메시지의 어드레스를 스택에 삽입
+	;push 1						; 화면 Y 좌표(1)를 스택에 삽입
+	;push 0						; 화면 X 좌표(0)를 스택에 삽입
+	;call PRINTMSG			; PRINTMSG 함수 호출
+	;add sp, 6					; 삽입한 파라미터 제거
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;	디스크에서 OS 이미지 로딩
@@ -85,7 +92,7 @@ RESETDISK:						; 디스크를 리셋하는 코드의 시작
 
 	mov di, word [ TOTALSECTORCOUNT ] ; 복사할 OS 이미지의 섹터 수를 DI 레지스터에 설정
 
-READDATA:
+.READDATA:
 	; 모든 섹터를 다 읽었는지 확인
 	cmp di, 0				; 복사할 OS 이미지 섹터 수를 0과 비교
 	je READEND				; 복사할 섹터 수가 0이라면 다 복사 했으므로 READEND로 이동
@@ -106,7 +113,7 @@ READDATA:
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;	복사할 어드레스와 트랙, 헤드, 섹터 어드레스 계산
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	add si, 0x0020			; 512(0x200)바이트만큼 읽었으므로, 이를 세그먼트 레지스터 값으로 변환
+	add si, 0x0020			; 512(0x0020)바이트만큼 읽었으므로, 이를 세그먼트 레지스터 값으로 변환
 	mov es, si				; ES세그먼트 레지스터에 더해서 어드레스를 한 섹터만큼 증가
 
 	; 한 섹터를 읽었으므로 섹터 번호를 증가시키고 마지막 섹터(18)까지 읽었는지 판단
@@ -115,7 +122,7 @@ READDATA:
 	add al, 0x01					; 섹터 번호를 1 증가
 	mov byte [ SECTORNUMBER ], al	; 증가시킨 섹터 번호를 SECTORNUMBER에 다시 설정
 	cmp al, 19						; 증가시킨 섹터 번호를 19와 비교
-	jl READDATA						; 섹터 번호가 19 미만이라면 리드로 이동
+	jl .READDATA						; 섹터 번호가 19 미만이라면 리드로 이동
 
 	; 마지막 섹터까지 읽었으면(섹터 번호가 19이면) 헤드를 토글(0->1, 1->0) 하고, 섹터 번호 1로 설정
 	xor byte [ HEADNUMBER ], 0x01	; 헤드 번호를 0x01과 XOR하여 토글
@@ -123,26 +130,22 @@ READDATA:
 
 	; 만약 헤드가 1->0 으로 바뀌었으면 양쪽 헤드를 모두 읽은 것이므로 아래로 이동하여 트랙 번호 1 증가
 	cmp byte [ HEADNUMBER ], 0x00	; 헤드 번호를 0x00과 비교
-	jne READDATA					; 헤드 번호가 0이 아니면 리드로 이동
+	jne .READDATA					; 헤드 번호가 0이 아니면 리드로 이동
 
 	; 트랙을 1 증가시킨 후 다시 섹터 읽기로 이동
 	add byte [ TRACKNUMBER ], 0x01	; 트랙 번호 1 증가
-	jmp READDATA
+	jmp .READDATA
 READEND:
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;	OS 이미지가 완료되었다는 메시지 출력
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	push LOADINGCOMPLETEMESSAGE		; 출력할 메시지의 어드레스를 스택에 삽입
-	push 1							; 화면 Y 좌표(1)를 스택에 삽입
-	push 20							; 화면 X 좌표(20)를 스택에 삽입
-	call PRINTMESSAGE
-	add sp, 6
-	push MADEBYMESSAGE
-	push 3
-	push 0
-	call PRINTMESSAGE				; PRINTMESSAGE 함수 호출
-	add sp, 6						; 삽입한 파라미터 제거
+	push HITMSG			; 출력할 메시지의 어드레스를 스택에 삽입
+	push 0x0A						; 초록색
+	push 53							; 화면 X 좌표(53)를 스택에 삽입
+	push 3							; 화면 Y 좌표(3)를 스택에 삽입
+	call PRINTMSG				; PRINTMSG 함수 호출
+	add sp, 8						; 삽입한 파라미터 제거
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;	로딩한 가상 OS 이미지 실행
@@ -154,16 +157,17 @@ READEND:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 디스크 에러를 처리하는 함수
 HANDLEDISKERROR:			; 에러 처리 코드
-	push DISKERRORMESSAGE	; 에러 문자열의 어드레스를 스택에 삽입
-	push 1					; 화면 Y 좌표(1)를 스택에 삽입
-	push 20					; 화면 X 좌표(20)를 스택에 삽입
-	call PRINTMESSAGE		; PRINTMESSAGE 함수 호출
-
+	push ERRORMSG		; 에러 문자열의 어드레스를 스택에 삽입
+	push 0x0C				; 빨간색
+	push 53					; 화면 X 좌표(53)를 스택에 삽입
+	push 3					; 화면 Y 좌표(3)를 스택에 삽입
+	call PRINTMSG		; PRINTMSG 함수 호출
+	add sp, 8
 	jmp $					; 현재 위치에서 무한 루프 수행
 
 ; 메시지를 출력하는 함수
 ; PARAM : x 좌표, y 좌표, 문자열
-PRINTMESSAGE:
+PRINTMSG:
 	push bp				; 베이스 포인터 레지스터(BP)를 스택에 삽입
 	mov bp, sp			; 베이스 포인터 레지스터(BP)에 스택 포인터 레지스터(SP)의 값을 설정
 						; 베이스 포인터 레지스터(BP)를 이용해서 파라미터에 접근할 목적
@@ -183,36 +187,38 @@ PRINTMESSAGE:
 	; X, Y의 좌표로 비디오 메모리의 어드레스를 계산함
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	; Y 좌표를 이용해서 먼저 라인 어드레스를 구함
-	mov ax, word [ bp + 6 ]	; 파라미터 2(화면 좌표 Y)를 AX 레지스터에 설정
+	mov ax, word [ bp + 4 ]	; 파라미터 2(화면 좌표 Y)를 AX 레지스터에 설정
 	mov si, 160				; 한 라인의 바이트 수(2 * 80 컬럼)를 SI 레지스터에 설정
 	mul si					; AX 레지스터와 SI 레지스터를 곱하여 화면 Y 어드레스 계산
 	mov di, ax				; 계산된 화면 Y 어드레스를 DI 레지스터에 설정
 
 	; X 좌표를 이용해서 2를 곱한 후 최종 어드레스를 구함
-	mov ax, word [ bp + 4 ]	; 파라미터 1(화면 좌표 X)를 AX 레지스터에 설정
+	mov ax, word [ bp + 6 ]	; 파라미터 1(화면 좌표 X)를 AX 레지스터에 설정
 	mov si, 2				; 한 문자를 나타내는 바이트 수(2)를 SI 레지스터에 설정
 	mul si					; AX 레지스터와 SI 레지스터를 곱하여 화면 X 어드레스를 계산
 	add di, ax				; 화면 Y 어드레스와 계산된 X 어드레스를 더해서 실제 비디오 메모리 어드레스 계산
 
 	; 출력할 문자열의 어드레스
-	mov si, word [ bp + 8 ]	; 파라미터 3(출력할 문자열의 어드레스)
+	mov si, word [ bp + 10 ]	; 파라미터 3(출력할 문자열의 어드레스)
+	mov bl, byte [ bp + 8 ]
 
-.MESSAGELOOP:			; 메시지 출력 루프
+.MSGLOOP:			; 메시지 출력 루프
 	mov cl, byte [ si ]	; SI 레지스터가 가리키는 문자열 위치에서 한 문자를 CL 레지스터에 복사
 						; CL 레지스터는 CX 레지스터의 하위 1바이트를 의미
 						; 문자열은 1바이트면 충분하므로 CX 레지스터의 하위 1바이트만 사용
 
 	cmp cl, 0			; 복사된 문자와 0을 비교
-	je .MESSAGEEND		; 복사한 문자의 값이 0이면 문자열이 종료되었음을 의미하므로 .MESSAGEEND로 이동하여 문자 출력 종료
+	je .MSGEND		; 복사한 문자의 값이 0이면 문자열이 종료되었음을 의미하므로 .MSGEND로 이동하여 문자 출력 종료
 
 	mov byte [ es: di ], cl		; 0이 아니라면 비디오 메모리 어드레스 0xB800:di에 문자를 출력
+	mov byte [ es : di + 1 ], bl
 
 	add si, 1			; SI 레지스터에 1을 더하여 다음 문자열로 이동
 	add di, 2			; DI 레지스터에 2를 더하여 비디오 메모리의 다음 문자 위치로 이동 비디오 메모리는 (문자, 속성)의 쌍으로 구성되므로 문자만 출력하려면 2를 더해야 함
 
-	jmp .MESSAGELOOP	; 메시지 출력 루프로 이동해 다음 문자 출력
+	jmp .MSGLOOP	; 메시지 출력 루프로 이동해 다음 문자 출력
 
-.MESSAGEEND:
+.MSGEND:
 	pop dx				; 함수에서 사용이 끝난 DX 레지스터에서 ES 레지스터까지를 스택에
 	pop cx				; 삽입된 값을 이용해서 복원
 	pop ax				; 스택은 가장 마지막에 들어간 데이터가 가장 먼저 나오는
@@ -226,21 +232,48 @@ PRINTMESSAGE:
 ;	데이터 영역
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 부트 로더 시작 메시지
-MESSAGE1:	db 'MINT64 OS Boot Loader Start.............', 0	; 출력할 메시지 정의
+;MESSAGE1:	db 'MINT64 OS Boot Loader Start.............', 0	; 출력할 메시지 정의
 													; 마지막은 0으로 설정해 루프에서 처리하도록 함
 
-;mov ax, 0xB800		; AX 레지스터에 0xB800 복사
-;mov ds, ax			; DS 세그먼트 레지스터에 AX 레지스터의 값(0xB800)을 복사
+MONITORCLEAR:
+	push bp
+	mov bp, sp
+	
+	push es
+	push si
+	push di
+	push ax
+	push cx
+	push dx
+
+	mov ax, 0xB800
+	mov es, ax
+
+.MONITORCLEARLOOP:	; 화면을 지우는 루프
+	mov byte [ es: si ], 0			; 비디오 메모리의 문자가 위치하는 어드레스에 0을 복사하여 문자 삭제
+	mov byte [ es: si + 1 ], 0x0F	; 비디오 메모리의 속성이 위치하는 어드레스에 0x0F(검은 바탕에 밝은 녹색)을 복사
+	add si, 2						; 문자와 속성을 설정했으니 다음 위치로 이동
+	cmp si, 80 * 25 * 2				; 화면의 전체 크기는 80문자 * 25라인
+									; 출력한 문자의 수를 의미하는 SI 레지스터와 비교
+	jl .MONITORCLEARLOOP				; SI 레지스터가 80*25*2보다 작다면 아직 지우지 못한 영역이 있으니 다시 위로 이동
+	pop dx
+	pop cx
+	pop ax
+	pop di
+	pop si
+	pop es
+	pop bp
+	ret
 
 ;mov byte [ 0x00 ], 'M'	; DS 세그먼트:오프셋 0xB800:0x0000에 "M"을 복사
 ;mov byte [ 0x01 ], 0x4A	; DS 세그먼트:오프셋 0xB800:0x0001에 0x4A(빨간 배경에 밝은 녹색 속성)를 복사
 
 ;jmp $				; 현재 위치에서 무한 루프 수행
 
-DISKERRORMESSAGE:	db 'DISK Error~!!', 0
-IMAGELOADINGMESSAGE:	db 'OS Image Loading.....', 0
-LOADINGCOMPLETEMESSAGE:	db 'Loading Complete!!', 0
-MADEBYMESSAGE:	db '###############Made by YummyHit###############', 0
+ERRORMSG:	db '[  Error  ]', 0
+LOADINGMSG:	db 'OS Image Loading..................................', 0
+HITMSG:	db '[  Hit  ]', 0
+MADEBYMSG:	db 'YummyHitOS', 0
 
 ; 디스크 읽기에 관련된 변수들
 SECTORNUMBER:	db 0x02    ; OS 이미지가 시작하는 섹터 번호를 저장하는 영역

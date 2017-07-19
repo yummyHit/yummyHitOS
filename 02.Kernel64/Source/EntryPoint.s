@@ -22,5 +22,3 @@ START:
 
 	call Main			; C 언어 엔트리 포인트 함수(Main) 호출
 
-	jmp $
-

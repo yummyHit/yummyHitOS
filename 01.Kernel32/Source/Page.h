@@ -30,20 +30,20 @@
 #pragma pack(push, 1)
 
 // 페이지 엔트리에 대한 자료구조
-typedef struct kPageTableEntryStruct {
+typedef struct pageTableEntryStruct {
 	// PML4T와 PDPTE의 경우
 	// 1비트 P, RW, US, PWT, PCD, A / 3비트 Reserved / 3비트 Avail / 20비트 Base Address
 	// PDE의 경우
 	// 1비트 P, RW, US, PWT, PCD, A, D / 1로 설정한 G / 3비트 Avail / 1비트 PAT / 8비트 Avail / 11비트 Base Address
-	DWORD dwAttributeAndLowerBaseAddress;
+	DWORD lowAddress;
 	// 8비트 Upper BaseAddress, 12비트 Reserved, 11비트 Avail, 1비트 EXB
-	DWORD dwUpperBaseAddressAndEXB;
+	DWORD highAddress;
 } PML4TENTRY, PDPTENTRY, PDENTRY, PTENTRY;
 #pragma pack(pop)
 
 // 함수
-void kInitializePageTables(void);
-void kSetPageEntryData(PTENTRY *pstEntry, DWORD dwUpperBaseAddress, DWORD dwLowerBaseAddress, DWORD dwLowerFlags, DWORD dwUpperFlags);
+void initializePageTables(void);
+void setPageEntryData(PTENTRY *entry, DWORD highBaseAddress, DWORD lowBaseAddress, DWORD lowFlags, DWORD highFlags);
 
 #endif /*__PAGE_H__*/
 

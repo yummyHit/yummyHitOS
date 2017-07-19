@@ -89,18 +89,24 @@ PROTECTEDMODE:
 	je .APPLICATIONPROCESSORSTARTPOINT
 
 	; 화면에 보호 모드로 전환되었다는 메시지 표시
-	push ( SWITCHSUCCESSMESSAGE - $$ + 0x10000 )	; 출력할 메시지의 어드레스를 스택에 삽입
-	push 5					; 화면 Y 좌표(5)를 스택에 삽입
-	push 0					; 화면 X 좌표(0)를 스택에 삽입
-	call PRINTMESSAGE		; PRINTMESSAGE 함수 호출
-	add esp, 12				; 삽입한 파라미터 제거
+	push ( SWITCHMSG - $$ + 0x10000 )	; 출력할 메시지의 어드레스를 스택에 삽입
+	push 0x0F				; 출력 메시지의 색깔
+	push 4					; 화면 Y 좌표(4)를 스택에 삽입
+	push 3					; 화면 X 좌표(3)를 스택에 삽입
+	call PRINTMSG				; PRINTMSG 함수 호출
+	add esp, 16				; 삽입한 파라미터 제거
+
+	push ( HITMSG - $$ + 0x10000 )
+	push 0x0A
+	push 4
+	push 53
+	call PRINTMSG
+	add esp, 16
 
 	; 수정 : 170706 / CS세그먼트 셀렉터를 커널 코드 디스크립터(0x08)로 변경하며 0x10200 어드레스(C언어 커널 주소)로 이동
 	; 수정 : 170718 / IA-32e 보호모드로 진입하기 위해 0x08에서 0x18로 위치 수정
 .APPLICATIONPROCESSORSTARTPOINT:
 	jmp dword 0x18: 0x10200 ; C언어 커널이 존재하는 주소로 이동해 C언어 커널 수행
-
-	jmp $					; 현재 위치 무한 루프 수행
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,7 +114,7 @@ PROTECTEDMODE:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 메시지 출력 함수
 ; 스택에 x좌표, y좌표, 문자열
-PRINTMESSAGE:
+PRINTMSG:
 	push ebp					; 베이스 포인터 레지스터(BP)를 스택에 삽입
 	mov ebp, esp				; 베이스 포인터 레지스터(BP)에 스택 포인터 레지스터(SP)의 값 설정
 	push esi					; 함수에서 임시로 사용하는 레지스터로 함수의 마지막 부분에서
@@ -133,25 +139,27 @@ PRINTMESSAGE:
 	add edi, eax				; 화면 Y 어드레스와 계산된 X 어드레스를 더해 실제 비디오 메모리 어드레스 계산
 
 	; 출력할 문자열의 어드레스
-	mov esi, dword [ ebp + 16 ]	; 파라미터 3(출력할 문자열의 어드레스)
+	mov bl, byte [ ebp + 16 ]
+	mov esi, dword [ ebp + 20 ]	; 파라미터 3(출력할 문자열의 어드레스)
 
-.MESSAGELOOP:				; 메세지 출력 루프
+.MSGLOOP:				; 메세지 출력 루프
 	mov cl, byte [ esi ]	; ESI 레지스터가 가리키는 문자열 위치에서 한 문자를 CL 레지스터에 복사
 							; CL 레지스터는 ECX 레지스터의 하위 1바이트를 의미
 							; 문자열은 1바이트면 충분하므로 ECX 레지스터의 하위 1바이트만 사용
 
 	cmp cl, 0				; 복사된 문자와 0 비교
-	je .MESSAGEEND			; 복사한 문자의 값이 0이면 문자열이 종료되었으므로 .MESSAGEEND로 이동해 출력 종료
+	je .MSGEND			; 복사한 문자의 값이 0이면 문자열이 종료되었으므로 .MSGEND로 이동해 출력 종료
 
 	mov byte [ edi + 0xB8000 ], cl	; 0이 아니라면 비디오 메모리 어드레스(0xB8000 + EDI)에 문자 출력
+	mov byte [ edi + 0xB8000 + 1 ], bl
 
 	add esi, 1				; ESI 레지스터에 1을 더해 다음 문자열로 이동
 	add edi, 2				; EDI 레지스터에 2를 더해 비디오 메모리의 다음 문자 위치로 이동
 							; 비디오 메모리는 (문자, 속성)의 쌍으로 구성되므로 문자만 출력하려면 2 더해야 함
 
-	jmp .MESSAGELOOP		; 다음 문자 출력
+	jmp .MSGLOOP		; 다음 문자 출력
 
-.MESSAGEEND:
+.MSGEND:
 	pop edx					; 함수에서 사용 끝난 EDX 레지스터부터 EBP 레지스터까지 스택에 삽입된 값을 이용해 복원
 	pop ecx					; 스택은 LIFO 구조이므로 삽입의 역순으로 제거
 	pop eax
@@ -222,7 +230,8 @@ GDT:
 GDTEND:
 
 ; 보호 모드로 전환되었다는 메시지
-SWITCHSUCCESSMESSAGE:	db 'Switch To Protected Mode Success...!!', 0
+SWITCHMSG:	db 'Switch To Protected Mode .........................', 0
+HITMSG:	db '[  Hit  ]', 0
 
 times 512 - ( $ - $$ ) db 0x00	; 512바이트 맞추기 위해 남는 부분 0 으로 채움
 
