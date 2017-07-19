@@ -17,7 +17,7 @@ void kCopyKernel64ImageTo2Mbyte(void);
 
 #define BOOTSTRAPPROCESSOR_FLAGADDRESS  0x7C09
 
-// Main ÇÔ¼ö
+// Main í•¨ìˆ˜
 void Main( void ) {
 	DWORD i;
 	DWORD dwEAX, dwEBX, dwECX, dwEDX;
@@ -30,7 +30,7 @@ void Main( void ) {
 
 	kPrintString(0, 6, "Protected Mode C Language Kernel Start.[Pass]");
 
-	// ÃÖ¼Ò ¸Ş¸ğ¸® Å©±â¸¦ ¸¸Á·ÇÏ´Â Áö °Ë»ç
+	// ìµœì†Œ ë©”ëª¨ë¦¬ í¬ê¸°ë¥¼ ë§Œì¡±í•˜ëŠ” ì§€ ê²€ì‚¬
 	kPrintString(0, 7, "Minimum Memory Size Check..............[    ]");
 	if(kIsMemoryEnough() == FALSE) {
 		kPrintString(40, 7, "Fail");
@@ -38,7 +38,7 @@ void Main( void ) {
 		while(1);
 	} else kPrintString(40, 7, "Pass");
 
-	// IA-32e ¸ğµåÀÇ Ä¿³Î ¿µ¿ªÀ» ÃÊ±âÈ­
+	// IA-32e ëª¨ë“œì˜ ì»¤ë„ ì˜ì—­ì„ ì´ˆê¸°í™”
 
 	kPrintString(0, 8, "IA-32 Kernel Area Initialize...........[    ]");
 	if(kInitializeKernel64Area() == FALSE) {
@@ -47,12 +47,12 @@ void Main( void ) {
 		while(1);
 	} else kPrintString(40, 8, "Pass");
 
-	// IA-32e ¸ğµå Ä¿³ÎÀ» À§ÇÑ ÆäÀÌÁö Å×ÀÌºí »ı¼º
+	// IA-32e ëª¨ë“œ ì»¤ë„ì„ ìœ„í•œ í˜ì´ì§€ í…Œì´ë¸” ìƒì„±
 	kPrintString(0, 9, "IA-32e Page Tables Initialize..........[    ]");
 	kInitializePageTables();
 	kPrintString(40, 9, "Pass");
 
-	// ÇÁ·Î¼¼¼­ Á¦Á¶»ç Á¤º¸ ÀĞ±â
+	// í”„ë¡œì„¸ì„œ ì œì¡°ì‚¬ ì •ë³´ ì½ê¸°
 	kReadCPUID(0x00, &dwEAX, &dwEBX, &dwECX, &dwEDX);
 	*(DWORD*)vcVendorString = dwEBX;
 	*((DWORD*)vcVendorString + 1) = dwEDX;
@@ -60,7 +60,7 @@ void Main( void ) {
 	kPrintString(0, 9, "Processor Vendor String................[              ]");
 	kPrintString(40, 9, vcVendorString);
 
-	// 64ºñÆ® Áö¿ø À¯¹« È®ÀÎ
+	// 64ë¹„íŠ¸ ì§€ì› ìœ ë¬´ í™•ì¸
 	kReadCPUID(0x80000001, &dwEAX, &dwEBX, &dwECX, &dwEDX);
 	kPrintString(0, 10, "64bit Mode Support Check...............[    ]");
 	if(dwEDX & ( 1 << 29 )) kPrintString(40, 10, "Pass");
@@ -70,92 +70,93 @@ void Main( void ) {
 		while(1);
 	}
 
-	// IA-32e ¸ğµå Ä¿³ÎÀ» 0x200000(2Mbyte) ¾îµå·¹½º·Î ÀÌµ¿
+	// IA-32e ëª¨ë“œ ì»¤ë„ì„ 0x200000(2Mbyte) ì–´ë“œë ˆìŠ¤ë¡œ ì´ë™
 	kPrintString(0, 11, "Copy IA-32e Kernel To 2M byte Address..[    ]");
 	kCopyKernel64ImageTo2Mbyte();
 	kPrintString(40, 11, "Pass");
 
-	// IA-32e ¸ğµå·Î ÀüÈ¯
+	// IA-32e ëª¨ë“œë¡œ ì „í™˜
 	kPrintString(0, 12, "Switch To IA-32e Mode");
-	// ¿ø·¡´Â ¾Æ·¡ ÇÔ¼ö¸¦ È£ÃâÇØ¾ß ÇÏ³ª  IA-32e ¸ğµå Ä¿³ÎÀÌ ¾øÀ¸¹Ç·Î ÁÖ¼®
+	// ì›ë˜ëŠ” ì•„ë˜ í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•´ì•¼ í•˜ë‚˜  IA-32e ëª¨ë“œ ì»¤ë„ì´ ì—†ìœ¼ë¯€ë¡œ ì£¼ì„
 	// kSwitchAndExecute64bitKernel();
 
 	while(1);
 }
 
-// ¹®ÀÚ¿­ Ãâ·Â ÇÔ¼ö
+// ë¬¸ìì—´ ì¶œë ¥ í•¨ìˆ˜
 void kPrintString(int iX, int iY, const char *pcString) {
 	CHARACTER *pstScreen = (CHARACTER*) 0xB8000;
 	int i;
 
-	// X, YÁÂÇ¥¸¦ ÀÌ¿ëÇØ ¹®ÀÚ¿­ Ãâ·Â ¾îµå·¹½º °è»ê
+	// X, Yì¢Œí‘œë¥¼ ì´ìš©í•´ ë¬¸ìì—´ ì¶œë ¥ ì–´ë“œë ˆìŠ¤ ê³„ì‚°
 	pstScreen += (iY * 80) + iX;
 
-	// NULLÀÌ ³ª¿Ã¶§±îÁö ¹®ÀÚ¿­ Ãâ·Â
+	// NULLì´ ë‚˜ì˜¬ë•Œê¹Œì§€ ë¬¸ìì—´ ì¶œë ¥
 	for(i = 0; pcString[i] != 0; i++ ) pstScreen[i].bCharactor = pcString[i];
 }
 
-// IA-32e ¸ğµå¿ë Ä¿³Î ¿µ¿ªÀ» 0À¸·Î ÃÊ±âÈ­
+// IA-32e ëª¨ë“œìš© ì»¤ë„ ì˜ì—­ì„ 0ìœ¼ë¡œ ì´ˆê¸°í™”
 BOOL kInitializeKernel64Area(void) {
 	DWORD* pdwCurrentAddress;
 
-	// ÃÊ±âÈ­¸¦ ½ÃÀÛÇÒ ¾îµå·¹½ºÀÎ 0x100000(1MB)À» ¼³Á¤
+	// ì´ˆê¸°í™”ë¥¼ ì‹œì‘í•  ì–´ë“œë ˆìŠ¤ì¸ 0x100000(1MB)ì„ ì„¤ì •
 	pdwCurrentAddress = (DWORD*) 0x100000;
 
-	// ¸¶Áö¸· ¾îµå·¹½ºÀÎ 0x600000(6MB)±îÁö ·çÇÁ¸¦ µ¹¸é¼­ 4¹ÙÀÌÆ®¾¿ 0À¸·Î Ã¤¿ò
+	// ë§ˆì§€ë§‰ ì–´ë“œë ˆìŠ¤ì¸ 0x600000(6MB)ê¹Œì§€ ë£¨í”„ë¥¼ ëŒë©´ì„œ 4ë°”ì´íŠ¸ì”© 0ìœ¼ë¡œ ì±„ì›€
 	while((DWORD) pdwCurrentAddress < 0x600000) {
 		*pdwCurrentAddress = 0x00;
 
-		// 0À¸·Î ÀúÀåÇÑ ÈÄ ´Ù½Ã ÀĞ¾úÀ» ¶§ 0ÀÌ ³ª¿ÀÁö ¾ÊÀ¸¸é ÇØ´ç ¾îµå·¹½º¸¦
-		// »ç¿ëÇÏ´Âµ¥ ¹®Á¦°¡ »ı±ä °ÍÀ¸·Î ´õÀÌ»ó ÁøÇàÇÏÁö ¾Ê°í Á¾·á
+		// 0ìœ¼ë¡œ ì €ì¥í•œ í›„ ë‹¤ì‹œ ì½ì—ˆì„ ë•Œ 0ì´ ë‚˜ì˜¤ì§€ ì•Šìœ¼ë©´ í•´ë‹¹ ì–´ë“œë ˆìŠ¤ë¥¼
+		// ì‚¬ìš©í•˜ëŠ”ë° ë¬¸ì œê°€ ìƒê¸´ ê²ƒìœ¼ë¡œ ë”ì´ìƒ ì§„í–‰í•˜ì§€ ì•Šê³  ì¢…ë£Œ
 		if(*pdwCurrentAddress != 0) return FALSE;
 
-		// ´ÙÀ½ ¾îµå·¹½º·Î ÀÌµ¿
+		// ë‹¤ìŒ ì–´ë“œë ˆìŠ¤ë¡œ ì´ë™
 		pdwCurrentAddress++;
 	}
 
 	return TRUE;
 }
 
-// MINT64 OS¸¦ ½ÇÇàÇÏ±â¿¡ ÃæºĞÇÑ ¸Ş¸ğ¸®¸¦ °¡Áö°í ÀÖ´ÂÁö Ã¼Å©
+// MINT64 OSë¥¼ ì‹¤í–‰í•˜ê¸°ì— ì¶©ë¶„í•œ ë©”ëª¨ë¦¬ë¥¼ ê°€ì§€ê³  ìˆëŠ”ì§€ ì²´í¬
 BOOL kIsMemoryEnough(void) {
 	DWORD *pdwCurrentAddress;
 
-	// 0x100000(1MB)ºÎÅÍ °Ë»ç ½ÃÀÛ
+	// 0x100000(1MB)ë¶€í„° ê²€ì‚¬ ì‹œì‘
 	pdwCurrentAddress = (DWORD*) 0x100000;
 
-	// 0x4000000(64MB)±îÁö ·çÇÁ¸¦ µ¹¸ç È®ÀÎ
+	// 0x4000000(64MB)ê¹Œì§€ ë£¨í”„ë¥¼ ëŒë©° í™•ì¸
 	while((DWORD)pdwCurrentAddress < 0x4000000) {
 		*pdwCurrentAddress = 0x12345678;
 
-		// 0x12345678·Î ÀúÀåÇÑ ÈÄ ´Ù½Ã ÀĞ¾úÀ» ¶§ 0x12345678ÀÌ ³ª¿ÀÁö ¾ÊÀ¸¸é ÇØ´ç
-		// ¾îµå·¹½º¸¦ »ç¿ëÇÏ´Âµ¥ ¹®Á¦°¡ »ı±ä °ÍÀÌ¹Ç·Î ´õÀÌ»ó ÁøÇàÇÏÁö ¾Ê°í Á¾·á
+		// 0x12345678ë¡œ ì €ì¥í•œ í›„ ë‹¤ì‹œ ì½ì—ˆì„ ë•Œ 0x12345678ì´ ë‚˜ì˜¤ì§€ ì•Šìœ¼ë©´ í•´ë‹¹
+		// ì–´ë“œë ˆìŠ¤ë¥¼ ì‚¬ìš©í•˜ëŠ”ë° ë¬¸ì œê°€ ìƒê¸´ ê²ƒì´ë¯€ë¡œ ë”ì´ìƒ ì§„í–‰í•˜ì§€ ì•Šê³  ì¢…ë£Œ
 		if(*pdwCurrentAddress != 0x12345678) return FALSE;
 
-		// 1MB¾¿ ÀÌµ¿ÇÏ¸é¼­ È®ÀÎ
+		// 1MBì”© ì´ë™í•˜ë©´ì„œ í™•ì¸
 		pdwCurrentAddress += (0x100000 / 4);
 	}
 
 	return TRUE;
 }
 
-// IA-32e ¸ğµå Ä¿³ÎÀ» 0x200000(2Mbyte) ¾îµå·¹½º¿¡ º¹»ç
+// IA-32e ëª¨ë“œ ì»¤ë„ì„ 0x200000(2Mbyte) ì–´ë“œë ˆìŠ¤ì— ë³µì‚¬
 void kCopyKernel64ImageTo2Mbyte(void) {
 	WORD wKernel32SectorCount, wTotalKernelSectorCount;
 	DWORD *pdwSourceAddress, *pdwDestinationAddress;
 	int i;
 
-	// 0x7C05¿¡ ÃÑ Ä¿³Î ¼½ÅÍ ¼ö, 0x7C07¿¡ º¸È£ ¸ğµå Ä¿³Î ¼½ÅÍ ¼ö°¡ µé¾îÀÖÀ½
+	// 0x7C05ì— ì´ ì»¤ë„ ì„¹í„° ìˆ˜, 0x7C07ì— ë³´í˜¸ ëª¨ë“œ ì»¤ë„ ì„¹í„° ìˆ˜ê°€ ë“¤ì–´ìˆìŒ
 	wTotalKernelSectorCount = *((WORD*) 0x7C05);
 	wKernel32SectorCount = *((WORD*) 0x7C07);
 
 	pdwSourceAddress = (DWORD*)(0x10000 + (wKernel32SectorCount * 512));
 	pdwDestinationAddress = (DWORD*)0x200000;
 
-	// IA-32e ¸ğµå Ä¿³Î ¼½ÅÍ Å©±â¸¸Å­ º¹»ç
+	// IA-32e ëª¨ë“œ ì»¤ë„ ì„¹í„° í¬ê¸°ë§Œí¼ ë³µì‚¬
 	for(i = 0; i < 512 * (wTotalKernelSectorCount - wKernel32SectorCount) / 4; i++) {
 		*pdwDestinationAddress = *pdwSourceAddress;
 		pdwDestinationAddress++;
 		pdwSourceAddress++;
 	}
 }
+

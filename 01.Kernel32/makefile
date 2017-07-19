@@ -6,7 +6,7 @@
 #
 
 #########################################
-####### °¡»ó OS µğ½ºÅ© ÀÌ¹ÌÁö ¸¸µé ¶§
+####### ê°€ìƒ OS ë””ìŠ¤í¬ ì´ë¯¸ì§€ ë§Œë“¤ ë•Œ
 #########################################
 #all: VirtualOS.bin
 #
@@ -17,29 +17,29 @@
 #	rm -f VirtualOS.bin
 
 #########################################
-####### 32ºñÆ® º¸È£ ¸ğµå ¼Ò½º ÆÄÀÏ ¸¸µé ¶§
+####### 32ë¹„íŠ¸ ë³´í˜¸ ëª¨ë“œ ì†ŒìŠ¤ íŒŒì¼ ë§Œë“¤ ë•Œ
 #########################################
 #all: Kernel32.bin
 #
 #Kernel32.bin: Source/EntryPoint.s
-#	nasm -o Kernel32.bin $<	# $<´Â Dependency(: ÀÇ ¿ŞÂÊ)ÀÇ Ã¹ ¹øÂ° ÆÄÀÏÀ» ÀÇ¹ÌÇÏ´Â ¸ÅÅ©·Î, Áï Source/EntryPoint.s ·Î Ä¡
+#	nasm -o Kernel32.bin $<	# $<ëŠ” Dependency(: ì˜ ì™¼ìª½)ì˜ ì²« ë²ˆì§¸ íŒŒì¼ì„ ì˜ë¯¸í•˜ëŠ” ë§¤í¬ë¡œ, ì¦‰ Source/EntryPoint.s ë¡œ ì¹˜
 #	
 #clean:
 #	rm -f Kernel32.bin
 
 #########################################
-# ºôµå È¯°æ ¹× ±ÔÄ¢ ¼³Á¤
+# ë¹Œë“œ í™˜ê²½ ë° ê·œì¹™ ì„¤ì •
 #########################################
 NASM32 = nasm
-GCC32 = x86_64-pc-linux-gcc.exe -c -m32 -ffreestanding
-LD32 = x86_64-pc-linux-ld.exe -melf_i386 -T ../elf_i386.x -nostdlib -e Main -Ttext 0x10200
-OBJCOPY32 = x86_64-pc-linux-objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
+GCC32 = gcc -c -m32 -ffreestanding
+LD32 = ld -melf_i386 -T ../elf_i386.x -nostdlib -e Main -Ttext 0x10200
+OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
 OBJECTDIRECTORY = Temp
 SOURCEDIRECTORY = Source
 
 #########################################
-# ºôµå Ç×¸ñ ¹× ºôµå ¹æ¹ı ¼³Á¤
+# ë¹Œë“œ í•­ëª© ë° ë¹Œë“œ ë°©ë²• ì„¤ì •
 #########################################
 all: prepare Kernel32.bin
 
@@ -68,7 +68,7 @@ clean:
 	rm -f $(OBJECTDIRECTORY)/*.*
 	
 #########################################
-# Make¿¡ ÀÇÇØ ´Ù½Ã È£ÃâµÇ´Â ºÎºĞ, Temp µğ·ºÅä¸® ±âÁØ ¼öÇà
+# Makeì— ì˜í•´ ë‹¤ì‹œ í˜¸ì¶œë˜ëŠ” ë¶€ë¶„, Temp ë””ë ‰í† ë¦¬ ê¸°ì¤€ ìˆ˜í–‰
 #########################################
 CENTRYPOINTOBJECTFILE = Main.o
 CSOURCEFILES = $(wildcard ../$(SOURCEDIRECTORY)/*.c)
@@ -76,11 +76,11 @@ ASSEMBLYSOURCEFILES = $(wildcard ../$(SOURCEDIRECTORY)/*.asm)
 COBJECTFILES = $(subst Main.o, , $(notdir $(patsubst %.c,%.o,$(CSOURCEFILES))))
 ASSEMBLYOBJECTFILES = $(notdir $(patsubst %.asm,%.o,$(ASSEMBLYSOURCEFILES)))
 
-# .c ÆÄÀÏÀ» .o ÆÄÀÏ·Î ¹Ù²Ù´Â ±ÔÄ¢ Á¤ÀÇ
+# .c íŒŒì¼ì„ .o íŒŒì¼ë¡œ ë°”ê¾¸ëŠ” ê·œì¹™ ì •ì˜
 %.o: ../$(SOURCEDIRECTORY)/%.c
 	$(GCC32) -c $<
 	
-# .asm ÆÄÀÏÀ» .o ÆÄÀÏ·Î ¹Ù²Ù´Â ±ÔÄ¢ Á¤ÀÇ
+# .asm íŒŒì¼ì„ .o íŒŒì¼ë¡œ ë°”ê¾¸ëŠ” ê·œì¹™ ì •ì˜
 %.o: ../$(SOURCEDIRECTORY)/%.asm
 	$(NASM32) -f elf32 -o $@ $<
 	

@@ -9,10 +9,10 @@
 
 #include "Types.h"
 
-// ¸ÅÅ©·Î
+// ë§¤í¬ë¡œ
 #define PAGE_FLAGS_P		0x00000001	// Present
 #define PAGE_FLAGS_RW		0x00000002	// Read/Write
-#define PAGE_FLAGS_US		0x00000004	// User/Supervisor(ÇÃ·¡±× ¼³Á¤ ½Ã À¯Àú ·¹º§)
+#define PAGE_FLAGS_US		0x00000004	// User/Supervisor(í”Œë˜ê·¸ ì„¤ì • ì‹œ ìœ ì € ë ˆë²¨)
 #define PAGE_FLAGS_PWT		0x00000008	// Page Level Write-through
 #define PAGE_FLAGS_PCD		0x00000010	// Page Level Cache Disable
 #define PAGE_FLAGS_A		0x00000020	// Accessed
@@ -26,23 +26,24 @@
 #define PAGE_MAXENTRYCOUNT	512
 #define PAGE_DEFAULTSIZE	0x200000
 
-// ±¸Á¶Ã¼
+// êµ¬ì¡°ì²´
 #pragma pack(push, 1)
 
-// ÆäÀÌÁö ¿£Æ®¸®¿¡ ´ëÇÑ ÀÚ·á±¸Á¶
+// í˜ì´ì§€ ì—”íŠ¸ë¦¬ì— ëŒ€í•œ ìë£Œêµ¬ì¡°
 typedef struct kPageTableEntryStruct {
-	// PML4T¿Í PDPTEÀÇ °æ¿ì
-	// 1ºñÆ® P, RW, US, PWT, PCD, A / 3ºñÆ® Reserved / 3ºñÆ® Avail / 20ºñÆ® Base Address
-	// PDEÀÇ °æ¿ì
-	// 1ºñÆ® P, RW, US, PWT, PCD, A, D / 1·Î ¼³Á¤ÇÑ G / 3ºñÆ® Avail / 1ºñÆ® PAT / 8ºñÆ® Avail / 11ºñÆ® Base Address
+	// PML4Tì™€ PDPTEì˜ ê²½ìš°
+	// 1ë¹„íŠ¸ P, RW, US, PWT, PCD, A / 3ë¹„íŠ¸ Reserved / 3ë¹„íŠ¸ Avail / 20ë¹„íŠ¸ Base Address
+	// PDEì˜ ê²½ìš°
+	// 1ë¹„íŠ¸ P, RW, US, PWT, PCD, A, D / 1ë¡œ ì„¤ì •í•œ G / 3ë¹„íŠ¸ Avail / 1ë¹„íŠ¸ PAT / 8ë¹„íŠ¸ Avail / 11ë¹„íŠ¸ Base Address
 	DWORD dwAttributeAndLowerBaseAddress;
-	// 8ºñÆ® Upper BaseAddress, 12ºñÆ® Reserved, 11ºñÆ® Avail, 1ºñÆ® EXB
+	// 8ë¹„íŠ¸ Upper BaseAddress, 12ë¹„íŠ¸ Reserved, 11ë¹„íŠ¸ Avail, 1ë¹„íŠ¸ EXB
 	DWORD dwUpperBaseAddressAndEXB;
 } PML4TENTRY, PDPTENTRY, PDENTRY, PTENTRY;
 #pragma pack(pop)
 
-// ÇÔ¼ö
+// í•¨ìˆ˜
 void kInitializePageTables(void);
 void kSetPageEntryData(PTENTRY *pstEntry, DWORD dwUpperBaseAddress, DWORD dwLowerBaseAddress, DWORD dwLowerFlags, DWORD dwUpperFlags);
 
 #endif /*__PAGE_H__*/
+

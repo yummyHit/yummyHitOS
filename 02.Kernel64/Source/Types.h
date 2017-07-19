@@ -20,7 +20,7 @@
 
 #pragma pack( push, 1 )
 
-// ºñµğ¿À ¸ğµå Áß ÅØ½ºÆ® ¸ğµå È­¸éÀ» ±¸¼ºÇÏ´Â ÀÚ·á±¸Á¶
+// ë¹„ë””ì˜¤ ëª¨ë“œ ì¤‘ í…ìŠ¤íŠ¸ ëª¨ë“œ í™”ë©´ì„ êµ¬ì„±í•˜ëŠ” ìë£Œêµ¬ì¡°
 typedef struct kCharactorStruct {
 	BYTE bCharactor;
 	BYTE bAttribute;

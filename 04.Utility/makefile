@@ -1,11 +1,12 @@
-# ±âº»ÀûÀ¸·Î ºôµå¸¦ ¼öÇàÇÒ ¸ñ·Ï
+# ê¸°ë³¸ì ìœ¼ë¡œ ë¹Œë“œë¥¼ ìˆ˜í–‰í•  ëª©ë¡
 all: ImageMaker.exe
 
-# ImageMaker ºôµå
+# ImageMaker ë¹Œë“œ
 ImageMaker.exe: 00.ImageMaker/ImageMaker.c
 	gcc -o $@ $<
-	cp $@ ../../
+	chmod +x $@
+	cp $@ ../
 	
-# ¼Ò½º ÆÄÀÏÀ» Á¦¿ÜÇÑ ³ª¸ÓÁö ÆÄÀÏ Á¤¸®
+# ì†ŒìŠ¤ íŒŒì¼ì„ ì œì™¸í•œ ë‚˜ë¨¸ì§€ íŒŒì¼ ì •ë¦¬
 clean:
 	rm -f ImageMaker.exe

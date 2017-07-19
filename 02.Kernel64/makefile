@@ -1,16 +1,16 @@
 #########################################
-# ºôµå È¯°æ ¹× ±ÔÄ¢ ¼³Á¤
+# ë¹Œë“œ í™˜ê²½ ë° ê·œì¹™ ì„¤ì •
 #########################################
 NASM64 = nasm -f elf64
-GCC64 = x86_64-pc-linux-gcc.exe -c -m64 -ffreestanding
-LD64 = x86_64-pc-linux-ld.exe -melf_x86_64 -T ../elf_x86_64.x -nostdlib -e Main -Ttext 0x200000
-OBJCOPY64 = x86_64-pc-linux-objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
+GCC64 = gcc -c -m64 -ffreestanding
+LD64 = ld -melf_x86_64 -T ../elf_x86_64.x -nostdlib -e Main -Ttext 0x200000
+OBJCOPY64 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
 OBJECTDIRECTORY = Temp
 SOURCEDIRECTORY = Source
 
 #########################################
-# ºôµå Ç×¸ñ ¹× ºôµå ¹æ¹ý ¼³Á¤
+# ë¹Œë“œ í•­ëª© ë° ë¹Œë“œ ë°©ë²• ì„¤ì •
 #########################################
 all: prepare Kernel64.bin
 
@@ -33,26 +33,26 @@ clean:
 	rm -f $(OBJECTDIRECTORY)/*.*
 	
 #########################################
-# Make¿¡ ÀÇÇØ ´Ù½Ã È£ÃâµÇ´Â ºÎºÐ, Temp µð·ºÅÍ¸®¸¦ ±âÁØÀ¸·Î ¼öÇàµÊ
+# Makeì— ì˜í•´ ë‹¤ì‹œ í˜¸ì¶œë˜ëŠ” ë¶€ë¶„, Temp ë””ë ‰í„°ë¦¬ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ìˆ˜í–‰ë¨
 #########################################
-# ºôµåÇÒ ¾î¼Àºí¸®¾î ¿£Æ®¸® Æ÷ÀÎÆ® ¼Ò½º ÆÄÀÏ Á¤ÀÇ, Temp µð·ºÅÍ¸®¸¦ ±âÁØÀ¸·Î ¼³Á¤
+# ë¹Œë“œí•  ì–´ì…ˆë¸”ë¦¬ì–´ ì—”íŠ¸ë¦¬ í¬ì¸íŠ¸ ì†ŒìŠ¤ íŒŒì¼ ì •ì˜, Temp ë””ë ‰í„°ë¦¬ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ì„¤ì •
 ENTRYPOINTSOURCEFILE = ../$(SOURCEDIRECTORY)/EntryPoint.s
 ENTRYPOINTOBJECTFILE = EntryPoint.o
-# ºôµåÇÒ C¼Ò½º ÆÄÀÏ Á¤ÀÇ, Temp µð·ºÅÍ¸®¸¦ ±âÁØÀ¸·Î ¼³Á¤
+# ë¹Œë“œí•  Cì†ŒìŠ¤ íŒŒì¼ ì •ì˜, Temp ë””ë ‰í„°ë¦¬ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ì„¤ì •
 CSOURCEFILES = $(wildcard ../$(SOURCEDIRECTORY)/*.c)
 ASSEMBLYSOURCEFILES = $(wildcard ../$(SOURCEDIRECTORY)/*.asm)
 COBJECTFILES = $(notdir $(patsubst %.c,%.o,$(CSOURCEFILES)))
 ASSEMBLYOBJECTFILES = $(notdir $(patsubst %.asm,%.o,$(ASSEMBLYSOURCEFILES)))
 
-# ¾î¼Àºí¸®¾î ¿£Æ®¸® Æ÷ÀÎÆ® ºôµå
+# ì–´ì…ˆë¸”ë¦¬ì–´ ì—”íŠ¸ë¦¬ í¬ì¸íŠ¸ ë¹Œë“œ
 $(ENTRYPOINTOBJECTFILE): $(ENTRYPOINTSOURCEFILE)
 	$(NASM64) -o $@ $<
 	
-# .c ÆÄÀÏÀ» .o ÆÄÀÏ·Î ¹Ù²Ù´Â ±ÔÄ¢ Á¤ÀÇ
+# .c íŒŒì¼ì„ .o íŒŒì¼ë¡œ ë°”ê¾¸ëŠ” ê·œì¹™ ì •ì˜
 %.o: ../$(SOURCEDIRECTORY)/%.c
 	$(GCC64) -c $<
 	
-# .asm ÆÄÀÏÀ» .o ÆÄÀÏ·Î ¹Ù²Ù´Â ±ÔÄ¢ Á¤ÀÇ
+# .asm íŒŒì¼ì„ .o íŒŒì¼ë¡œ ë°”ê¾¸ëŠ” ê·œì¹™ ì •ì˜
 %.o: ../$(SOURCEDIRECTORY)/%.asm
 	$(NASM64) -o $@ $<
 	

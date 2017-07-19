@@ -1,25 +1,26 @@
-[BITS 64]				; ÀÌÇÏÀÇ ÄÚµå´Â 64ºñÆ® ÄÚµå·Î ¼³Á¤
+[BITS 64]				; ì´í•˜ì˜ ì½”ë“œëŠ” 64ë¹„íŠ¸ ì½”ë“œë¡œ ì„¤ì •
 
-SECTION .text			; test ¼½¼Ç(¼¼±×¸ÕÆ®)À» Á¤ÀÇ
+SECTION .text			; test ì„¹ì…˜(ì„¸ê·¸ë¨¼íŠ¸)ì„ ì •ì˜
 
-; ¿ÜºÎ¿¡¼­ Á¤ÀÇµÈ ÇÔ¼ö¸¦ ¾µ ¼ö ÀÖµµ·Ï ¼±¾ðÇÔ(Import)
+; ì™¸ë¶€ì—ì„œ ì •ì˜ëœ í•¨ìˆ˜ë¥¼ ì“¸ ìˆ˜ ìžˆë„ë¡ ì„ ì–¸í•¨(Import)
 extern Main
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ÄÚµå ¿µ¿ª
+; ì½”ë“œ ì˜ì—­
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 START:
-	mov ax, 0x10		; IA-32e ¸ðµå Ä¿³Î¿ë µ¥ÀÌÅÍ ¼¼±×¸ÕÆ® µð½ºÅ©¸³ÅÍ¸¦ AX ·¹Áö½ºÅÍ¿¡ ÀúÀå
-	mov ds, ax			; DS ¼¼±×¸ÕÆ® ¼¿·ºÅÍ¿¡ ¼³Á¤
-	mov es, ax			; ES ¼¼±×¸ÕÆ® ¼¿·ºÅÍ¿¡ ¼³Á¤
-	mov fs, ax			; FS ¼¼±×¸ÕÆ® ¼¿·ºÅÍ¿¡ ¼³Á¤
-	mov gs, ax			; GS ¼¼±×¸ÕÆ® ¼¿·ºÅÍ¿¡ ¼³Á¤
+	mov ax, 0x10		; IA-32e ëª¨ë“œ ì»¤ë„ìš© ë°ì´í„° ì„¸ê·¸ë¨¼íŠ¸ ë””ìŠ¤í¬ë¦½í„°ë¥¼ AX ë ˆì§€ìŠ¤í„°ì— ì €ìž¥
+	mov ds, ax			; DS ì„¸ê·¸ë¨¼íŠ¸ ì…€ë ‰í„°ì— ì„¤ì •
+	mov es, ax			; ES ì„¸ê·¸ë¨¼íŠ¸ ì…€ë ‰í„°ì— ì„¤ì •
+	mov fs, ax			; FS ì„¸ê·¸ë¨¼íŠ¸ ì…€ë ‰í„°ì— ì„¤ì •
+	mov gs, ax			; GS ì„¸ê·¸ë¨¼íŠ¸ ì…€ë ‰í„°ì— ì„¤ì •
 
-	; ½ºÅÃÀ» 0x600000 ~ 0x6FFFFF ¿µ¿ª¿¡ 1MB Å©±â·Î »ý¼º
-	mov ss, ax			; SS ¼¼±×¸ÕÆ® ¼¿·ºÅÍ¿¡ ¼³Á¤
-	mov rsp, 0x6FFFF8	; RSP ·¹Áö½ºÅÍÀÇ ¾îµå·¹½º¸¦ 0x6FFFF8·Î ¼³Á¤
-	mov rbp, 0x6FFFF8	; RBP ·¹Áö½ºÅÍÀÇ ¾îµå·¹½º¸¦ 0x6FFFF8·Î ¼³Á¤
+	; ìŠ¤íƒì„ 0x600000 ~ 0x6FFFFF ì˜ì—­ì— 1MB í¬ê¸°ë¡œ ìƒì„±
+	mov ss, ax			; SS ì„¸ê·¸ë¨¼íŠ¸ ì…€ë ‰í„°ì— ì„¤ì •
+	mov rsp, 0x6FFFF8	; RSP ë ˆì§€ìŠ¤í„°ì˜ ì–´ë“œë ˆìŠ¤ë¥¼ 0x6FFFF8ë¡œ ì„¤ì •
+	mov rbp, 0x6FFFF8	; RBP ë ˆì§€ìŠ¤í„°ì˜ ì–´ë“œë ˆìŠ¤ë¥¼ 0x6FFFF8ë¡œ ì„¤ì •
 
-	call Main			; C ¾ð¾î ¿£Æ®¸® Æ÷ÀÎÆ® ÇÔ¼ö(Main) È£Ãâ
+	call Main			; C ì–¸ì–´ ì—”íŠ¸ë¦¬ í¬ì¸íŠ¸ í•¨ìˆ˜(Main) í˜¸ì¶œ
 
 	jmp $
+

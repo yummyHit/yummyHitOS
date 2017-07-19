@@ -7,23 +7,24 @@
 
 #include "Types.h"
 
-// ÇÔ¼ö ¼±¾ğ
+// í•¨ìˆ˜ ì„ ì–¸
 void kPrintString(int iX, int iY, const char *pcString);
 
-// ¾Æ·¡ ÇÔ¼ö´Â C¾ğ¾î Ä¿³Î ½ÃÀÛ ºÎºĞ
+// ì•„ë˜ í•¨ìˆ˜ëŠ” Cì–¸ì–´ ì»¤ë„ ì‹œì‘ ë¶€ë¶„
 void Main(void) {
 	kPrintString(0, 12, "Switch To IA-32e Mode Success!!");
 	kPrintString(0, 13, "IA-32e C Language Kernel Start.........[Pass]");
 }
 
-// ¹®ÀÚ¿­À» X, Y À§Ä¡¿¡ Ãâ·Â
+// ë¬¸ìì—´ì„ X, Y ìœ„ì¹˜ì— ì¶œë ¥
 void kPrintString(int iX, int iY, const char *pcString) {
 	CHARACTER *pstScreen = (CHARACTER*) 0xB8000;
 	int i;
 
-	// X, Y ÁÂÇ¥¸¦ ÀÌ¿ëÇØ ¹®ÀÚ¿­À» Ãâ·ÂÇÒ ¾îµå·¹½º °è»ê
+	// X, Y ì¢Œí‘œë¥¼ ì´ìš©í•´ ë¬¸ìì—´ì„ ì¶œë ¥í•  ì–´ë“œë ˆìŠ¤ ê³„ì‚°
 	pstScreen += (iY * 80) + iX;
 
-	// NULLÀÌ ³ª¿Ã ¶§±îÁö ¹®ÀÚ¿­ Ãâ·Â
+	// NULLì´ ë‚˜ì˜¬ ë•Œê¹Œì§€ ë¬¸ìì—´ ì¶œë ¥
 	for(i = 0; pcString[i] != 0; i++) pstScreen[i].bCharactor = pcString[i];
 }
+

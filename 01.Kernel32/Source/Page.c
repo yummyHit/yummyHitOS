@@ -7,7 +7,7 @@
 
 #include "Page.h"
 
-// IA-32e ¸ğµå Ä¿³ÎÀ» À§ÇÑ ÆäÀÌÁö Å×ÀÌºí »ı¼º
+// IA-32e ëª¨ë“œ ì»¤ë„ì„ ìœ„í•œ í˜ì´ì§€ í…Œì´ë¸” ìƒì„±
 void kInitializePageTables(void) {
 	PML4TENTRY *pstPML4TEntry;
 	PDPTENTRY *pstPDPTEntry;
@@ -15,34 +15,35 @@ void kInitializePageTables(void) {
 	DWORD dwMappingAddress;
 	int i;
 
-	// PML4 Å×ÀÌºí »ı¼º
-	// Ã¹ ¹øÂ° ¿£Æ®¸® ¿Ü¿¡ ³ª¸ÓÁö´Â ¸ğµÎ 0À¸·Î ÃÊ±âÈ­
+	// PML4 í…Œì´ë¸” ìƒì„±
+	// ì²« ë²ˆì§¸ ì—”íŠ¸ë¦¬ ì™¸ì— ë‚˜ë¨¸ì§€ëŠ” ëª¨ë‘ 0ìœ¼ë¡œ ì´ˆê¸°í™”
 	pstPML4TEntry = (PML4TENTRY*) 0x100000;
 	kSetPageEntryData(&(pstPML4TEntry[0]), 0x00, 0x101000, PAGE_FLAGS_DEFAULT, 0);
 	for(i = 1; i < PAGE_MAXENTRYCOUNT; i++) kSetPageEntryData(&(pstPML4TEntry[i]), 0, 0, 0, 0);
 
-	// ÆäÀÌÁö µğ·ºÅÍ¸® Æ÷ÀÎÅÍ Å×ÀÌºí »ı¼º
-	// ÇÏ³ªÀÇ PDPT·Î 512GB±îÁö ¸ÅÇÎ °¡´ÉÇÏ¹Ç·Î ÇÏ³ª·Î ÃæºĞÇÔ
-	// 64°³ÀÇ ¿£Æ®¸®¸¦ ¼³Á¤ÇÏ¿© 64GB±îÁö ¸ÅÇÎÇÔ
+	// í˜ì´ì§€ ë””ë ‰í„°ë¦¬ í¬ì¸í„° í…Œì´ë¸” ìƒì„±
+	// í•˜ë‚˜ì˜ PDPTë¡œ 512GBê¹Œì§€ ë§¤í•‘ ê°€ëŠ¥í•˜ë¯€ë¡œ í•˜ë‚˜ë¡œ ì¶©ë¶„í•¨
+	// 64ê°œì˜ ì—”íŠ¸ë¦¬ë¥¼ ì„¤ì •í•˜ì—¬ 64GBê¹Œì§€ ë§¤í•‘í•¨
 	pstPDPTEntry = (PDPTENTRY*) 0x101000;
 	for(i = 0; i < 64; i++) kSetPageEntryData(&(pstPDPTEntry[i]), 0, 0x102000 + (i * PAGE_TABLESIZE), PAGE_FLAGS_DEFAULT, 0);
 	for(i = 64; i < PAGE_MAXENTRYCOUNT; i++) kSetPageEntryData(&(pstPDPTEntry[i]), 0, 0, 0, 0);
 
-	// ÆäÀÌÁö µğ·ºÅÍ¸® Å×ÀÌºí »ı¼º
-	// ÇÏ³ªÀÇ ÆäÀÌÁö µğ·ºÅÍ¸®°¡ 1GB±îÁö ¸ÅÇÎ °¡´É
-	// ¿©À¯ÀÖ°Ô 64°³ÀÇ ÆäÀÌÁö µğ·ºÅÍ¸®¸¦ »ı¼ºÇÏ¿© ÃÑ 64GB±îÁö Áö¿ø
+	// í˜ì´ì§€ ë””ë ‰í„°ë¦¬ í…Œì´ë¸” ìƒì„±
+	// í•˜ë‚˜ì˜ í˜ì´ì§€ ë””ë ‰í„°ë¦¬ê°€ 1GBê¹Œì§€ ë§¤í•‘ ê°€ëŠ¥
+	// ì—¬ìœ ìˆê²Œ 64ê°œì˜ í˜ì´ì§€ ë””ë ‰í„°ë¦¬ë¥¼ ìƒì„±í•˜ì—¬ ì´ 64GBê¹Œì§€ ì§€ì›
 	pstPDEntry = (PDENTRY*) 0x102000;
 	dwMappingAddress = 0;
 	for(i = 0; i < PAGE_MAXENTRYCOUNT * 64; i++) {
-		// 32ºñÆ®·Î´Â »óÀ§ ¾îµå·¹½º¸¦ Ç¥ÇöÇÒ ¼ö ¾øÀ¸¹Ç·Î, MB´ÜÀ§·Î °è»êÇÑ ´ÙÀ½
-		// ÃÖÁ¾ °á°ú¸¦ ´Ù½Ã 4KB·Î ³ª´©¾î 32ºñÆ® ÀÌ»óÀÇ ¾îµå·¹½º¸¦ °è»êÇÔ
+		// 32ë¹„íŠ¸ë¡œëŠ” ìƒìœ„ ì–´ë“œë ˆìŠ¤ë¥¼ í‘œí˜„í•  ìˆ˜ ì—†ìœ¼ë¯€ë¡œ, MBë‹¨ìœ„ë¡œ ê³„ì‚°í•œ ë‹¤ìŒ
+		// ìµœì¢… ê²°ê³¼ë¥¼ ë‹¤ì‹œ 4KBë¡œ ë‚˜ëˆ„ì–´ 32ë¹„íŠ¸ ì´ìƒì˜ ì–´ë“œë ˆìŠ¤ë¥¼ ê³„ì‚°í•¨
 		kSetPageEntryData(&(pstPDEntry[i]), (i * (PAGE_DEFAULTSIZE >> 20)) >> 12, dwMappingAddress, PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS, 0);
 		dwMappingAddress += PAGE_DEFAULTSIZE;
 	}
 }
 
-// ÆäÀÌÁö ¿£Æ®¸®¿¡ ±âÁØ ÁÖ¼Ò¿Í ¼Ó¼º ÇÃ·¡±×¸¦ ¼³Á¤
+// í˜ì´ì§€ ì—”íŠ¸ë¦¬ì— ê¸°ì¤€ ì£¼ì†Œì™€ ì†ì„± í”Œë˜ê·¸ë¥¼ ì„¤ì •
 void kSetPageEntryData(PTENTRY *pstEntry, DWORD dwUpperBaseAddress, DWORD dwLowerBaseAddress, DWORD dwLowerFlags, DWORD dwUpperFlags) {
 	pstEntry->dwAttributeAndLowerBaseAddress = dwLowerBaseAddress | dwLowerFlags;
 	pstEntry->dwUpperBaseAddressAndEXB = (dwUpperBaseAddress & 0xFF) | dwUpperFlags;
 }
+

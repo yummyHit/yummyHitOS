@@ -46,14 +46,14 @@ Disk.img: 00.BootLoader/BootLoader.bin 01.Kernel32/Kernel32.bin 02.Kernel64/Kern
 	@echo
 	
 #	cat 00.BootLoader/BootLoader.bin 01.Kernel32/VirtualOS.bin > Disk.img
-#	cat $^ > Disk.img	# $^´Â Dependency(: ÀÇ ¿À¸¥ÂÊ)¿¡ ³ª¿­µÈ ÀüÃ¼ ÆÄÀÏÀ» ÀÇ¹ÌÇÔ
+#	cat $^ > Disk.img	# $^ëŠ” Dependency(: ì˜ ì˜¤ë¥¸ìª½)ì— ë‚˜ì—´ëœ ì „ì²´ íŒŒì¼ì„ ì˜ë¯¸í•¨
 	./ImageMaker.exe $^
 	
 	@echo
 	@echo =============== All Build Complete ===============
 	@echo
 	
-# À¯Æ¿¸®Æ¼ ºôµå
+# ìœ í‹¸ë¦¬í‹° ë¹Œë“œ
 Utility: 
 	@echo 
 	@echo =============== Utility Build Start ===============
