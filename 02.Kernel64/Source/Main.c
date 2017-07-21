@@ -8,6 +8,7 @@
 #include "Types.h"
 #include "Keyboard.h"
 #include "Descriptor.h"
+#include "PIC.h"
 
 // 함수 선언
 void setPrint(int x, int y, BYTE color, const char *str);
@@ -42,10 +43,17 @@ void Main(void) {
 		setPrint(53, 9, 0x0C, "[  Err  ]");
 		while(1);
 	}
+
+	setPrint(3, 10, 0x0F, "PIC Controller And Interrupt Initialize...........");
+	initPIC();
+	maskPIC(0);
+	onInterrupt();
+	setPrint(53, 10, 0x0A, "[  Hit  ]");
+
 	while(1) if(outputBufCheck() == TRUE) {
 			tmp = getScanCode();
 			if(convertCode(tmp, &(temp[0]), &flag) == TRUE) if(flag & KEY_FLAGS_DOWN) {
-				setPrint(i++, 10, 0x0F, temp);
+				setPrint(i++, 11, 0x0D, temp);
 				// 0이 입력되면 변수를 0으로 나누어 Divide Error 예외 발생
 				if(temp[0] == '0') tmp = tmp / 0;
 			}

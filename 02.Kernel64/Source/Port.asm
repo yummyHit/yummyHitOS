@@ -4,6 +4,7 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 
 ; C언어에서 호출할 수 있도록 이름 노출
 global inByte, outByte, loadGDTR, loadTSS, loadIDTR
+global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
 
 ; 포트로부터 1바이트 읽음
 ; PARAM: 포트 번호
@@ -45,4 +46,20 @@ loadTSS:
 ; PARAM: IDT 테이블 정보 저장하는 자료구조 어드레스
 loadIDTR:
 	lidt [ rdi ]	; 파라미터 1(IDTR 어드레스)을 프로세서에 로드해 IDT테이블 설정
+	ret
+
+; 인터럽트 활성화
+onInterrupt:
+	sti
+	ret
+
+; 인터럽트 비활성화
+offInterrupt:
+	cli
+	ret
+
+; RFLAGS 레지스터 읽고 되돌려줌
+readRFLAGS:
+	pushfq		; RFLAGS 레지스터를 스택에 저장
+	pop rax		; 스택에 저장된 RFLAGS 레지스터를 RAX 레지스터에 저장해 함수 반환값으로 설정
 	ret
