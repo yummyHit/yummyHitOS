@@ -7,6 +7,7 @@
 
 #include "Types.h"
 #include "Keyboard.h"
+#include "Descriptor.h"
 
 // 함수 선언
 void setPrint(int x, int y, BYTE color, const char *str);
@@ -18,6 +19,21 @@ void Main(void) {
 	int i = 0;
 
 	setPrint(53, 8, 0x0A, "[  Hit  ]");
+
+	setPrint(3, 9, 0x0F, "GDT Initailiza And Switch For IA-32e Mode.........");
+	initGDTNTSS();
+	loadGDTR(GDTR_STARTADDRESS);
+	setPrint(53, 9, 0x0A, "[  Hit  ]");
+
+	setPrint(3, 9, 0x0F, "TSS Segment Load..................................");
+	loadTSS(GDT_TSSSEGMENT);
+	setPrint(53, 9, 0x0A, "[  Hit  ]");
+
+	setPrint(3, 9, 0x0F, "IDT Initialize....................................");
+	initIDT();
+	loadIDTR(IDTR_STARTADDRESS);
+	setPrint(53, 9, 0x0A, "[  Hit  ]");
+
 	setPrint(3, 9, 0x0F, "Keyboard Activate.................................");
 	if(activeKeyboard() == TRUE) {
 		setPrint(53, 9, 0x0A, "[  Hit  ]");
@@ -28,8 +44,12 @@ void Main(void) {
 	}
 	while(1) if(outputBufCheck() == TRUE) {
 			tmp = getScanCode();
-			if(convertCode(tmp, &(temp[0]), &flag) == TRUE) if(flag & KEY_FLAGS_DOWN) setPrint(i++, 13, 0x0F, temp);
-		}
+			if(convertCode(tmp, &(temp[0]), &flag) == TRUE) if(flag & KEY_FLAGS_DOWN) {
+				setPrint(i++, 10, 0x0F, temp);
+				// 0이 입력되면 변수를 0으로 나누어 Divide Error 예외 발생
+				if(temp[0] == '0') tmp = tmp / 0;
+			}
+	}
 }
 
 // 문자열을 X, Y 위치에 출력

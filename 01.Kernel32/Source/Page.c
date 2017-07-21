@@ -8,7 +8,7 @@
 #include "Page.h"
 
 // IA-32e 모드 커널을 위한 페이지 테이블 생성
-void initializePageTables(void) {
+void initPageTables(void) {
 	PML4TENTRY *pml4t = (PML4TENTRY*) 0x100000;
 	PDPTENTRY *pdpt = (PDPTENTRY*) 0x101000;
 	PDENTRY *pd = (PDENTRY*) 0x102000;

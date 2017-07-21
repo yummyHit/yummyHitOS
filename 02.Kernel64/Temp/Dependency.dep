@@ -1,3 +1,7 @@
-Main.o: ../Source/Main.c ../Source/Types.h ../Source/Keyboard.h
-Keyboard.o: ../Source/Keyboard.c ../Source/Types.h \
- ../Source/AssemblyUtility.h ../Source/Keyboard.h
+Main.o: ../Source/Main.c ../Source/Types.h ../Source/Keyboard.h \
+ ../Source/Descriptor.h
+Descriptor.o: ../Source/Descriptor.c ../Source/Descriptor.h \
+ ../Source/Types.h ../Source/Util.h
+Util.o: ../Source/Util.c ../Source/Util.h ../Source/Types.h
+Keyboard.o: ../Source/Keyboard.c ../Source/Types.h ../Source/Port.h \
+ ../Source/Keyboard.h

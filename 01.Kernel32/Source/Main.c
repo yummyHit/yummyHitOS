@@ -11,9 +11,9 @@
 #include "ModeSwitch.h"
 
 void setPrint(int x, int y, BYTE color, const char *str);
-BOOL initializeArea(void);
+BOOL initArea(void);
 BOOL isMemEnough(void);
-void copyImageTo2Mbyte(void);
+void copyImage(void);
 
 #define BOOTSTRAPPROCESSOR_FLAGADDRESS  0x7C09
 
@@ -38,7 +38,7 @@ void Main( void ) {
 
 	// IA-32e 모드의 커널 영역을 초기화
 	setPrint(3, 6, 0x0F, "IA-32 Kernel Area Initialize......................");
-	if(initializeArea() == FALSE) {
+	if(initArea() == FALSE) {
 		setPrint(53, 6, 0x0C, "[  Err  ]");
 		setPrint(3, 7, 0x0C, "Kernel Area Initialization Fail!!");
 		while(1);
@@ -46,7 +46,7 @@ void Main( void ) {
 
 	// IA-32e 모드 커널을 위한 페이지 테이블 생성
 	setPrint(3, 6, 0x0F, "IA-32e Page Tables Initialize.....................");
-	initializePageTables();
+	initPageTables();
 	setPrint(53, 6, 0x0A, "[  Hit  ]");
 
 	// 프로세서 제조사 정보 읽기
@@ -69,7 +69,7 @@ void Main( void ) {
 
 	// IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스로 이동
 	setPrint(3, 8, 0x0F, "Copy IA-32e Kernel To 2M byte Address.............");
-	copyImageTo2Mbyte();
+	copyImage();
 	setPrint(53, 8, 0x0A, "[  Hit  ]");
 
 	// IA-32e 모드로 전환
@@ -95,7 +95,7 @@ void setPrint(int x, int y, BYTE color, const char *str) {
 }
 
 // IA-32e 모드용 커널 영역을 0으로 초기화
-BOOL initializeArea(void) {
+BOOL initArea(void) {
 	DWORD *addr;
 
 	// 초기화를 시작할 어드레스인 0x100000(1MB)을 설정
@@ -139,7 +139,7 @@ BOOL isMemEnough(void) {
 }
 
 // IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스에 복사
-void copyImageTo2Mbyte(void) {
+void copyImage(void) {
 	WORD sectorCnt, totalSectorCnt;
 	DWORD *srcAddr, *dstAddr;
 	int i;
