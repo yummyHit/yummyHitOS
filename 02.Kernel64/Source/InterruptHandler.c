@@ -7,6 +7,7 @@
 
 #include "InterruptHandler.h"
 #include "PIC.h"
+#include "Keyboard.h"
 
 // 공통으로 사용하는 예외 핸들러
 void exceptionHandler(int vecNum, QWORD errCode) {
@@ -50,6 +51,7 @@ void interruptHandler(int vecNum) {
 void keyboardHandler(int vecNum) {
 	char buf[] = "[INT:  , ]";
 	static int ls_keyboardCnt = 0;
+	BYTE tmp;
 
 	// 인터럽트가 발생했음을 알리기 위해 메시지 출력하는 부분. 화면 오른쪽 위 2자리 정수로 출력
 	buf[5] = '0' + vecNum / 10;
@@ -58,6 +60,12 @@ void keyboardHandler(int vecNum) {
 	buf[8] = '0' + ls_keyboardCnt;
 	ls_keyboardCnt = (ls_keyboardCnt + 1) % 10;
 	setPrint(0, 0, buf);
+
+	// 키보드 컨트롤러에서 데이터 읽고 ASCII로 변환해 큐에 삽입
+	if(outputBufCheck() == TRUE) {
+		tmp = getCode();
+		convertNPutCode(tmp);
+	}
 
 	// EOI 전송
 	sendEOI(vecNum - PIC_IRQSTARTVECTOR);

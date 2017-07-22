@@ -1,10 +1,13 @@
 Main.o: ../Source/Main.c ../Source/Types.h ../Source/Keyboard.h \
  ../Source/Descriptor.h ../Source/PIC.h
+Queue.o: ../Source/Queue.c ../Source/Queue.h ../Source/Types.h
 InterruptHandler.o: ../Source/InterruptHandler.c \
- ../Source/InterruptHandler.h ../Source/Types.h ../Source/PIC.h
+ ../Source/InterruptHandler.h ../Source/Types.h ../Source/PIC.h \
+ ../Source/Keyboard.h
 Descriptor.o: ../Source/Descriptor.c ../Source/Descriptor.h \
  ../Source/Types.h ../Source/Util.h ../Source/ISR.h
-Util.o: ../Source/Util.c ../Source/Util.h ../Source/Types.h
+Util.o: ../Source/Util.c ../Source/Util.h ../Source/Types.h \
+ ../Source/Port.h
 PIC.o: ../Source/PIC.c ../Source/PIC.h ../Source/Types.h
 Keyboard.o: ../Source/Keyboard.c ../Source/Types.h ../Source/Port.h \
- ../Source/Keyboard.h
+ ../Source/Keyboard.h ../Source/Queue.h

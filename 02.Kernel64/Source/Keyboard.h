@@ -58,6 +58,8 @@
 #define KEY_F11		0x9E
 #define KEY_F12		0x9F
 #define KEY_PAUSE	0xA0
+// 키 큐 최대 크기
+#define KEY_MAXQUEUECOUNT 100
 
 // 구조체
 #pragma pack(push, 1)
@@ -83,12 +85,26 @@ typedef struct keyboardManager {
 	int skipForPause;
 } KEYBOARDMANAGER;
 
+// 키 큐에 삽입할 데이터 구조체
+typedef struct keyData {
+	// 키보드에서 전달된 스캔 코드
+	BYTE scanCode;
+	// 스캔 코드를 변환한 ASCII 코드
+	BYTE ascii;
+	// 키 상태 저장하는 플래그(눌림, 떨어짐, 확장 키 여부)
+	BYTE flag;
+} KEYDATA;
+
 #pragma pack(pop)
 
-// 스캔 코드를 ASCII 코드로 변환하는 테이블
+// 키보드 상태 관리하는 키보드 매니저
 static KEYBOARDMANAGER gs_manager = {0,};
 
-static KEYMAPPINGENTRY gs_mapTable[ KEY_MAPPINGTABLEMAXCOUNT ] =
+// 키 저장하는 버퍼
+static KEYDATA gs_keyQBuf[KEY_MAXQUEUECOUNT];
+
+// 스캔 코드를 ASCII 코드로 변환하는 테이블
+static KEYMAPPINGENTRY gs_mapTable[KEY_MAPPINGTABLEMAXCOUNT] =
 {
     /*  0   */  {   KEY_NONE        ,   KEY_NONE        },
     /*  1   */  {   KEY_ESC         ,   KEY_ESC         },
@@ -185,6 +201,7 @@ static KEYMAPPINGENTRY gs_mapTable[ KEY_MAPPINGTABLEMAXCOUNT ] =
 // 함수
 BOOL outputBufCheck(void);
 BOOL inputBufCheck(void);
+BOOL ackForQueue(void);
 BOOL activeKeyboard(void);
 BOOL getScanCode(void);
 BOOL changeLED(BOOL caps, BOOL num, BOOL scroll);
@@ -196,5 +213,8 @@ BOOL isPadScanCode(BYTE scanCode);
 BOOL isCombineCode(BOOL scanCode);
 void updateKeyNLED(BYTE scanCode);
 BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag);
+BOOL initKeyboard(void);
+BOOL convertNPutCode(BYTE scanCode);
+BOOL rmKeyData(KEYDATA *data);
 
 #endif /*__KEYBOARD_H__*/

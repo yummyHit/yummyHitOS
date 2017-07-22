@@ -9,6 +9,7 @@
 #include "Types.h"
 #include "Port.h"
 #include "Keyboard.h"
+#include "Queue.h"
 
 /*	키보드 컨트롤러와 키보드 제어에 관련된 함수	*/
 
@@ -26,9 +27,33 @@ BOOL inputBufCheck(void) {
 	return FALSE;
 }
 
+// ACK 기다리며 ACK가 아닌 다른 스캔코드는 변환시켜 큐에 삽입
+BOOL ackForQueue(void) {
+	int i, j;
+	BYTE data;
+	BOOL res = FALSE;
+
+	// ACK가 오기 전 키보드 출력 버퍼(포트 0x60)에 키 데이터가 저장될 수 있어 키보드에서 전달된 데이터를 최대 100개 수신해 확인
+	for(j = 0; j < 100; j++) {
+		// 0xFFFF만큼 루프 수행. 루프 수행 후 출력 버퍼(포트 0x60)가 차 있지 않으면 무시
+		for(i = 0; i < 0xFFFF; i++) if(outputBufCheck() == TRUE) break;
+		data = inByte(0x60);
+		if(data == 0xFA) {
+			res = TRUE;
+			break;
+		} else convertNPutCode(data);
+	}
+	return res;
+}
+
 // 키보드 활성화
 BOOL activeKeyboard(void) {
 	int i, j;
+	BOOL preInterrupt;
+	BOOL res;
+
+	// 인터럽트 불가
+	preInterrupt = setInterruptFlag(FALSE);
 	
 	// 컨트롤 레지스터(포트 0x64)에 키보드 활성화 커맨드(0xAE)를 전달하여 키보드 디바이스 활성화
 	outByte(0x64, 0xAE);
@@ -40,20 +65,17 @@ BOOL activeKeyboard(void) {
 
 	// 입력 버퍼(포트 0x60)로 키보드 활성화(0xF4) 커맨드 전달해 키보드로 전송
 	outByte(0x60, 0xF4);
-	
-	// ACK가 올 때까지 대기, 오기 전 키보드 출력 버퍼(포트 0x60)에 키 데이터가 저장되어 있을 수 있어
-	// 키보드에서 전달된 데이터를 최대 100개까지 수신해 ACK 확인
-	for(j = 0; j < 100; j++) for(i = 0; i < 0xFFFF; i++) {
-		// 0xFFFF 루프 수행한 후에도 출력 버퍼(포트 0x60)가 비어있다면 무시하고 읽음
-//		if(outputBufCheck() == TRUE) break;			// 이 부분 때문에 자꾸 에러남;;
-		// 출력 버퍼(포트 0x60)에서 읽은 데이터가 ACK(0xFA)면 성공
-		if(inByte(0x60) == 0xFA) return TRUE;
-	}
-	return FALSE;
+
+	// ACK가 올 때까지 대기
+	res = ackForQueue();
+
+	// 이전 인터럽트 상태 복원
+	setInterruptFlag(preInterrupt);
+	return res;
 }
 
 // 출력 버퍼(포트 0x60)에서 키를 읽음
-BYTE getScanCode(void) {
+BYTE getCode(void) {
 	// 출력 버퍼(포트 0x60)에 데이터가 있을 때까지 대기
 	while(outputBufCheck() == FALSE);
 	return inByte(0x60);
@@ -62,6 +84,12 @@ BYTE getScanCode(void) {
 // 키보드 LED의 ON/OFF 변경
 BOOL changeLED(BOOL caps, BOOL num, BOOL scroll) {
 	int i, j;
+	BOOL preInterrupt;
+	BOOL res;
+	BYTE data;
+
+	// 인터럽트 불가
+	preInterrupt = setInterruptFlag(FALSE);
 
 	// 키보드에 LED 변경 커맨드 전송하고 커맨드가 처리될 때까지 대기
 	for(i = 0; i < 0xFFFF; i++) if(inputBufCheck() == FALSE) break;
@@ -70,15 +98,14 @@ BOOL changeLED(BOOL caps, BOOL num, BOOL scroll) {
 	outByte(0x60, 0xED);
 	for(i = 0; i < 0xFFFF; i++) if(inputBufCheck() == FALSE) break;
 
-	// 키보드가 LED 상태 변경 커맨드를 가져갔으므로 ACK가 올 때까지 대기
-	for(j = 0; j < 100; j++) {
-		for(i = 0; i < 0xFFFF; i++) if(outputBufCheck() == TRUE) break;
+	// ACK 올 때까지 대기
+	res = ackForQueue();
 
-		// 출력 버퍼(포트 0x60)에서 읽은 데이터가 ACK(0xFA)면 성공
-		if(inByte(0x60) == 0xFA) break;
+	if(res == FALSE) {
+		// 이전 인터럽트 상태 복원
+		setInterruptFlag(preInterrupt);
+		return FALSE;
 	}
-
-	if(j >= 100) return FALSE;
 
 	// LED 변경 값을 키보드로 전송하고 데이터가 처리 완료될 때까지 대기
 	outByte(0x60, (caps << 2) | (num << 1) | scroll);
@@ -86,16 +113,12 @@ BOOL changeLED(BOOL caps, BOOL num, BOOL scroll) {
 	// 입력 버퍼(포트 0x60)가 비어있으면 키보드가 LED데이터 가져간 것
 	for(i = 0; i < 0xFFFF; i++) if(inputBufCheck() == FALSE) break;
 
-	// 키보드가 LED데이터 가져갔으니 ACK가 올 때까지 대기
-	for(j = 0; j < 100; j++) {
-		for(i = 0; i < 0xFFFF; i++) if(outputBufCheck() == TRUE) break;
-		// 출력 버퍼(포트 0x60)에서 읽은 데이터가 ACK(0xFA)면 성공
-		if(inByte(0x60) == 0xFA) break;
-	}
+	// ACK 올 때까지 대기
+	res = ackForQueue();
 
-	if(j >= 100) return FALSE;
-
-	return TRUE;
+	// 이전 인터럽트 상태 복원
+	setInterruptFlag(preInterrupt);
+	return res;
 }
 
 // A20 게이트를 활성화
@@ -140,6 +163,9 @@ void reboot(void) {
 
 	while(1);
 }
+
+// 키를 저장하는 큐
+static QUEUE gs_keyQ;
 
 // 스캔 코드가 알파벳 범위인지 여부 반환
 BOOL isEngScanCode(BYTE scanCode) {
@@ -258,4 +284,55 @@ BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag) {
 	// 조합 키 눌림이나 떨어짐 상태 갱신
 	updateKeyNLED(scanCode);
 	return TRUE;
+}
+
+// 키보드 초기화
+BOOL initKeyboard(void) {
+	// 큐 초기화
+	initQueue(&gs_keyQ, gs_keyQBuf, KEY_MAXQUEUECOUNT, sizeof(KEYDATA));
+
+	// 키보드 활성화
+	return activeKeyboard();
+}
+
+// 스캔 코드를 내부적으로 사용하는 키 데이터로 바꾼 후 키 큐에 삽입
+BOOL convertNPutCode(BYTE scanCode) {
+	KEYDATA data;
+	BOOL res = FALSE;
+	BOOL preInterrupt;
+
+	// 스캔 코드를 키 데이터에 삽입
+	data.scanCode = scanCode;
+
+	// 스캔 코드를 ASCII 코드와 키 상태로 변환해 키 데이터에 삽입
+	if(convertCode(scanCode, &(data.ascii), &(data.flag)) == TRUE) {
+		// 인터럽트 불가
+		preInterrupt = setInterruptFlag(FALSE);
+
+		// 키 큐에 삽입
+		res = addData(&gs_keyQ, &data);
+
+		// 이전 인터럽트 플래그 복원
+		setInterruptFlag(preInterrupt);
+	}
+	return res;
+}
+
+// 키 큐에서 키 데이터 제거
+BOOL rmKeyData(KEYDATA *data) {
+	BOOL res;
+	BOOL preInterrupt;
+
+	// 큐가 비었으면 키 데이터 못꺼냄
+	if(isQEmpty(&gs_keyQ) == TRUE) return FALSE;
+
+	// 인터럽트 불가
+	preInterrupt = setInterruptFlag(FALSE);
+
+	// 키 큐에서 키 데이터 제거
+	res = rmData(&gs_keyQ, data);
+
+	// 이전 인터럽트 플래그 복원
+	setInterruptFlag(preInterrupt);
+	return res;
 }

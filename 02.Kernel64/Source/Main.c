@@ -16,8 +16,10 @@ void setPrint(int x, int y, BYTE color, const char *str);
 // 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
 	char temp[2] = {0,};
-	BYTE flag, tmp;
+	BYTE tmp;
 	int i = 0;
+	KEYDATA data;
+	
 
 	setPrint(53, 8, 0x0A, "[  Hit  ]");
 
@@ -35,8 +37,8 @@ void Main(void) {
 	loadIDTR(IDTR_STARTADDRESS);
 	setPrint(53, 9, 0x0A, "[  Hit  ]");
 
-	setPrint(3, 9, 0x0F, "Keyboard Activate.................................");
-	if(activeKeyboard() == TRUE) {
+	setPrint(3, 9, 0x0F, "Keyboard Activate And Queue Initialize............");
+	if(initKeyboard() == TRUE) {
 		setPrint(53, 9, 0x0A, "[  Hit  ]");
 		changeLED(FALSE, FALSE, FALSE);
 	} else {
@@ -50,13 +52,11 @@ void Main(void) {
 	onInterrupt();
 	setPrint(53, 10, 0x0A, "[  Hit  ]");
 
-	while(1) if(outputBufCheck() == TRUE) {
-			tmp = getScanCode();
-			if(convertCode(tmp, &(temp[0]), &flag) == TRUE) if(flag & KEY_FLAGS_DOWN) {
+	while(1) if(rmKeyData(&data) == TRUE) if(data.flag & KEY_FLAGS_DOWN) {
+				temp[0] = data.ascii;
 				setPrint(i++, 11, 0x0D, temp);
 				// 0이 입력되면 변수를 0으로 나누어 Divide Error 예외 발생
 				if(temp[0] == '0') tmp = tmp / 0;
-			}
 	}
 }
 
