@@ -149,7 +149,7 @@ void onA20Gate(void) {
 }
 
 // 프로세서 리셋
-void reboot(void) {
+void reBoot(void) {
 	int i;
 
 	// 입력 버퍼(포트 0x60)에 데이터가 비어있으면 출력 포트에 값을 쓰는 커맨드와 출력 포트 데이터 전송
@@ -170,7 +170,7 @@ static QUEUE gs_keyQ;
 // 스캔 코드가 알파벳 범위인지 여부 반환
 BOOL isEngScanCode(BYTE scanCode) {
 	// 변환 테이블 값을 직접 읽어 알파벳 범위 확인
-	if(('a' <= gs_mapTable[scanCode].normCode) && (gs_mapTable[scanCode].normCode <= 'z')) return TRUE;
+	if(('a' <= gs_keyMapTable[scanCode].normCode) && (gs_keyMapTable[scanCode].normCode <= 'z')) return TRUE;
 	return FALSE;
 }
 
@@ -198,17 +198,17 @@ BOOL isCombineCode(BOOL scanCode) {
 	// 알파벳 키라면 Shift키와 Caps Lock영향 받음
 	if(isEngScanCode(downScanCode) == TRUE) {
 		// 만약 Shift키와 Caps Lock 키 중 하나만 눌러져 있으면 반환
-		if(gs_manager.shiftDown ^ gs_manager.capsOn) combineKey = TRUE;
+		if(gs_keyManager.shiftDown ^ gs_keyManager.capsOn) combineKey = TRUE;
 		else combineKey = FALSE;
 	} else if(isNumScanCode(downScanCode) == TRUE) {	// 숫자와 기호 키라면 Shift키 영향 받음
 		// Shift 키가 눌러져 있으면 반환
-		if(gs_manager.shiftDown == TRUE) combineKey = TRUE;
+		if(gs_keyManager.shiftDown == TRUE) combineKey = TRUE;
 		else combineKey = FALSE;
-	} else if((isPadScanCode(downScanCode) == TRUE) && (gs_manager.exCodeIn == FALSE)) {
+	} else if((isPadScanCode(downScanCode) == TRUE) && (gs_keyManager.exCodeIn == FALSE)) {
 		// 숫자 패드 키라면 Num Lock 키 영향 받음. 0xE0만 제외하면 확장 키 코드와 숫자 패드 코드가
 		// 겹치므로 확장 키 코드가 수신되지 않았을 때만 처리 조합된 코드 사용
 		// Num Lock 키 눌러져 있으면 반환
-		if(gs_manager.numOn == TRUE) combineKey = TRUE;
+		if(gs_keyManager.numOn == TRUE) combineKey = TRUE;
 		else combineKey = FALSE;
 	}
 	return combineKey;
@@ -229,20 +229,20 @@ void updateKeyNLED(BYTE scanCode) {
 	}
 
 	// 조합 키 검색. Shift 키의 스캔 코드(42 or 54)면 Shift 키 상태 갱신
-	if((downScanCode == 42) || (downScanCode == 54)) gs_manager.shiftDown = down;
+	if((downScanCode == 42) || (downScanCode == 54)) gs_keyManager.shiftDown = down;
 	else if((downScanCode == 58) && (down == TRUE)) {	// Caps Lock 키 스캔 코드(58)면 Caps Lock 상태 갱신 및 LED 변경
-		gs_manager.capsOn ^= TRUE;
+		gs_keyManager.capsOn ^= TRUE;
 		ledStat = TRUE;
 	} else if((downScanCode == 69) && (down == TRUE)) {	// Num Lock 키 스캔 코드(69)면 Num Lock 상태 갱신 및 LED 변경
-		gs_manager.numOn ^= TRUE;
+		gs_keyManager.numOn ^= TRUE;
 		ledStat = TRUE;
 	} else if((downScanCode == 70) && (down == TRUE)) {
-		gs_manager.scrollOn ^= TRUE;
+		gs_keyManager.scrollOn ^= TRUE;
 		ledStat = TRUE;
 	}
 
 	// LED 상태가 변했으면 키보드로 커맨드 전송해 LED 변경
-	if(ledStat == TRUE) changeLED(gs_manager.capsOn, gs_manager.numOn, gs_manager.scrollOn);
+	if(ledStat == TRUE) changeLED(gs_keyManager.capsOn, gs_keyManager.numOn, gs_keyManager.scrollOn);
 }
 
 // 스캔 코드를 ASCII 코드로 변환
@@ -250,8 +250,8 @@ BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag) {
 	BOOL combineKey;
 
 	// 이전에 Pause 키가 수신되었으면 남은 스캔 코드 무시
-	if(gs_manager.skipForPause > 0) {
-		gs_manager.skipForPause--;
+	if(gs_keyManager.skipForPause > 0) {
+		gs_keyManager.skipForPause--;
 		return FALSE;
 	}
 
@@ -259,23 +259,23 @@ BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag) {
 	if(scanCode == 0xE1) {
 		*ascii = KEY_PAUSE;
 		*flag = KEY_FLAGS_DOWN;
-		gs_manager.skipForPause = KEY_SKIPCOUNTFORPAUSE;
+		gs_keyManager.skipForPause = KEY_SKIPCOUNTFORPAUSE;
 		return TRUE;
 	} else if(scanCode == 0xE0) {	// 확장 키 코드가 들어오면 실제 키 값은 다음에 들어오니 플래그만 설정
-		gs_manager.exCodeIn = TRUE;
+		gs_keyManager.exCodeIn = TRUE;
 		return FALSE;
 	}
 
 	combineKey = isCombineCode(scanCode);
 
 	// 키 값 설정
-	if(combineKey == TRUE) *ascii = gs_mapTable[scanCode & 0x7F].combCode;
-	else *ascii = gs_mapTable[scanCode & 0x7F].normCode;
+	if(combineKey == TRUE) *ascii = gs_keyMapTable[scanCode & 0x7F].combCode;
+	else *ascii = gs_keyMapTable[scanCode & 0x7F].normCode;
 
 	// 확장 키 유무 설정
-	if(gs_manager.exCodeIn == TRUE) {
+	if(gs_keyManager.exCodeIn == TRUE) {
 		*flag = KEY_FLAGS_EXTENDEDKEY;
-		gs_manager.exCodeIn = FALSE;
+		gs_keyManager.exCodeIn = FALSE;
 	} else *flag = 0;
 
 	// 눌러짐이나 떨어짐 유무 설정

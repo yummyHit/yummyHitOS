@@ -8,6 +8,7 @@
 #include "InterruptHandler.h"
 #include "PIC.h"
 #include "Keyboard.h"
+#include "Console.h"
 
 // 공통으로 사용하는 예외 핸들러
 void exceptionHandler(int vecNum, QWORD errCode) {
@@ -17,15 +18,15 @@ void exceptionHandler(int vecNum, QWORD errCode) {
 	buf[0] = '0' + vecNum / 10;
 	buf[1] = '0' + vecNum % 10;
 
-	setPrint(3, 3, 0x0F, "=============================================================           ");
-	setPrint(3, 4, 0x0F, "                                                                        ");
-	setPrint(3, 5, 0x0B, "                Interrupt Handler Execute                               ");
-	setPrint(3, 6, 0x0F, "                                                                        ");
-	setPrint(3, 7, 0x0E, "                It is Exception : ");
-	setPrint(37, 7, 0x0C, buf);
-	setPrint(39, 7, 0x0F, "                                 ");
-	setPrint(3, 8, 0x0F, "                                                                        ");
-	setPrint(3, 9, 0x0F, "=============================================================           ");
+	printXY(3, 3, 0x0F, "=============================================================           ");
+	printXY(3, 4, 0x0F, "                                                                        ");
+	printXY(3, 5, 0x0B, "                Interrupt Handler Execute                               ");
+	printXY(3, 6, 0x0F, "                                                                        ");
+	printXY(3, 7, 0x0E, "                It is Exception : ");
+	printXY(37, 7, 0x0C, buf);
+	printXY(39, 7, 0x0F, "                                 ");
+	printXY(3, 8, 0x0F, "                                                                        ");
+	printXY(3, 9, 0x0F, "=============================================================           ");
 
 	while(1);
 }
@@ -41,7 +42,7 @@ void interruptHandler(int vecNum) {
 	// 발생 횟수 출력
 	buf[8] = '0' + ls_interruptCnt;
 	ls_interruptCnt = (ls_interruptCnt + 1) % 10;
-	setPrint(70, 0, buf);
+	printXY(70, 0, 0x0E, buf);
 
 	// EOI 전송
 	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
@@ -59,7 +60,7 @@ void keyboardHandler(int vecNum) {
 	// 발생 횟수 출력
 	buf[8] = '0' + ls_keyboardCnt;
 	ls_keyboardCnt = (ls_keyboardCnt + 1) % 10;
-	setPrint(0, 0, buf);
+	printXY(0, 0, 0x0E, buf);
 
 	// 키보드 컨트롤러에서 데이터 읽고 ASCII로 변환해 큐에 삽입
 	if(outputBufCheck() == TRUE) {

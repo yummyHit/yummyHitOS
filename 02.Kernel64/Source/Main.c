@@ -9,58 +9,72 @@
 #include "Keyboard.h"
 #include "Descriptor.h"
 #include "PIC.h"
+#include "Console.h"
+#include "Shell.h"
 
 // 함수 선언
+/*	15장 진행 후 Console.c - printXY() 함수로 전부 교체
 void setPrint(int x, int y, BYTE color, const char *str);
+*/
 
 // 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
-	char temp[2] = {0,};
-	BYTE tmp;
-	int i = 0;
-	KEYDATA data;
-	
+	int x, y;
 
-	setPrint(53, 8, 0x0A, "[  Hit  ]");
+	// 콘솔 초기화 후 작업 수행
+	initConsole(0, 8);
 
-	setPrint(3, 9, 0x0F, "GDT Initailiza And Switch For IA-32e Mode.........");
+	printXY(53, 8, 0x0A, "[  Hit  ]");
+
+	getCursor(&x, &y);	y++;
+	printXY(3, 9, 0x0F, "GDT Initailiza And Switch For IA-32e Mode.........");
 	initGDTNTSS();
 	loadGDTR(GDTR_STARTADDRESS);
-	setPrint(53, 9, 0x0A, "[  Hit  ]");
+	printXY(53, 9, 0x0A, "[  Hit  ]");
 
-	setPrint(3, 9, 0x0F, "TSS Segment Load..................................");
+	printXY(3, 9, 0x0F, "TSS Segment Load..................................");
 	loadTSS(GDT_TSSSEGMENT);
-	setPrint(53, 9, 0x0A, "[  Hit  ]");
+	printXY(53, 9, 0x0A, "[  Hit  ]");
 
-	setPrint(3, 9, 0x0F, "IDT Initialize....................................");
+	printXY(3, 9, 0x0F, "IDT Initialize....................................");
 	initIDT();
 	loadIDTR(IDTR_STARTADDRESS);
-	setPrint(53, 9, 0x0A, "[  Hit  ]");
+	printXY(53, 9, 0x0A, "[  Hit  ]");
 
-	setPrint(3, 9, 0x0F, "Keyboard Activate And Queue Initialize............");
+	printXY(3, 9, 0x0F, "Memory Size Check.................................[     MB]");
+	chkTotalMemSize();
+	setCursor(54, y++);
+	printF("%d", getTotalMemSize());
+
+	printXY(3, 10, 0x0F, "Keyboard Activate And Queue Initialize............");
 	if(initKeyboard() == TRUE) {
-		setPrint(53, 9, 0x0A, "[  Hit  ]");
+		printXY(53, 10, 0x0A, "[  Hit  ]");
 		changeLED(FALSE, FALSE, FALSE);
 	} else {
-		setPrint(53, 9, 0x0C, "[  Err  ]");
+		printXY(53, 10, 0x0C, "[  Err  ]");
 		while(1);
-	}
+	}	y++;
 
-	setPrint(3, 10, 0x0F, "PIC Controller And Interrupt Initialize...........");
+	printXY(3, 11, 0x0F, "PIC Controller And Interrupt Initialize...........");
 	initPIC();
 	maskPIC(0);
-	onInterrupt();
-	setPrint(53, 10, 0x0A, "[  Hit  ]");
+	offInterrupt();
+	printXY(53, 11, 0x0A, "[  Hit  ]");	y++;
+	setCursor(0, ++y);
 
+/*	15장 진행 후 Shell.c - startShell() 함수로 교체
 	while(1) if(rmKeyData(&data) == TRUE) if(data.flag & KEY_FLAGS_DOWN) {
-				temp[0] = data.ascii;
-				setPrint(i++, 11, 0x0D, temp);
-				// 0이 입력되면 변수를 0으로 나누어 Divide Error 예외 발생
-				if(temp[0] == '0') tmp = tmp / 0;
+		temp[0] = data.ascii;
+		setPrint(i++, 11, 0x0D, temp);
+		// 0이 입력되면 변수를 0으로 나누어 Divide Error 예외 발생
+		if(temp[0] == '0') tmp = tmp / 0;
 	}
+*/
+	startShell();
 }
 
 // 문자열을 X, Y 위치에 출력
+/*	15장 진행 후 Console.c - printXY() 함수로 전부 교체
 void setPrint(int x, int y, BYTE color, const char *str) {
 	CHARACTER *p = (CHARACTER*) 0xB8000;
 	int i;
@@ -74,4 +88,4 @@ void setPrint(int x, int y, BYTE color, const char *str) {
 		p[i].color = color;
 	}
 }
-
+*/

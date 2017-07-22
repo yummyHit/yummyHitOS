@@ -98,13 +98,13 @@ typedef struct keyData {
 #pragma pack(pop)
 
 // 키보드 상태 관리하는 키보드 매니저
-static KEYBOARDMANAGER gs_manager = {0,};
+static KEYBOARDMANAGER gs_keyManager = {0,};
 
 // 키 저장하는 버퍼
 static KEYDATA gs_keyQBuf[KEY_MAXQUEUECOUNT];
 
 // 스캔 코드를 ASCII 코드로 변환하는 테이블
-static KEYMAPPINGENTRY gs_mapTable[KEY_MAPPINGTABLEMAXCOUNT] =
+static KEYMAPPINGENTRY gs_keyMapTable[KEY_MAPPINGTABLEMAXCOUNT] =
 {
     /*  0   */  {   KEY_NONE        ,   KEY_NONE        },
     /*  1   */  {   KEY_ESC         ,   KEY_ESC         },
