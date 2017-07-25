@@ -58,7 +58,7 @@ void Main(void) {
 	printXY(3, 11, 0x0F, "PIC Controller And Interrupt Initialize...........");
 	initPIC();
 	maskPIC(0);
-	offInterrupt();
+	onInterrupt();
 	printXY(53, 11, 0x0A, "[  Hit  ]");	y++;
 	setCursor(0, ++y);
 

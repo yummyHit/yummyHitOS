@@ -31,14 +31,14 @@ START:
 	mov si,		0	; SI 레지스터(문자열 원본 인덱스 레지스터)를 초기화
 	call MONITORCLEAR
 
-	; YummyHit's OS
-	push MADEBYMSG
-	push 0xE5		; 1(남색), 2(초록색), 3(청록색), 4(버건디색), 5(자주색), 6(갈색), 7(회색), 8(쥐색)
+	; YummyHit's OS		17.07.25 인터럽트에 적용
+;	push MADEBYMSG
+;	push 0xE5		; 1(남색), 2(초록색), 3(청록색), 4(버건디색), 5(자주색), 6(갈색), 7(회색), 8(쥐색)
 				; 9(연한 파란색), A(밝은 초록색), B(파란색), C(빨간색), D(분홍색), E(노란색), F(흰색)
-	push 25
-	push 1
-	call PRINTMSG
-	add sp, 8
+;	push 25
+;	push 1
+;	call PRINTMSG
+;	add sp, 8
 
 	push LOADINGMSG
 	push 0x0F		; 흰색

@@ -131,15 +131,15 @@ void setEntry(ENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BY
 	entry->ist = ist & 0x3;
 	entry->typeNFlag = type | flag;
 	entry->midBaseAddr = ((QWORD)handle >> 16) & 0xFFFF;
-	entry->highBaseAddr = (QWORD)handle >> 32;
+	entry->highBaseAddr = ((QWORD)handle >> 32);
 	entry->reserved = 0;
 }
 
 // 임시 예외 또는 인터럽트 핸들러
 void dummyHandler(void) {
 	printXY(3, 0, 0x0F, "=====================================================");
-	printXY(3, 1, 0x0B, "		Dummy Interrupt Handler Execute		   ");
-	printXY(3, 2, 0x0E, "		    Interrupt or Exception		   ");
+	printXY(3, 1, 0x0B, "		Dummy Interrupt Handler Execute		  ");
+	printXY(3, 2, 0x0E, "		    Interrupt or Exception		  ");
 	printXY(3, 3, 0x0F, "=====================================================");
 	while(1);
 }

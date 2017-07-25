@@ -30,6 +30,7 @@ BOOL inputBufCheck(void) {
 // ACK 기다리며 ACK가 아닌 다른 스캔코드는 변환시켜 큐에 삽입
 BOOL ackForQueue(void) {
 	int i, j;
+//	char *tmp = "123";
 	BYTE data;
 	BOOL res = FALSE;
 
@@ -40,9 +41,11 @@ BOOL ackForQueue(void) {
 		data = inByte(0x60);
 		if(data == 0xFA) {
 			res = TRUE;
+//			tmp = "321";
 			break;
 		} else convertNPutCode(data);
 	}
+//	printXY(15, 15, 0x0A, tmp);
 	return res;
 }
 
@@ -164,8 +167,6 @@ void reBoot(void) {
 	while(1);
 }
 
-// 키를 저장하는 큐
-static QUEUE gs_keyQ;
 
 // 스캔 코드가 알파벳 범위인지 여부 반환
 BOOL isEngScanCode(BYTE scanCode) {
@@ -305,7 +306,7 @@ BOOL convertNPutCode(BYTE scanCode) {
 	data.scanCode = scanCode;
 
 	// 스캔 코드를 ASCII 코드와 키 상태로 변환해 키 데이터에 삽입
-	if(convertCode(scanCode, &(data.ascii), &(data.flag)) == TRUE) {
+	if(convertCode(scanCode, &data.ascii, &data.flag) == TRUE) {
 		// 인터럽트 불가
 		preInterrupt = setInterruptFlag(FALSE);
 

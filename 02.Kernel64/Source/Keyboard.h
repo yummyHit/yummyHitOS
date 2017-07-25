@@ -9,6 +9,7 @@
 #define __KEYBOARD_H__
 
 #include "Types.h"
+#include "Queue.h"
 
 // 매크로. Pause 키를 처리하기 위해 무시해야 하는 나머지 스캔 코드의 수
 #define KEY_SKIPCOUNTFORPAUSE	2
@@ -96,6 +97,9 @@ typedef struct keyData {
 } KEYDATA;
 
 #pragma pack(pop)
+
+// 키를 저장하는 큐
+static QUEUE gs_keyQ;
 
 // 키보드 상태 관리하는 키보드 매니저
 static KEYBOARDMANAGER gs_keyManager = {0,};
@@ -203,10 +207,10 @@ BOOL outputBufCheck(void);
 BOOL inputBufCheck(void);
 BOOL ackForQueue(void);
 BOOL activeKeyboard(void);
-BOOL getScanCode(void);
+BOOL getCode(void);
 BOOL changeLED(BOOL caps, BOOL num, BOOL scroll);
 void onA20Gate(void);
-void reboot(void);
+void reBoot(void);
 BOOL isEngScanCode(BYTE scanCode);
 BOOL isNumScanCode(BYTE scanCode);
 BOOL isPadScanCode(BYTE scanCode);

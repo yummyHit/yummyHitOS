@@ -55,7 +55,7 @@ void printF(const char *format, ...) {
 	char buf[1024];
 	int nextPrintOffset;
 
-	// 가변 인자 리스트를 사용해 Vsprintf()로 처리
+	// 가변 인자 리스트를 사용해 vsprintf()로 처리
 	va_start(v, format);
 	vsprintF(buf, format, v);
 	va_end(v);
@@ -112,25 +112,22 @@ void clearMonitor(void) {
 	int i;
 
 	// 화면 전체를 공백으로 채우고 커서 위치를 0, 0으로 이동
-	for(i = 0; i < CONSOLE_WIDTH * (CONSOLE_HEIGHT - 3); i++) {
+	for(i = 0; i < CONSOLE_WIDTH * CONSOLE_HEIGHT; i++) {
 		mon[i].character = ' ';
 		mon[i].color = CONSOLE_DEFAULTTEXTCOLOR;
 	}
-	setCursor(0, 4);
+	setCursor(0, 0);
 }
 
 // getch() 함수 구현
 BYTE getCh(void) {
 	KEYDATA data;
-	data.flag = KEY_FLAGS_UP;
 
-	// 키가 눌러질 때까지 대기
-	while(1) {					// 현재 여기서 무한루프. 문제해결 필요.
-		// 키 큐에 데이터가 수신될 때까지 대기
-		while(rmKeyData(&data) == FALSE);
-		// 키가 눌렸다는 데이터 수신되면 ASCII 코드 반환
-		if(data.flag & KEY_FLAGS_DOWN) return data.ascii;
-	}
+	// 키가 눌러질 때까지 대기, 키 큐에 데이터가 수신되면 키가 눌렸다는 데이터 수신시 ASCII 코드 반환
+	while(1) if(rmKeyData(&data) == TRUE) if(data.flag & KEY_FLAGS_DOWN) return data.ascii;
+				// 현재 여기서 무한루프. 문제해결 필요. rmKeyData(&data)에서 키가 눌려도 절대 TRUE가 되지 않음!!
+				// rmKeyData()함수를 참고했을 때, isQEmpty()함수가 계속 TRUE가 되어 return FALSE; 를 내보냄!!
+				// rmKeyData()함수를 빼도 data.flag & KEY_FLAGS_DOWN를 읽지 못해 return 할 수가 없음...
 }
 
 // 문자열을 X, Y 위치에 출력

@@ -372,7 +372,7 @@ ISRSerial1:
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 36
-	call interruptHandler
+	call exceptionHandler
 
 	L_CONTEXT
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
@@ -383,7 +383,7 @@ ISRParallel2:
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 37
-	call interruptHandler
+	call exceptionHandler
 
 	L_CONTEXT
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
@@ -394,7 +394,7 @@ ISRFloppy:
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 38
-	call interruptHandler
+	call exceptionHandler
 
 	L_CONTEXT
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
