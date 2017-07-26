@@ -1,3 +1,10 @@
+;
+; EntryPoint.s
+;
+;  Created on: 2017. 7. 18.
+;      Author: Yummy
+;
+
 [BITS 64]				; 이하의 코드는 64비트 코드로 설정
 
 SECTION .text			; test 섹션(세그먼트)을 정의

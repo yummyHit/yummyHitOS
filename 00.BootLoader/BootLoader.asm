@@ -1,3 +1,10 @@
+;
+; BootLoader.asm
+;
+;  Created on: 2017. 7. 1.
+;      Author: Yummy
+;
+
 [ORG 0x00]			; 코드의 시작 어드레스를 0x00으로 설정
 [BITS 16]			; 이하의 코드는 16비트 코드로 설정
 

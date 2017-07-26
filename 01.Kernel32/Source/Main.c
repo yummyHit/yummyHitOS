@@ -74,6 +74,7 @@ void Main( void ) {
 
 	// IA-32e 모드로 전환
 	setPrint(3, 8, 0x1F, "Switch To IA-32e Mode.............................");
+	setPrint(53, 8, 0x11, "         ");
 	SwitchNExecKernel();
 
 	while(1);

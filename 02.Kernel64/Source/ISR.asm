@@ -1,3 +1,10 @@
+;
+; ISR.asm
+;
+;  Created on: 2017. 7. 22.
+;      Author: Yummy
+;
+
 [BITS 64]		; 이하 코드는 64비트 코드로 설정
 
 SECTION .text		; text 섹션(세그먼트)을 정의
