@@ -136,6 +136,7 @@ void setEntry(ENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BY
 }
 
 // 임시 예외 또는 인터럽트 핸들러
+/*	인터럽트 핸들러 생성 후 필요없어진 임시 함수
 void dummyHandler(void) {
 	printXY(3, 0, 0x0F, "=====================================================");
 	printXY(3, 1, 0x0B, "		Dummy Interrupt Handler Execute		  ");
@@ -143,3 +144,4 @@ void dummyHandler(void) {
 	printXY(3, 3, 0x0F, "=====================================================");
 	while(1);
 }
+*/

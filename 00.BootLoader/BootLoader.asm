@@ -41,7 +41,7 @@ START:
 ;	add sp, 8
 
 	push LOADINGMSG
-	push 0x0F		; 흰색
+	push 0x1F		; 흰색
 	push 3
 	push 3
 	call PRINTMSG
@@ -143,7 +143,7 @@ READEND:
 	;	OS 이미지가 완료되었다는 메시지 출력
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	push HITMSG			; 출력할 메시지의 어드레스를 스택에 삽입
-	push 0x0A						; 초록색
+	push 0x1A						; 초록색
 	push 53							; 화면 X 좌표(53)를 스택에 삽입
 	push 3							; 화면 Y 좌표(3)를 스택에 삽입
 	call PRINTMSG				; PRINTMSG 함수 호출
@@ -160,7 +160,7 @@ READEND:
 ; 디스크 에러를 처리하는 함수
 HANDLEDISKERROR:			; 에러 처리 코드
 	push ERRORMSG		; 에러 문자열의 어드레스를 스택에 삽입
-	push 0x0C				; 빨간색
+	push 0x1C				; 빨간색
 	push 53					; 화면 X 좌표(53)를 스택에 삽입
 	push 3					; 화면 Y 좌표(3)를 스택에 삽입
 	call PRINTMSG		; PRINTMSG 함수 호출
@@ -253,7 +253,7 @@ MONITORCLEAR:
 
 .MONITORCLEARLOOP:	; 화면을 지우는 루프
 	mov byte [ es: si ], 0			; 비디오 메모리의 문자가 위치하는 어드레스에 0을 복사하여 문자 삭제
-	mov byte [ es: si + 1 ], 0x0F	; 비디오 메모리의 속성이 위치하는 어드레스에 0x0F(검은 바탕에 밝은 녹색)을 복사
+	mov byte [ es: si + 1 ], 0x1F	; 비디오 메모리의 속성이 위치하는 어드레스에 0x0F(검은 바탕에 밝은 녹색)을 복사
 	add si, 2						; 문자와 속성을 설정했으니 다음 위치로 이동
 	cmp si, 80 * 25 * 2				; 화면의 전체 크기는 80문자 * 25라인
 									; 출력한 문자의 수를 의미하는 SI 레지스터와 비교
@@ -275,7 +275,7 @@ MONITORCLEAR:
 ERRORMSG:	db '[  Error  ]', 0
 LOADINGMSG:	db 'OS Image Loading..................................', 0
 HITMSG:	db '[  Hit  ]', 0
-MADEBYMSG:	db ' YummyHitOS ', 0
+;MADEBYMSG:	db ' YummyHitOS ', 0
 
 ; 디스크 읽기에 관련된 변수들
 SECTORNUMBER:	db 0x02    ; OS 이미지가 시작하는 섹터 번호를 저장하는 영역

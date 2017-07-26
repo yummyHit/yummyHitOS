@@ -29,51 +29,51 @@ void Main( void ) {
 	}
 
 	// 최소 메모리 크기를 만족하는 지 검사
-	setPrint(3, 5, 0x0F, "Minimum Memory Size Check.........................");
+	setPrint(3, 5, 0x1F, "Minimum Memory Size Check.........................");
 	if(isMemEnough() == FALSE) {
-		setPrint(53, 5, 0x0C, "[  Err  ]");
-		setPrint(3, 6, 0x0C, "Not Enough Memory. MINT64 OS Requires Over 64Mbyte Memory!");
+		setPrint(53, 5, 0x1C, "[  Err  ]");
+		setPrint(3, 6, 0x1C, "Not Enough Memory. MINT64 OS Requires Over 64Mbyte Memory!");
 		while(1);
-	} else setPrint(53, 5, 0x0A, "[  Hit  ]");
+	} else setPrint(53, 5, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드의 커널 영역을 초기화
-	setPrint(3, 6, 0x0F, "IA-32 Kernel Area Initialize......................");
+	setPrint(3, 6, 0x1F, "IA-32 Kernel Area Initialize......................");
 	if(initArea() == FALSE) {
-		setPrint(53, 6, 0x0C, "[  Err  ]");
-		setPrint(3, 7, 0x0C, "Kernel Area Initialization Fail!!");
+		setPrint(53, 6, 0x1C, "[  Err  ]");
+		setPrint(3, 7, 0x1C, "Kernel Area Initialization Fail!!");
 		while(1);
-	} else setPrint(53, 6, 0x0A, "[  Hit  ]");
+	} else setPrint(53, 6, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드 커널을 위한 페이지 테이블 생성
-	setPrint(3, 6, 0x0F, "IA-32e Page Tables Initialize.....................");
+	setPrint(3, 6, 0x1F, "IA-32e Page Tables Initialize.....................");
 	initPageTables();
-	setPrint(53, 6, 0x0A, "[  Hit  ]");
+	setPrint(53, 6, 0x1A, "[  Hit  ]");
 
 	// 프로세서 제조사 정보 읽기
 	ReadCPUID(0x00000000, &eax, &ebx, &ecx, &edx);
 	*(DWORD*)cpuMaker = ebx;
 	*((DWORD*)cpuMaker + 1) = edx;
 	*((DWORD*)cpuMaker + 2) = ecx;
-	setPrint(3, 6, 0x0F, "CPU maker check...................................[              ]");
-	setPrint(55, 6, 0x0C, cpuMaker);
+	setPrint(3, 6, 0x1F, "CPU maker check...................................[              ]");
+	setPrint(55, 6, 0x1C, cpuMaker);
 
 	// 64비트 지원 유무 확인
 	ReadCPUID(0x80000001, &eax, &ebx, &ecx, &edx);
-	setPrint(3, 7, 0x0F, "64bit Mode Support Check..........................");
-	if(edx & ( 1 << 29 )) setPrint(53, 7, 0x0A, "[  Hit  ]");
+	setPrint(3, 7, 0x1F, "64bit Mode Support Check..........................");
+	if(edx & ( 1 << 29 )) setPrint(53, 7, 0x1A, "[  Hit  ]");
 	else {
-		setPrint(53, 7, 0x0C, "[  Err  ]");
-		setPrint(3, 8, 0x0C, "This processor doesn't support 64bit mode!!");
+		setPrint(53, 7, 0x1C, "[  Err  ]");
+		setPrint(3, 8, 0x1C, "This processor doesn't support 64bit mode!!");
 		while(1);
 	}
 
 	// IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스로 이동
-	setPrint(3, 8, 0x0F, "Copy IA-32e Kernel To 2M byte Address.............");
+	setPrint(3, 8, 0x1F, "Copy IA-32e Kernel To 2M byte Address.............");
 	copyImage();
-	setPrint(53, 8, 0x0A, "[  Hit  ]");
+	setPrint(53, 8, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드로 전환
-	setPrint(3, 8, 0x0F, "Switch To IA-32e Mode.............................");
+	setPrint(3, 8, 0x1F, "Switch To IA-32e Mode.............................");
 	SwitchNExecKernel();
 
 	while(1);

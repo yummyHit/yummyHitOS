@@ -30,7 +30,6 @@ BOOL inputBufCheck(void) {
 // ACK 기다리며 ACK가 아닌 다른 스캔코드는 변환시켜 큐에 삽입
 BOOL ackForQueue(void) {
 	int i, j;
-//	char *tmp = "123";
 	BYTE data;
 	BOOL res = FALSE;
 
@@ -41,11 +40,9 @@ BOOL ackForQueue(void) {
 		data = inByte(0x60);
 		if(data == 0xFA) {
 			res = TRUE;
-//			tmp = "321";
 			break;
 		} else convertNPutCode(data);
 	}
-//	printXY(15, 15, 0x0A, tmp);
 	return res;
 }
 

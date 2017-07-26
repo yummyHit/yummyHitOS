@@ -19,8 +19,8 @@ void printDebug(int vec, int cnt, int handler) {
 	// 발생 횟수 출력
 	buf[8] = '0' + cnt / 10;
 	buf[9] = '0' + cnt % 10;
-	if(handler == 1) printXY(69, 0, 0x0E, buf);
-	else printXY(0, 0, 0x0E, buf);
+	if(handler == 1) printXY(69, 0, 0x1E, buf);
+	else printXY(0, 0, 0x1E, buf);
 	printXY(34, 0, 0xE5, " YummyHitOS ");
 }
 
@@ -32,15 +32,15 @@ void exceptionHandler(int vecNum, QWORD errCode) {
 	buf[0] = '0' + vecNum / 10;
 	buf[1] = '0' + vecNum % 10;
 
-	printXY(3, 3, 0x0F, "=============================================================           ");
-	printXY(3, 4, 0x0F, "                                                                        ");
-	printXY(3, 5, 0x0B, "                Interrupt Handler Execute                               ");
-	printXY(3, 6, 0x0F, "                                                                        ");
-	printXY(3, 7, 0x0E, "                It is Exception : ");
-	printXY(37, 7, 0x0C, buf);
-	printXY(39, 7, 0x0F, "                                 ");
-	printXY(3, 8, 0x0F, "                                                                        ");
-	printXY(3, 9, 0x0F, "=============================================================           ");
+	printXY(3, 3, 0x1F, "=============================================================           ");
+	printXY(3, 4, 0x1F, "                                                                        ");
+	printXY(3, 5, 0x1B, "                Interrupt Handler Execute                               ");
+	printXY(3, 6, 0x1F, "                                                                        ");
+	printXY(3, 7, 0x1E, "                It is Exception : ");
+	printXY(37, 7, 0x1C, buf);
+	printXY(39, 7, 0x1F, "                                 ");
+	printXY(3, 8, 0x1F, "                                                                        ");
+	printXY(3, 9, 0x1F, "=============================================================           ");
 
 	while(1);
 }

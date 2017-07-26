@@ -24,42 +24,42 @@ void Main(void) {
 	// 콘솔 초기화 후 작업 수행
 	initConsole(0, 8);
 
-	printXY(53, 8, 0x0A, "[  Hit  ]");
+	printXY(53, 8, 0x1A, "[  Hit  ]");
 
 	getCursor(&x, &y);	y++;
-	printXY(3, 9, 0x0F, "GDT Initailiza And Switch For IA-32e Mode.........");
+	printXY(3, 9, 0x1F, "GDT Initailiza And Switch For IA-32e Mode.........");
 	initGDTNTSS();
 	loadGDTR(GDTR_STARTADDRESS);
-	printXY(53, 9, 0x0A, "[  Hit  ]");
+	printXY(53, 9, 0x1A, "[  Hit  ]");
 
-	printXY(3, 9, 0x0F, "TSS Segment Load..................................");
+	printXY(3, 9, 0x1F, "TSS Segment Load..................................");
 	loadTSS(GDT_TSSSEGMENT);
-	printXY(53, 9, 0x0A, "[  Hit  ]");
+	printXY(53, 9, 0x1A, "[  Hit  ]");
 
-	printXY(3, 9, 0x0F, "IDT Initialize....................................");
+	printXY(3, 9, 0x1F, "IDT Initialize....................................");
 	initIDT();
 	loadIDTR(IDTR_STARTADDRESS);
-	printXY(53, 9, 0x0A, "[  Hit  ]");
+	printXY(53, 9, 0x1A, "[  Hit  ]");
 
-	printXY(3, 9, 0x0F, "Memory Size Check.................................[     MB]");
+	printXY(3, 9, 0x1F, "Memory Size Check.................................[     MB]");
 	chkTotalMemSize();
 	setCursor(54, y++);
 	printF("%d", getTotalMemSize());
 
-	printXY(3, 10, 0x0F, "Keyboard Activate And Queue Initialize............");
+	printXY(3, 10, 0x1F, "Keyboard Activate And Queue Initialize............");
 	if(initKeyboard() == TRUE) {
-		printXY(53, 10, 0x0A, "[  Hit  ]");
+		printXY(53, 10, 0x1A, "[  Hit  ]");
 		changeLED(FALSE, FALSE, FALSE);
 	} else {
-		printXY(53, 10, 0x0C, "[  Err  ]");
+		printXY(53, 10, 0x1C, "[  Err  ]");
 		while(1);
 	}	y++;
 
-	printXY(3, 11, 0x0F, "PIC Controller And Interrupt Initialize...........");
+	printXY(3, 11, 0x1F, "PIC Controller And Interrupt Initialize...........");
 	initPIC();
 	maskPIC(0);
 	onInterrupt();
-	printXY(53, 11, 0x0A, "[  Hit  ]");	y++;
+	printXY(53, 11, 0x1A, "[  Hit  ]");	y++;
 	setCursor(0, ++y);
 
 /*	15장 진행 후 Shell.c - startShell() 함수로 교체

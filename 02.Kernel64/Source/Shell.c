@@ -12,11 +12,11 @@
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
-	{"help", "### What do u want?", csHelp},
-	{"clear", "", csClear},
-	{"tot_free", "### Your Total RAM :", csFree},
-	{"strConvert", "### String To Number(Decimal or HexaDecimal)", csStrConvert},
-	{"shutdown", "Shutdown & Reboot ...", csHalt},
+	{"help", "### Show Commands ###", csHelp},
+	{"clear", "### Clear Monitor ###", csClear},
+	{"tot_free", "### Show your total memory ###", csFree},
+	{"strConvert", "### String To Number(Decimal or HexaDecimal) ###", csStrConvert},
+	{"shutdown", "### Shutdown & Reboot ###", csHalt},
 };
 
 // 셸 메인 루프

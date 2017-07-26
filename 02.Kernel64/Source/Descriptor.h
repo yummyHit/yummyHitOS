@@ -153,6 +153,6 @@ void setEntry16(ENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE
 void initTSS(TSS *tss);
 void initIDT(void);
 void setEntry(ENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BYTE type);
-void dummyHandler(void);
+//void dummyHandler(void);
 
 #endif /*__DESCRIPTOR_H__*/

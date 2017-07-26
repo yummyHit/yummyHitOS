@@ -90,14 +90,14 @@ PROTECTEDMODE:
 
 	; 화면에 보호 모드로 전환되었다는 메시지 표시
 	push ( SWITCHMSG - $$ + 0x10000 )	; 출력할 메시지의 어드레스를 스택에 삽입
-	push 0x0F				; 출력 메시지의 색깔
+	push 0x1F				; 출력 메시지의 색깔
 	push 4					; 화면 Y 좌표(4)를 스택에 삽입
 	push 3					; 화면 X 좌표(3)를 스택에 삽입
 	call PRINTMSG				; PRINTMSG 함수 호출
 	add esp, 16				; 삽입한 파라미터 제거
 
 	push ( HITMSG - $$ + 0x10000 )
-	push 0x0A
+	push 0x1A
 	push 4
 	push 53
 	call PRINTMSG

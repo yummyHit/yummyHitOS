@@ -14,7 +14,7 @@ global ISRTimer, ISRKeyboard, ISRSlavePIC, ISRSerial2, ISRSerial1, ISRParallel2,
 global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, ISRHDD1, ISRHDD2, ISRETC
 
 ; 콘텍스트를 저장하고 셀렉터를 교체하는 매크로
-%macro S_CONTEXT 0	; 파라미터를 전달받지 않는 매크로 정의
+%macro SAVE 0	; 파라미터를 전달받지 않는 매크로 정의
 	; RBP 레지스터부터 GS 세그먼트 셀렉터까지 모두 스택에 삽입
 	push rbp
 	mov rbp, rsp
@@ -49,7 +49,7 @@ global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, 
 %endmacro
 
 ; 콘텍스트 복원 매크로
-%macro L_CONTEXT 0	; 파라미터 전달받지 않는 매크로 정의
+%macro LOAD 0	; 파라미터 전달받지 않는 매크로 정의
 	; GS 세그먼트 셀렉터부터 RBP 레지스터까지 모두 스택에서 꺼내 복원
 	pop gs
 	pop fs
@@ -78,433 +78,433 @@ global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, 
 ; 예외 핸들러
 ; #0, Divide Error ISR
 ISRDivErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 0
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #1, Debug ISR
 ISRDebug:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 1
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #2, NMI ISR
 ISRNMI:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 2
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #3, BreakPoint ISR
 ISRBP:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 3
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #4, Overflow ISR
 ISROF:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 4
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #5, Bound Range Exceeded ISR
 ISRExceed:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 5
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #6, Invalid Opcode ISR
 ISROPErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 6
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #7, Device Not Available ISR
 ISRDevErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 7
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #8, Double Fault ISR
 ISRDoubleErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 8
 	mov rsi, qword [ rbp + 8 ]
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	add rsp, 8	; 에러 코드 스택에서 제거
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #9, Coprocessor Segment Overrun ISR
 ISRSegmentOverrun:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 9
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #10, Invalid TSS ISR
 ISRTSSErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 10
 	mov rsi, qword [ rbp + 8 ]
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #11, Segment Not Present ISR
 ISRSegmentErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 11
 	mov rsi, qword [ rbp + 8 ]
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #12, Stack Segment Fault ISR
 ISRStackErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 12
 	mov rsi, qword [ rbp + 8 ]
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #13, General Protection ISR
 ISRProtectErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 13
 	mov rsi, qword [ rbp + 8 ]
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #14, Page Fault ISR
 ISRPageErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 14
 	mov rsi, qword [ rbp + 8 ]
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #15, Reserved ISR
 ISR15:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 15
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #16, FPU Error ISR
 ISRFPUErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 16
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #17, Alignment Check ISR
 ISRAlignChk:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 17
 	mov rsi, qword [ rbp + 8 ]
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #18, Machine Check ISR
 ISRMachChk:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 18
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #19, SIMD Floating Point Exception ISR
 ISRSIMDErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 19
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #20 ~ 31, Reserved ISR
 ISRETCErr:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 20
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; 인터럽트 핸들러
 ; #32, Timer ISR
 ISRTimer:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 32
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #33, Keyboard ISR
 ISRKeyboard:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 33
 	call keyboardHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #34, Slave PIC ISR
 ISRSlavePIC:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 34
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #35, Serial Port2 ISR
 ISRSerial2:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 35
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #36, Serial Port1 ISR
 ISRSerial1:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 36
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #37, Parallel Port2 ISR
 ISRParallel2:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 37
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #38, Floppy Disk Controller ISR
 ISRFloppy:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 38
 	call exceptionHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #39, Parallel Port1 ISR
 ISRParallel1:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 39
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #40, RTC ISR
 ISRRTC:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 40
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #41, Reserved Interrupt ISR
 ISRReserved:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 41
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #42, Not Use 1
 ISRNotUsed1:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 42
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #43, Not Use 2
 ISRNotUsed2:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 43
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #44, Mouse ISR
 ISRMouse:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 44
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #45, Coprocessor ISR
 ISRCoprocessor:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 45
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #46, Hard Disk Drive 1 ISR
 ISRHDD1:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 46
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #47, Hard Disk Drive 2 ISR
 ISRHDD2:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 47
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #48 etc ISR
 ISRETC:
-	S_CONTEXT	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
+	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 48
 	call interruptHandler
 
-	L_CONTEXT
+	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
