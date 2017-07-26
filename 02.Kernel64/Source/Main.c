@@ -12,7 +12,6 @@
 #include "Console.h"
 #include "Shell.h"
 
-// 함수 선언
 /*	15장 진행 후 Console.c - printXY() 함수로 전부 교체
 void setPrint(int x, int y, BYTE color, const char *str);
 */
@@ -22,44 +21,47 @@ void Main(void) {
 	int x, y;
 
 	// 콘솔 초기화 후 작업 수행
-	initConsole(0, 8);
+	initConsole(0, 5);
 
-	printXY(53, 8, 0x1A, "[  Hit  ]");
+	printXY(57, 5, 0x1A, "[  Hit  ]");
 
 	getCursor(&x, &y);	y++;
-	printXY(3, 9, 0x1F, "GDT Initailiza And Switch For IA-32e Mode.........");
+	printXY(7, 6, 0x1F, "GDT Initialize And Switch For IA-32e Mode ........");
 	initGDTNTSS();
 	loadGDTR(GDTR_STARTADDRESS);
-	printXY(53, 9, 0x1A, "[  Hit  ]");
+	printXY(57, 6, 0x1A, "[  Hit  ]");
 
-	printXY(3, 9, 0x1F, "TSS Segment Load..................................");
+	printXY(7, 6, 0x1F, "TSS Segment Load .................................");
 	loadTSS(GDT_TSSSEGMENT);
-	printXY(53, 9, 0x1A, "[  Hit  ]");
+	printXY(57, 6, 0x1A, "[  Hit  ]");
 
-	printXY(3, 9, 0x1F, "IDT Initialize....................................");
+	printXY(7, 6, 0x1F, "IDT Initialize ...................................");
 	initIDT();
 	loadIDTR(IDTR_STARTADDRESS);
-	printXY(53, 9, 0x1A, "[  Hit  ]");
+	printXY(57, 6, 0x1A, "[  Hit  ]");
 
-	printXY(3, 9, 0x1F, "Memory Size Check.................................[     MB]");
+	printXY(7, 6, 0x1F, "Memory Size Check ................................[     MB]");
 	chkTotalMemSize();
-	setCursor(54, y++);
+	setCursor(58, y++);
 	printF("%d", getTotalMemSize());
 
-	printXY(3, 10, 0x1F, "Keyboard Activate And Queue Initialize............");
+	printXY(7, 7, 0x1F, "Keyboard Activate And Queue Initialize ...........");
 	if(initKeyboard() == TRUE) {
-		printXY(53, 10, 0x1A, "[  Hit  ]");
+		printXY(57, 7, 0x1A, "[  Hit  ]");
 		changeLED(FALSE, FALSE, FALSE);
 	} else {
-		printXY(53, 10, 0x1C, "[  Err  ]");
+		printXY(57, 7, 0x1C, "[  Err  ]");
+		printXY(7, 8, 0x1C, "Keyboard is Not active ! Check your keyboard port ...");
 		while(1);
 	}	y++;
 
-	printXY(3, 11, 0x1F, "PIC Controller And Interrupt Initialize...........");
+	printXY(7, 7, 0x1F, "PIC Controller And Interrupt Initialize ..........");
 	initPIC();
 	maskPIC(0);
 	onInterrupt();
-	printXY(53, 11, 0x1A, "[  Hit  ]");	y++;
+	printXY(57, 7, 0x1A, "[  Hit  ]");
+
+	printXY(12, 8, 0x1B, "### Welcome to YummyHitOS !! Please enjoy this !! ###");
 	setCursor(0, ++y);
 
 /*	15장 진행 후 Shell.c - startShell() 함수로 교체

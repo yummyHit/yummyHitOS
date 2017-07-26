@@ -32,8 +32,7 @@
 #########################################
 NASM32 = nasm
 GCC32 = gcc -g -std=c99 -C -m32 -ffreestanding
-LD32 = ld -elf_i386 -T ../Linker32.x -nostdlib
-# -e Main -Ttext 0x10200
+LD32 = ld -elf_i386 -T ../Linker32.x -nostdlib -e Main -Ttext 0x10200
 OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
 OBJECTDIRECTORY = Temp

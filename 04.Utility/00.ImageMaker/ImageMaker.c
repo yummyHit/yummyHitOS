@@ -17,8 +17,8 @@
 #define BYTESOFSECTOR 512
 
 // 함수 선언
-int adjustInSectorSize(int fd, int srcSize);
-void writeKernelInformation(int targetFd, int totalSectorCnt, int sectorCnt); // 170718 수정
+int sectorSize(int fd, int srcSize);
+void writeInfo(int targetFd, int totalSectorCnt, int sectorCnt); // 170718 수정
 int copyFile(int srcFd, int targerFd);
 
 // Main 함수
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 	close(srcFd);
 
 	// 파일 크기를 섹터 크기인 512바이트로 맞추기 위해 나머지 부분을 0x00으로 채움
-	bootSize = adjustInSectorSize(targetFd, srcSize);
+	bootSize = sectorSize(targetFd, srcSize);
 	printf("[INFO] %s size = [%d] and sector count = [%d]\n", argv[1], srcSize, bootSize);
 
 	//----------------------------------------------------------------
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
 	srcSize = copyFile(srcFd, targetFd);
 	close(srcFd);
 
-	lowSectorCnt = adjustInSectorSize(targetFd, srcSize);
+	lowSectorCnt = sectorSize(targetFd, srcSize);
 	printf("[INFO] %s size = [%d] and sector count = [%d]\n", argv[2], srcSize, lowSectorCnt);
 
 	//----------------------------------------------------------------
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
 	close(srcFd);
 
 	// 파일 크기를 섹터 크기인 512바이트로 맞추기 위해 나머지 부분을 0x000 으로 채움
-	highSectorCnt = adjustInSectorSize(targetFd, srcSize);
+	highSectorCnt = sectorSize(targetFd, srcSize);
 	printf("[INFO] %s size = [%d] and sector count = [%d]\n", argv[3], srcSize, highSectorCnt);
 
 	//----------------------------------------------------------------
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
 	//----------------------------------------------------------------
 	printf("[INFO] Start to write kernel information\n");
 	// 부트섹터의 5번째 바이트부터 커널에 대한 정보를 넣음
-	writeKernelInformation(targetFd, lowSectorCnt + highSectorCnt, lowSectorCnt);	// 170718 수정
+	writeInfo(targetFd, lowSectorCnt + highSectorCnt, lowSectorCnt);	// 170718 수정
 	printf("[INFO] Image file create complete\n");
 
 	close(targetFd);
@@ -97,51 +97,51 @@ int main(int argc, char* argv[]) {
 }
 
 // 현재 위치부터 512바이트 배수 위치까지 맞추어 0x00으로 채움
-int adjustInSectorSize(int fd, int srcSize) {
-	int i, adjustSizeToSector, ch, sectorCnt;
+int sectorSize(int fd, int srcSize) {
+	int i, sector_size, ch, sectorCnt;
 
-	adjustSizeToSector = srcSize % BYTESOFSECTOR;
+	sector_size = srcSize % BYTESOFSECTOR;
 	ch = 0x00;
 
-	if(adjustSizeToSector != 0) {
-		adjustSizeToSector = 512 - adjustSizeToSector;
-		printf("[INFO] File size [%lu] and fill [%u] byte\n", srcSize, adjustSizeToSector);
-		for(i = 0; i < adjustSizeToSector; i++) write(fd, &ch, 1);
+	if(sector_size != 0) {
+		sector_size = 512 - sector_size;
+		printf("[INFO] File size [%u] and fill [%u] byte\n", srcSize, sector_size);
+		for(i = 0; i < sector_size; i++) write(fd, &ch, 1);
 	}
 	else printf("[INFO] File size is aligned 512 byte\n");
 
 	// 섹터 수를 되돌려줌
-	sectorCnt = (srcSize + adjustSizeToSector) / BYTESOFSECTOR;
+	sectorCnt = (srcSize + sector_size) / BYTESOFSECTOR;
 	return sectorCnt;
 }
 
 // 부트 로더에 커널에 대한 정보를 삽입
-void writeKernelInformation(int targetFd, int totalSectorCnt, int sectorCnt) {
+void writeInfo(int targetFd, int totalSectorCnt, int lowSectorCnt) {
 	unsigned short usData;
 	long position;
 
 	// 파일의 시작에서 5바이트 떨어진 위치가 커널의 총 섹터 수 정보를 나타냄
 	position = lseek(targetFd, 5, SEEK_SET);
 	if(position == -1) {
-		fprintf(stderr, "lseek fail. Return value = %d, errno = %d, %d\n", position, errno, SEEK_SET);
+		fprintf(stderr, "lseek fail. Return value = %lu, errno = %d, %d\n", position, errno, SEEK_SET);
 		exit(-1);
 	}
 
 	usData = (unsigned short) totalSectorCnt;
 	write(targetFd, &usData, 2);
-	usData = (unsigned short) sectorCnt;
+	usData = (unsigned short) lowSectorCnt;
 	write(targetFd, &usData, 2);
 
 	printf("[INFO] Total sector count except boot loader [%d]\n", totalSectorCnt);
-	printf("[INFO] Total sector count of protected mode kernel [%d]\n", sectorCnt);
+	printf("[INFO] Total sector count of protected mode kernel [%d]\n", lowSectorCnt);
 }
 
 // 소스 파일(Source FD)의 내용을 목표 파일(Target FD)에 복사하고 그 크기를 되돌려줌
 int copyFile(int srcFd, int targetFd) {
-	int srcFileSize, r, w;
+	int srcSize, r, w;
 	char buf[BYTESOFSECTOR];
 
-	srcFileSize = 0;
+	srcSize = 0;
 	while(1) {
 		r = read(srcFd, buf, sizeof(buf));
 		w = write(targetFd, buf, r);
@@ -150,10 +150,10 @@ int copyFile(int srcFd, int targetFd) {
 			fprintf(stderr, "[ERROR] iRead != iWrite.. \n");
 			exit(-1);
 		}
-		srcFileSize += r;
+		srcSize += r;
 
 		if(r != sizeof(buf)) break;
 	}
-	return srcFileSize;
+	return srcSize;
 }
 

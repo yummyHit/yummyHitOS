@@ -49,8 +49,8 @@ START:
 
 	push LOADINGMSG
 	push 0x1F		; 흰색
-	push 3
-	push 3
+	push 7
+	push 1
 	call PRINTMSG
 	add sp, 8
 
@@ -151,8 +151,8 @@ READEND:
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	push HITMSG			; 출력할 메시지의 어드레스를 스택에 삽입
 	push 0x1A						; 초록색
-	push 53							; 화면 X 좌표(53)를 스택에 삽입
-	push 3							; 화면 Y 좌표(3)를 스택에 삽입
+	push 57							; 화면 X 좌표(53)를 스택에 삽입
+	push 1							; 화면 Y 좌표(3)를 스택에 삽입
 	call PRINTMSG				; PRINTMSG 함수 호출
 	add sp, 8						; 삽입한 파라미터 제거
 
@@ -168,8 +168,8 @@ READEND:
 HANDLEDISKERROR:			; 에러 처리 코드
 	push ERRORMSG		; 에러 문자열의 어드레스를 스택에 삽입
 	push 0x1C				; 빨간색
-	push 53					; 화면 X 좌표(53)를 스택에 삽입
-	push 3					; 화면 Y 좌표(3)를 스택에 삽입
+	push 57					; 화면 X 좌표(53)를 스택에 삽입
+	push 1					; 화면 Y 좌표(3)를 스택에 삽입
 	call PRINTMSG		; PRINTMSG 함수 호출
 	add sp, 8
 	jmp $					; 현재 위치에서 무한 루프 수행
@@ -280,7 +280,7 @@ MONITORCLEAR:
 ;jmp $				; 현재 위치에서 무한 루프 수행
 
 ERRORMSG:	db '[  Error  ]', 0
-LOADINGMSG:	db 'OS Image Loading..................................', 0
+LOADINGMSG:	db 'OS image Loading .................................', 0
 HITMSG:	db '[  Hit  ]', 0
 ;MADEBYMSG:	db ' YummyHitOS ', 0
 
@@ -298,7 +298,5 @@ times 510 - ( $ - $$ )	db	0x00	; $ : 현재 라인의 어드레스
 									; time : 반복 수행
 									; 현재 위치에서 어드레스 510까지 0x00으로 채움
 
-db 0x55				; 1바이트를 선언하고 값은 0x55
-db 0xAA				; 1바이트를 선언하고 값은 0xAA
-					; 어드레스 511, 512에 0x55, 0xAA를 써서 부트 섹터로 표기
+dw 0xAA55			; 어드레스 511, 512에 0x55, 0xAA를 써서 부트 섹터로 표기(little endian)
 

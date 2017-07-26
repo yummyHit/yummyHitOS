@@ -19,65 +19,59 @@ void copyImage(void);
 
 // Main 함수
 void Main( void ) {
-	DWORD i;
-	DWORD eax, ebx, ecx, edx;
+	DWORD i, eax, ebx, ecx, edx;
 	char cpuMaker[13] = {0,};
 
-	if(*((BYTE*)BOOTSTRAPPROCESSOR_FLAGADDRESS) == 0) {
-		SwitchNExecKernel();
-		while(1) ;
-	}
+	if(*((BYTE*)BOOTSTRAPPROCESSOR_FLAGADDRESS) == 0) SwitchNExecKernel();
 
 	// 최소 메모리 크기를 만족하는 지 검사
-	setPrint(3, 5, 0x1F, "Minimum Memory Size Check.........................");
+	setPrint(7, 3, 0x1F, "Minimum Memory Size Check ........................");
 	if(isMemEnough() == FALSE) {
-		setPrint(53, 5, 0x1C, "[  Err  ]");
-		setPrint(3, 6, 0x1C, "Not Enough Memory. MINT64 OS Requires Over 64Mbyte Memory!");
+		setPrint(57, 5, 0x1C, "[  Err  ]");
+		setPrint(7, 6, 0x1C, "Not Enough Memory. YummyHitOS Requires Over 64Mbyte Memory!");
 		while(1);
-	} else setPrint(53, 5, 0x1A, "[  Hit  ]");
+	} else setPrint(57, 5, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드의 커널 영역을 초기화
-	setPrint(3, 6, 0x1F, "IA-32 Kernel Area Initialize......................");
+	setPrint(7, 3, 0x1F, "IA-32 Kernel Area Initialize .....................");
 	if(initArea() == FALSE) {
-		setPrint(53, 6, 0x1C, "[  Err  ]");
-		setPrint(3, 7, 0x1C, "Kernel Area Initialization Fail!!");
+		setPrint(57, 5, 0x1C, "[  Err  ]");
+		setPrint(7, 6, 0x1C, "Kernel Area Initialization Fail !!");
 		while(1);
-	} else setPrint(53, 6, 0x1A, "[  Hit  ]");
+	} else setPrint(57, 5, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드 커널을 위한 페이지 테이블 생성
-	setPrint(3, 6, 0x1F, "IA-32e Page Tables Initialize.....................");
-	initPageTables();
-	setPrint(53, 6, 0x1A, "[  Hit  ]");
+	setPrint(7, 3, 0x1F, "IA-32e Page Tables Initialize ....................");
+	initTables();
+	setPrint(57, 5, 0x1A, "[  Hit  ]");
 
 	// 프로세서 제조사 정보 읽기
 	ReadCPUID(0x00000000, &eax, &ebx, &ecx, &edx);
 	*(DWORD*)cpuMaker = ebx;
 	*((DWORD*)cpuMaker + 1) = edx;
 	*((DWORD*)cpuMaker + 2) = ecx;
-	setPrint(3, 6, 0x1F, "CPU maker check...................................[              ]");
-	setPrint(55, 6, 0x1C, cpuMaker);
+	setPrint(7, 3, 0x1F, "CPU maker check ..................................[              ]");
+	setPrint(59, 3, 0x1C, cpuMaker);
 
 	// 64비트 지원 유무 확인
 	ReadCPUID(0x80000001, &eax, &ebx, &ecx, &edx);
-	setPrint(3, 7, 0x1F, "64bit Mode Support Check..........................");
-	if(edx & ( 1 << 29 )) setPrint(53, 7, 0x1A, "[  Hit  ]");
+	setPrint(7, 4, 0x1F, "64bit Mode Support Check .........................");
+	if(edx & ( 1 << 29 )) setPrint(57, 4, 0x1A, "[  Hit  ]");
 	else {
-		setPrint(53, 7, 0x1C, "[  Err  ]");
-		setPrint(3, 8, 0x1C, "This processor doesn't support 64bit mode!!");
+		setPrint(57, 4, 0x1C, "[  Err  ]");
+		setPrint(7, 5, 0x1C, "This processor doesn't support 64bit mode !!");
 		while(1);
 	}
 
 	// IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스로 이동
-	setPrint(3, 8, 0x1F, "Copy IA-32e Kernel To 2M byte Address.............");
+	setPrint(7, 5, 0x1F, "Copy IA-32e Kernel To 2M byte Address ............");
 	copyImage();
-	setPrint(53, 8, 0x1A, "[  Hit  ]");
+	setPrint(57, 5, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드로 전환
-	setPrint(3, 8, 0x1F, "Switch To IA-32e Mode.............................");
-	setPrint(53, 8, 0x11, "         ");
+	setPrint(7, 5, 0x1F, "Switching from 32bit to 64bit ....................");
+	setPrint(57, 5, 0x11, "         ");
 	SwitchNExecKernel();
-
-	while(1);
 }
 
 // 문자열 출력 함수
@@ -97,11 +91,9 @@ void setPrint(int x, int y, BYTE color, const char *str) {
 
 // IA-32e 모드용 커널 영역을 0으로 초기화
 BOOL initArea(void) {
-	DWORD *addr;
+	DWORD *addr = (DWORD*) 0x100000;;
 
-	// 초기화를 시작할 어드레스인 0x100000(1MB)을 설정
-	addr = (DWORD*) 0x100000;
-
+	// 초기화를 시작할 어드레스인 0x100000(1MB)부터
 	// 마지막 어드레스인 0x600000(6MB)까지 루프를 돌면서 4바이트씩 0으로 채움
 	while((DWORD) addr < 0x600000) {
 		*addr = 0x00;
@@ -113,18 +105,14 @@ BOOL initArea(void) {
 		// 다음 어드레스로 이동
 		addr++;
 	}
-
 	return TRUE;
 }
 
 // MINT64 OS를 실행하기에 충분한 메모리를 가지고 있는지 체크
 BOOL isMemEnough(void) {
-	DWORD *addr;
+	DWORD *addr = (DWORD*) 0x100000;;
 
-	// 0x100000(1MB)부터 검사 시작
-	addr = (DWORD*) 0x100000;
-
-	// 0x4000000(64MB)까지 루프를 돌며 확인
+	// 0x100000(1MB)부터 0x4000000(64MB)까지 루프를 돌며 검사
 	while((DWORD)addr < 0x4000000) {
 		*addr = 0x12345678;
 
@@ -135,23 +123,19 @@ BOOL isMemEnough(void) {
 		// 1MB씩 이동하면서 확인
 		addr += (0x100000 / 4);
 	}
-
 	return TRUE;
 }
 
 // IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스에 복사
 void copyImage(void) {
-	WORD sectorCnt, totalSectorCnt;
-	DWORD *srcAddr, *dstAddr;
 	int i;
 
 	// 0x7C05에 총 커널 섹터 수, 0x7C07에 보호 모드 커널 섹터 수가 들어있음
-	totalSectorCnt = *((WORD*) 0x7C05);
-	sectorCnt = *((WORD*) 0x7C07);
-
-	srcAddr = (DWORD*)(0x10000 + (sectorCnt * 512));
-	dstAddr = (DWORD*)0x200000;
-
+	WORD totalSectorCnt = *((WORD*) 0x7C05);
+	WORD sectorCnt = *((WORD*) 0x7C07);
+	DWORD *srcAddr = (DWORD*)(0x10000 + (sectorCnt * 512));
+	DWORD *dstAddr = (DWORD*)0x200000;
+	while(1);
 	// IA-32e 모드 커널 섹터 크기만큼 복사
 	for(i = 0; i < 512 * (totalSectorCnt - sectorCnt) / 4; i++) {
 		*dstAddr = *srcAddr;

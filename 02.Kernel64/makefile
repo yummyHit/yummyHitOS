@@ -3,8 +3,7 @@
 #########################################
 NASM64 = nasm -f elf64
 GCC64 = gcc -g -std=c99 -C -m64 -ffreestanding -I ../Source/ -Wall -w
-LD64 = ld -elf_x86_64 -T ../Linker64.x -nostdlib
-# -e Main -Ttext 0x200000
+LD64 = ld -elf_x86_64 -T ../Linker64.x -nostdlib -e Main -Ttext 0x200000
 OBJCOPY64 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
 OBJECTDIRECTORY = Temp

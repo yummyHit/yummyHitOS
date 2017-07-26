@@ -25,7 +25,7 @@ START:
 	mov es, ax			; ES 세그먼트 레지스터 의 시작 어드레스를 0으로 설정
 
 	cmp byte [ es: 0x7C09 ], 0x00		; 플래그가 0이면 Application Processor이므로
-	je .APPLICATIONPROCESSORSTARTPOINT	; Application Processor용 코드로 이동
+	je .APPPROC				; Application Processor용 코드로 이동
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	; Bootstrap Processor만 실행하는 부분
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -49,7 +49,7 @@ START:
 	out 0x92, al		; 시스템 컨트롤 포트(0x92)에 변경된 값을 1바이트 설정
 
 .A20GATESUCCESS:
-.APPLICATIONPROCESSORSTARTPOINT:
+.APPPROC:
 	cli			; 인터럽트가 발생하지 못하게 설정
 	lgdt [ GDTR ] 		; GDTR 자료구조를 프로세서에 설정해 GDT 테이블 로드
 
@@ -86,26 +86,26 @@ PROTECTEDMODE:
 	; Application Processor이면 아래의 과정을 모두 뛰어넘어서 C 언어 커널 엔트리
 	; 포인트로 이동
 	cmp byte [ 0x7C09 ], 0x00
-	je .APPLICATIONPROCESSORSTARTPOINT
+	je .APPPROC
 
 	; 화면에 보호 모드로 전환되었다는 메시지 표시
 	push ( SWITCHMSG - $$ + 0x10000 )	; 출력할 메시지의 어드레스를 스택에 삽입
 	push 0x1F				; 출력 메시지의 색깔
-	push 4					; 화면 Y 좌표(4)를 스택에 삽입
-	push 3					; 화면 X 좌표(3)를 스택에 삽입
+	push 2					; 화면 Y 좌표(2)를 스택에 삽입
+	push 7					; 화면 X 좌표(3)를 스택에 삽입
 	call PRINTMSG				; PRINTMSG 함수 호출
 	add esp, 16				; 삽입한 파라미터 제거
 
 	push ( HITMSG - $$ + 0x10000 )
 	push 0x1A
-	push 4
-	push 53
+	push 2
+	push 57
 	call PRINTMSG
 	add esp, 16
 
 	; 수정 : 170706 / CS세그먼트 셀렉터를 커널 코드 디스크립터(0x08)로 변경하며 0x10200 어드레스(C언어 커널 주소)로 이동
 	; 수정 : 170718 / IA-32e 보호모드로 진입하기 위해 0x08에서 0x18로 위치 수정
-.APPLICATIONPROCESSORSTARTPOINT:
+.APPPROC:
 	jmp dword 0x18: 0x10200 ; C언어 커널이 존재하는 주소로 이동해 C언어 커널 수행
 
 
@@ -230,7 +230,7 @@ GDT:
 GDTEND:
 
 ; 보호 모드로 전환되었다는 메시지
-SWITCHMSG:	db 'Switch To Protected Mode .........................', 0
+SWITCHMSG:	db 'Switching from 16bit to 32bit ....................', 0
 HITMSG:	db '[  Hit  ]', 0
 
 times 512 - ( $ - $$ ) db 0x00	; 512바이트 맞추기 위해 남는 부분 0 으로 채움
