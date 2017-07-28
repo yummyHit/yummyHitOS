@@ -5,7 +5,6 @@
  *      Author: Yummy
  */
 
-
 #include "Types.h"
 #include "Page.h"
 #include "ModeSwitch.h"
@@ -108,7 +107,7 @@ BOOL initArea(void) {
 	return TRUE;
 }
 
-// MINT64 OS를 실행하기에 충분한 메모리를 가지고 있는지 체크
+// OS를 실행하기에 충분한 메모리를 가지고 있는지 체크
 BOOL isMemEnough(void) {
 	DWORD *addr = (DWORD*) 0x100000;;
 
@@ -135,7 +134,7 @@ void copyImage(void) {
 	WORD sectorCnt = *((WORD*) 0x7C07);
 	DWORD *srcAddr = (DWORD*)(0x10000 + (sectorCnt * 512));
 	DWORD *dstAddr = (DWORD*)0x200000;
-	while(1);
+
 	// IA-32e 모드 커널 섹터 크기만큼 복사
 	for(i = 0; i < 512 * (totalSectorCnt - sectorCnt) / 4; i++) {
 		*dstAddr = *srcAddr;

@@ -116,7 +116,6 @@ void clearMonitor(void) {
 		mon[i].character = ' ';
 		mon[i].color = CONSOLE_DEFAULTTEXTCOLOR;
 	}
-	setCursor(0, 0);
 }
 
 // getch() 함수 구현

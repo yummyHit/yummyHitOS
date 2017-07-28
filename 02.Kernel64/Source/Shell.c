@@ -145,9 +145,9 @@ void csHelp(const char *buf) {
 
 // 화면 지움
 void csClear(const char *buf) {
-	// 맨 윗줄은 디버깅 용으로 사용하므로 1번째 라인으로 커서 이동
+	// 1번째 라인은 디버깅, 미관을 위해 2번째 라인으로 커서 이동
 	clearMonitor();
-	setCursor(0, 1);
+	setCursor(0, 2);
 }
 
 // 총 메모리 크기 출력

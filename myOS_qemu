@@ -1,1 +1,1 @@
-qemu-system-x86_64 -L . -m 1024 -fda ~/yummyHitOS/Disk.img -localtime -M pc
+/usr/local/bin/myOS_qemu

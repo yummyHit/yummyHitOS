@@ -13,9 +13,9 @@ SECTION .text		; text 섹션(세그먼트)을 정의
 jmp 0x07C0:START	; CS 세그먼트 레지스터에 0x07C0 복사, START 레이블로 이동
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	MINT64 OS에 관련된 환경 설정 값
+;	OS에 관련된 환경 설정 값
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-TOTALSECTORCOUNT:	dw 0x02		; 부트 로더를 제외한 MINT64 OS 이미지의 크기
+TOTALSECTORCOUNT:	dw 0x02		; 부트 로더를 제외한 OS 이미지의 크기
 								; 최대 1152 섹터(0x90000byte)까지 가능
 KERNEL32SECTORCOUNT: dw 0x02	; 보호 모드 커널의 총 섹터 수
 
@@ -53,7 +53,6 @@ START:
 	push 1
 	call PRINTMSG
 	add sp, 8
-
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;	화면 상단에 시작 메시지 출력
@@ -151,8 +150,8 @@ READEND:
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	push HITMSG			; 출력할 메시지의 어드레스를 스택에 삽입
 	push 0x1A						; 초록색
-	push 57							; 화면 X 좌표(53)를 스택에 삽입
-	push 1							; 화면 Y 좌표(3)를 스택에 삽입
+	push 57							; 화면 X 좌표(57)를 스택에 삽입
+	push 1							; 화면 Y 좌표(1)를 스택에 삽입
 	call PRINTMSG				; PRINTMSG 함수 호출
 	add sp, 8						; 삽입한 파라미터 제거
 
@@ -168,8 +167,8 @@ READEND:
 HANDLEDISKERROR:			; 에러 처리 코드
 	push ERRORMSG		; 에러 문자열의 어드레스를 스택에 삽입
 	push 0x1C				; 빨간색
-	push 57					; 화면 X 좌표(53)를 스택에 삽입
-	push 1					; 화면 Y 좌표(3)를 스택에 삽입
+	push 57					; 화면 X 좌표(57)를 스택에 삽입
+	push 1					; 화면 Y 좌표(1)를 스택에 삽입
 	call PRINTMSG		; PRINTMSG 함수 호출
 	add sp, 8
 	jmp $					; 현재 위치에서 무한 루프 수행
@@ -241,7 +240,7 @@ PRINTMSG:
 ;	데이터 영역
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 부트 로더 시작 메시지
-;MESSAGE1:	db 'MINT64 OS Boot Loader Start.............', 0	; 출력할 메시지 정의
+;MESSAGE1:	db 'YummyHitOS Boot Loader Start.............', 0	; 출력할 메시지 정의
 													; 마지막은 0으로 설정해 루프에서 처리하도록 함
 
 MONITORCLEAR:

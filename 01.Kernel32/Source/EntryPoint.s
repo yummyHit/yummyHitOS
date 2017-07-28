@@ -92,7 +92,7 @@ PROTECTEDMODE:
 	push ( SWITCHMSG - $$ + 0x10000 )	; 출력할 메시지의 어드레스를 스택에 삽입
 	push 0x1F				; 출력 메시지의 색깔
 	push 2					; 화면 Y 좌표(2)를 스택에 삽입
-	push 7					; 화면 X 좌표(3)를 스택에 삽입
+	push 7					; 화면 X 좌표(7)를 스택에 삽입
 	call PRINTMSG				; PRINTMSG 함수 호출
 	add esp, 16				; 삽입한 파라미터 제거
 
