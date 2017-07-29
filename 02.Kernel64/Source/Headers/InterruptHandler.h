@@ -8,7 +8,7 @@
 #ifndef __INTERRUPTHANDLER_H__
 #define __INTERRUPTHANDLER_H__
 
-#include "Types.h"
+#include <Types.h>
 
 void exceptionHandler(int vecNum, QWORD errCode);
 void interruptHandler(int vecNum);

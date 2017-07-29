@@ -8,7 +8,7 @@
 #ifndef __SHELL_H__
 #define __SHELL_H__
 
-#include "Types.h"
+#include <Types.h>
 
 // 매크로
 #define SHELL_MAXCOMMANDBUFFERCOUNT	300
@@ -54,5 +54,10 @@ void csClear(const char *buf);
 void csFree(const char *buf);
 void csStrConvert(const char *buf);
 void csHalt(const char *buf);
+void csSetTime(const char *buf);
+void csWait(const char *buf);
+void csRTSC(const char *buf);
+void csCPUSpeed(const char *buf);
+void csDate(const char *buf);
 
 #endif /*__SHELL_H__*/

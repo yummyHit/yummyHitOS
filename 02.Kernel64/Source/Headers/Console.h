@@ -8,7 +8,7 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
-#include "Types.h"
+#include <Types.h>
 
 // 매크로. 비디오 메모리 속성 값 설정
 #define CONSOLE_BACKGROUND_BLACK		0x00

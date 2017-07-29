@@ -5,10 +5,13 @@
  *      Author: Yummy
  */
 
-#include "Shell.h"
-#include "Console.h"
-#include "Keyboard.h"
-#include "Util.h"
+#include <Shell.h>
+#include <Console.h>
+#include <Keyboard.h>
+#include <Util.h>
+#include <PIT.h>
+#include <RTC.h>
+#include <AsmUtil.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -17,6 +20,11 @@ SHELLENTRY gs_cmdTable[] = {
 	{"tot_free", "### Show your total memory ###", csFree},
 	{"strConvert", "### String To Number(Decimal or HexaDecimal) ###", csStrConvert},
 	{"shutdown", "### Shutdown & Reboot ###", csHalt},
+	{"setTime", "### Set Timer. ex)setTime 10(ms) 1(term) ###", csSetTime},
+	{"wait", "### Wait a few millisecond. ex)wait 100(ms) ###", csWait},
+	{"rdtsc", "### Read Time Stamp Counter ###", csRTSC},
+	{"cpuSpeed", "### Measure Processor Speed ###", csCPUSpeed},
+	{"date", "### Show Date & Time ###", csDate},
 };
 
 // 셸 메인 루프
@@ -190,4 +198,101 @@ void csHalt(const char *buf) {
 	printF("Press any key on your keyboard for reboot PC !\n");
 	getCh();
 	reBoot();
+}
+
+// PIT 컨트롤러 카운터 0 설정
+void csSetTime(const char *buf) {
+	char param[100];
+	PARAMLIST list;
+	long v;
+	BOOL term;
+
+	// 파라미터 초기화
+	initParam(&list, buf);
+
+	// milli second 추출
+	if(getNextParam(&list, param) == 0) {
+		printF("ex) setTime 10(ms) 1(term)\n");
+		return;
+	}
+	v = aToi(param, 10);
+
+	// Periodic 추출
+	if(getNextParam(&list, param) == 0) {
+		printF("ex) setTime 10(ms) 1(term)\n");
+		return;
+	}
+	term = aToi(param, 10);
+
+	initPIT(MSTOCOUNT(v), term);
+	printF("Time = %d ms, Term = %d Change Complete\n", v, term);
+}
+
+// PIT 컨트롤러를 직접 사용해 ms 동안 대기
+void csWait(const char *buf) {
+	char param[100];
+	int len, i;
+	PARAMLIST list;
+	long ms;
+
+	// 파라미터 초기화
+	initParam(&list, buf);
+	if(getNextParam(&list, param) == 0) {
+		printF("ex) wait 100(ms)\n");
+		return;
+	}
+	ms = aToi(buf, 10);
+	printF("### %d ms Sleep Start... ###\n", ms);
+
+	// 인터럽트 비활성화 후 PIT 컨트롤러를 통해 직접 시간 측정
+	offInterrupt();
+	for(i = 0; i < ms / 30; i++) waitPIT(MSTOCOUNT(30));
+	waitPIT(MSTOCOUNT(ms % 30));
+	onInterrupt();
+	printF("### %d ms Sleep Complete ###\n", ms);
+
+	// 타이머 복원
+	initPIT(MSTOCOUNT(1), TRUE);
+}
+
+// 타임 스탬프 카운터 읽음
+void csRTSC(const char *buf) {
+	QWORD TSC;
+	
+	TSC = readTSC();
+	printF("Time Stamp Counter = %q\n", TSC);
+}
+
+// 프로세서 속도 측정
+void csCPUSpeed(const char *buf) {
+	int i;
+	QWORD last, total = 0;
+
+	printF("### Now Measuring.");
+
+	// 10초 동안 변화한 타임 스탬프 카운터를 이용해 프로세서 속도 측정
+	offInterrupt();
+	for(i = 0; i < 200; i++) {
+		last = readTSC();
+		waitPIT(MSTOCOUNT(50));
+		total += readTSC() - last;
+		printF(".");
+	}
+	// 타이머 복원
+	initPIT(MSTOCOUNT(1), TRUE);
+	onInterrupt();
+	printF("\n### CPU Speed = %d MHz ###\n", total / 10 / 1000 / 1000);
+}
+
+// RTC 컨트롤러에 저장된 일자 및 시간 정보 표시
+void csDate(const char *buf) {
+	BYTE sec, min, hour, week, day, month;
+	WORD year;
+
+	// RTC 컨트롤러에서 시간 및 일자 읽음
+	readTime(&hour, &min, &sec);
+	readDate(&year, &month, &day, &week);
+
+	printF("Date : %d/%d/%d %s, ", year, month, day, convertWeek(week));
+	printF("Time : %d:%d:%d\n", hour, min, sec);
 }

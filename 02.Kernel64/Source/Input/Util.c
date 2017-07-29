@@ -5,8 +5,8 @@
  *      Author: Yummy
  */
 
-#include "Util.h"
-#include "Port.h"
+#include <Util.h>
+#include <AsmUtil.h>
 #include <stdarg.h>
 
 // 메모리를 특정 값으로 채움
@@ -60,8 +60,7 @@ static gs_totalMemSize = 0;
 
 // 64MB 이상 위치부터 크기 체크, 최초 부팅 과정에서 한 번만 호출해야 함
 void chkTotalMemSize(void) {
-	DWORD *nowAddr;
-	DWORD preValue;
+	DWORD *nowAddr, preValue;
 
 	// 64MB(0x4000000)부터 4MB 단위로 검사 시작
 	nowAddr = (DWORD*)0x4000000;
@@ -236,10 +235,9 @@ int sprintF(char *buf, const char *format, ...) {
 
 // vsprintf() 함수 내부 구현. 버퍼에 포맷 문자열에 따라 데이터 복사
 int vsprintF(char *buf, const char *format, va_list v) {
-	QWORD i, j;
+	QWORD i, j, qwV;
 	int bufIdx = 0, fmLen, cpLen, iV;
 	char *cpStr;
-	QWORD qwV;
 
 	// 포맷 문자열 길이를 읽어 문자열 길이만큼 데이터를 출력 버퍼에 출력
 	fmLen = strLen(format);

@@ -5,13 +5,12 @@
  *      Author: Yummy
  */
 
+#include <Types.h>
+#include <AsmUtil.h>
+#include <Keyboard.h>
+#include <Queue.h>
 
-#include "Types.h"
-#include "Port.h"
-#include "Keyboard.h"
-#include "Queue.h"
-
-/*	키보드 컨트롤러와 키보드 제어에 관련된 함수	*/
+/* 키보드 컨트롤러와 키보드 제어에 관련된 함수 */
 
 // 출력 버퍼(포트 0x60)에 수신된 데이터가 있는지 여부 반환
 BOOL outputBufCheck(void) {

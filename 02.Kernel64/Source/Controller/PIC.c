@@ -5,7 +5,7 @@
  *      Author: Yummy
  */
 
-#include "PIC.h"
+#include <PIC.h>
 
 // PIC 초기화
 void initPIC(void) {

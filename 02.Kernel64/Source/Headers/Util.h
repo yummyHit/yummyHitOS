@@ -9,7 +9,7 @@
 #define __UTIL_H__
 
 #include <stdarg.h>
-#include "Types.h"
+#include <Types.h>
 
 void memSet(void *dest, BYTE data, int size);
 int memCpy(void *dest, const void *src, int size);

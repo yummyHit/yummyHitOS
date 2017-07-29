@@ -5,9 +5,9 @@
  *      Author: Yummy
  */
 
-#include "Descriptor.h"
-#include "Util.h"
-#include "ISR.h"
+#include <Descriptor.h>
+#include <Util.h>
+#include <ISR.h>
 
 /* GDT, TSS */
 // GDT 테이블 초기화

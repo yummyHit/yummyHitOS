@@ -5,7 +5,7 @@
  *      Author: Yummy
  */
 
-#include "Queue.h"
+#include <Queue.h>
 
 // 큐 초기화
 void initQueue(QUEUE *queue, void *buf, int maxCnt, int size) {

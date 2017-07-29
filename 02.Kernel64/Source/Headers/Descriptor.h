@@ -8,7 +8,7 @@
 #ifndef __DESCRIPTOR_H__
 #define __DESCRIPTOR_H__
 
-#include "Types.h"
+#include <Types.h>
 
 /*
 매크로

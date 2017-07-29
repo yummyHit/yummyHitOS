@@ -5,10 +5,10 @@
  *      Author: Yummy
  */
 
-#include "InterruptHandler.h"
-#include "PIC.h"
-#include "Keyboard.h"
-#include "Console.h"
+#include <InterruptHandler.h>
+#include <PIC.h>
+#include <Keyboard.h>
+#include <Console.h>
 
 void printDebug(int vec, int cnt, int handler) {
 	char buf[] = "[INT:  ,  ]";

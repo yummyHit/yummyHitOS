@@ -35,8 +35,8 @@ GCC32 = gcc -g -std=c99 -C -m32 -ffreestanding
 LD32 = ld -elf_i386 -T ../Linker32.x -nostdlib -e Main -Ttext 0x10200
 OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
-OBJECTDIRECTORY = Temp
-SOURCEDIRECTORY = Source
+OBJDIR = Temp
+SRCDIR = Source
 
 #########################################
 # 빌드 항목 및 빌드 방법 설정
@@ -44,50 +44,50 @@ SOURCEDIRECTORY = Source
 all: prepare Kernel32.bin
 
 prepare:
-	mkdir -p $(OBJECTDIRECTORY)
+	mkdir -p $(OBJDIR)
 	
-$(OBJECTDIRECTORY)/EntryPoint.bin: $(SOURCEDIRECTORY)/EntryPoint.s
+$(OBJDIR)/EntryPoint.bin: $(SRCDIR)/EntryPoint.s
 	$(NASM32) -o $@ $<
 	
 dep:
 	@echo === Make Dependency File ===
-	make -C $(OBJECTDIRECTORY) -f ../makefile InternalDependency
+	make -C $(OBJDIR) -f ../makefile InternalDependency
 	@echo === Dependency Search Complete ===
 	
 ExecuteInternalBuild: dep
-	make -C $(OBJECTDIRECTORY) -f ../makefile Kernel32.elf
+	make -C $(OBJDIR) -f ../makefile Kernel32.elf
 	
-$(OBJECTDIRECTORY)/Kernel32.elf.bin: ExecuteInternalBuild
-	$(OBJCOPY32) $(OBJECTDIRECTORY)/Kernel32.elf $@
+$(OBJDIR)/Kernel32.elf.bin: ExecuteInternalBuild
+	$(OBJCOPY32) $(OBJDIR)/Kernel32.elf $@
 	
-Kernel32.bin: $(OBJECTDIRECTORY)/EntryPoint.bin $(OBJECTDIRECTORY)/Kernel32.elf.bin
+Kernel32.bin: $(OBJDIR)/EntryPoint.bin $(OBJDIR)/Kernel32.elf.bin
 	cat $^ > $@
 	
 clean:
 	rm -f *.bin
-	rm -f $(OBJECTDIRECTORY)/*.*
+	rm -f $(OBJDIR)/*.*
 	
 #########################################
 # Make에 의해 다시 호출되는 부분, Temp 디렉토리 기준 수행
 #########################################
-CENTRYPOINTOBJECTFILE = Main.o
-CSOURCEFILES = $(wildcard ../$(SOURCEDIRECTORY)/*.c)
-ASSEMBLYSOURCEFILES = $(wildcard ../$(SOURCEDIRECTORY)/*.asm)
-COBJECTFILES = $(subst Main.o, , $(notdir $(patsubst %.c,%.o,$(CSOURCEFILES))))
-ASSEMBLYOBJECTFILES = $(notdir $(patsubst %.asm,%.o,$(ASSEMBLYSOURCEFILES)))
+EPOBJFILE = Main.o
+CSRCFILES = $(wildcard ../$(SRCDIR)/*.c)
+ASMSRCFILES = $(wildcard ../$(SRCDIR)/*.asm)
+COBJFILES = $(subst Main.o, , $(notdir $(patsubst %.c,%.o,$(CSRCFILES))))
+ASMOBJFILES = $(notdir $(patsubst %.asm,%.o,$(ASMSRCFILES)))
 
 # .c 파일을 .o 파일로 바꾸는 규칙 정의
-%.o: ../$(SOURCEDIRECTORY)/%.c
+%.o: ../$(SRCDIR)/%.c
 	$(GCC32) -c $<
 	
 # .asm 파일을 .o 파일로 바꾸는 규칙 정의
-%.o: ../$(SOURCEDIRECTORY)/%.asm
+%.o: ../$(SRCDIR)/%.asm
 	$(NASM32) -f elf32 -o $@ $<
 	
 InternalDependency:
-	$(GCC32) -MM $(CSOURCEFILES) > Dependency.dep
+	$(GCC32) -MM $(CSRCFILES) > Dependency.dep
 	
-Kernel32.elf: $(CENTRYPOINTOBJECTFILE) $(COBJECTFILES) $(ASSEMBLYOBJECTFILES)
+Kernel32.elf: $(EPOBJFILE) $(COBJFILES) $(ASMOBJFILES)
 	$(LD32) -o $@ $^
 	
 ifeq (Dependency.dep, $(wildcard Dependency.dep))

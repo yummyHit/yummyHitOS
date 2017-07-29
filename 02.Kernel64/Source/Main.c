@@ -5,12 +5,12 @@
  *      Author: Yummy
  */
 
-#include "Types.h"
-#include "Keyboard.h"
-#include "Descriptor.h"
-#include "PIC.h"
-#include "Console.h"
-#include "Shell.h"
+#include <Types.h>
+#include <Keyboard.h>
+#include <Descriptor.h>
+#include <PIC.h>
+#include <Console.h>
+#include <Shell.h>
 
 /*	15장 진행 후 Console.c - printXY() 함수로 전부 교체
 void setPrint(int x, int y, BYTE color, const char *str);

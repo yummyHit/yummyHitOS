@@ -1,5 +1,5 @@
 ;
-; Port.asm
+; AsmUtil.asm
 ;
 ;  Created on: 2017. 7. 22.
 ;      Author: Yummy
@@ -12,6 +12,7 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 ; C언어에서 호출할 수 있도록 이름 노출
 global inByte, outByte, loadGDTR, loadTSS, loadIDTR
 global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
+global readTSC
 
 ; 포트로부터 1바이트 읽음
 ; PARAM: 포트 번호
@@ -69,4 +70,13 @@ offInterrupt:
 readRFLAGS:
 	pushfq		; RFLAGS 레지스터를 스택에 저장
 	pop rax		; 스택에 저장된 RFLAGS 레지스터를 RAX 레지스터에 저장해 함수 반환값으로 설정
+	ret
+
+; 타임 스탬프 카운터를 읽어서 반환
+readTSC:
+	push rdx	; RDX 레지스터를 스택에 저장
+	rdtsc		; 타임 스탬프 카운터를 읽어서 RDX:RAX에 저장
+	shl rdx, 32	; RDX 레지스터에 있는 상위 32비트 TSC 값과 RAX 레지스터에 있는 하위 32비트 TSC 값을 OR하여
+	or rax, rdx	; RAX 레지스터에 64비트 TSC 값을 저장
+	pop rdx
 	ret

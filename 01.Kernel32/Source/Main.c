@@ -17,7 +17,7 @@ void copyImage(void);
 #define BOOTSTRAPPROCESSOR_FLAGADDRESS  0x7C09
 
 // Main 함수
-void Main( void ) {
+void Main(void) {
 	DWORD i, eax, ebx, ecx, edx;
 	char cpuMaker[13] = {0,};
 
@@ -26,23 +26,23 @@ void Main( void ) {
 	// 최소 메모리 크기를 만족하는 지 검사
 	setPrint(7, 3, 0x1F, "Minimum Memory Size Check ........................");
 	if(isMemEnough() == FALSE) {
-		setPrint(57, 5, 0x1C, "[  Err  ]");
-		setPrint(7, 6, 0x1C, "Not Enough Memory. YummyHitOS Requires Over 64Mbyte Memory!");
+		setPrint(57, 3, 0x1C, "[  Err  ]");
+		setPrint(7, 4, 0x1C, "Not Enough Memory. YummyHitOS Requires Over 64Mbyte Memory!");
 		while(1);
-	} else setPrint(57, 5, 0x1A, "[  Hit  ]");
+	} else setPrint(57, 3, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드의 커널 영역을 초기화
 	setPrint(7, 3, 0x1F, "IA-32 Kernel Area Initialize .....................");
 	if(initArea() == FALSE) {
-		setPrint(57, 5, 0x1C, "[  Err  ]");
-		setPrint(7, 6, 0x1C, "Kernel Area Initialization Fail !!");
+		setPrint(57, 3, 0x1C, "[  Err  ]");
+		setPrint(7, 4, 0x1C, "Kernel Area Initialization Fail !!");
 		while(1);
-	} else setPrint(57, 5, 0x1A, "[  Hit  ]");
+	} else setPrint(57, 3, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드 커널을 위한 페이지 테이블 생성
 	setPrint(7, 3, 0x1F, "IA-32e Page Tables Initialize ....................");
 	initTables();
-	setPrint(57, 5, 0x1A, "[  Hit  ]");
+	setPrint(57, 3, 0x1A, "[  Hit  ]");
 
 	// 프로세서 제조사 정보 읽기
 	ReadCPUID(0x00000000, &eax, &ebx, &ecx, &edx);
@@ -55,7 +55,7 @@ void Main( void ) {
 	// 64비트 지원 유무 확인
 	ReadCPUID(0x80000001, &eax, &ebx, &ecx, &edx);
 	setPrint(7, 4, 0x1F, "64bit Mode Support Check .........................");
-	if(edx & ( 1 << 29 )) setPrint(57, 4, 0x1A, "[  Hit  ]");
+	if(edx & (1 << 29)) setPrint(57, 4, 0x1A, "[  Hit  ]");
 	else {
 		setPrint(57, 4, 0x1C, "[  Err  ]");
 		setPrint(7, 5, 0x1C, "This processor doesn't support 64bit mode !!");
@@ -75,14 +75,14 @@ void Main( void ) {
 
 // 문자열 출력 함수
 void setPrint(int x, int y, BYTE color, const char *str) {
-	CHARACTER *p = (CHARACTER*) 0xB8000;
+	CHARACTER *p = (CHARACTER*)0xB8000;
 	int i;
 
 	// X, Y좌표를 이용해 문자열 출력 어드레스 계산
 	p += (y * 80) + x;
 
 	// NULL이 나올때까지 문자열 출력
-	for(i = 0; str[i] != 0; i++ ) {
+	for(i = 0; str[i] != 0; i++) {
 		p[i].character = str[i];
 		p[i].color = color;
 	}
@@ -90,7 +90,7 @@ void setPrint(int x, int y, BYTE color, const char *str) {
 
 // IA-32e 모드용 커널 영역을 0으로 초기화
 BOOL initArea(void) {
-	DWORD *addr = (DWORD*) 0x100000;;
+	DWORD *addr = (DWORD*)0x100000;;
 
 	// 초기화를 시작할 어드레스인 0x100000(1MB)부터
 	// 마지막 어드레스인 0x600000(6MB)까지 루프를 돌면서 4바이트씩 0으로 채움
@@ -109,7 +109,7 @@ BOOL initArea(void) {
 
 // OS를 실행하기에 충분한 메모리를 가지고 있는지 체크
 BOOL isMemEnough(void) {
-	DWORD *addr = (DWORD*) 0x100000;;
+	DWORD *addr = (DWORD*)0x100000;;
 
 	// 0x100000(1MB)부터 0x4000000(64MB)까지 루프를 돌며 검사
 	while((DWORD)addr < 0x4000000) {

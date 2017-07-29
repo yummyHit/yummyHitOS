@@ -6,8 +6,8 @@
  */
 
 #include <stdarg.h>
-#include "Console.h"
-#include "Keyboard.h"
+#include <Console.h>
+#include <Keyboard.h>
 
 // 콘솔의 정보를 관리하는 자료구조
 CONSOLEMANAGER gs_csManager = {0,};

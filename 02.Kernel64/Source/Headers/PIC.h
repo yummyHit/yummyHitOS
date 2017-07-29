@@ -8,7 +8,7 @@
 #ifndef __PIC_H__
 #define __PIC_H__
 
-#include "Types.h"
+#include <Types.h>
 
 // 매크로. IO 포트 정의
 #define PIC_MASTER_PORT_A	0x20

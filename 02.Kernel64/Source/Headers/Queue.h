@@ -8,7 +8,7 @@
 #ifndef __QUEUE_H__
 #define __QUEUE_H__
 
-#include "Types.h"
+#include <Types.h>
 
 // 구조체, 1바이트로 정렬
 #pragma pack(push, 1)
