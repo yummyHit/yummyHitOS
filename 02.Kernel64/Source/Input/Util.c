@@ -9,6 +9,8 @@
 #include <AsmUtil.h>
 #include <stdarg.h>
 
+volatile QWORD g_tickCnt = 0;
+
 // 메모리를 특정 값으로 채움
 void memSet(void *dest, BYTE data, int size) {
 	int i;
@@ -297,4 +299,9 @@ int vsprintF(char *buf, const char *format, va_list v) {
 	// NULL을 추가해 완전한 문자열로 만들고, 출력 문자 길이 반환
 	buf[bufIdx] = '\0';
 	return bufIdx;
+}
+
+// Tick Count 반환
+QWORD getTickCnt(void) {
+	return g_tickCnt;
 }

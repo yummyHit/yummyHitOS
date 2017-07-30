@@ -18,8 +18,8 @@ void initGDTNTSS(void) {
 	int i;
 
 	// GDTR 설정
-	gdtr = (GDTR*) GDTR_STARTADDRESS;
-	entry = (ENTRY8*)(GDTR_STARTADDRESS + sizeof(GDTR));
+	gdtr = (GDTR*) GDTR_STARTADDR;
+	entry = (ENTRY8*)(GDTR_STARTADDR + sizeof(GDTR));
 	gdtr->limit = GDT_TABLESIZE - 1;
 	gdtr->baseAddr = (QWORD)entry;
 	// TSS 영역 설정
@@ -60,7 +60,7 @@ void setEntry16(ENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE
 // TSS 세그먼트 정보 초기화
 void initTSS(TSS *tss) {
 	memSet(tss, 0, sizeof(TSS));
-	tss->ist[0] = IST_STARTADDRESS + IST_SIZE;
+	tss->ist[0] = IST_STARTADDR + IST_SIZE;
 	// IO를 TSS의 limit 값보다 크게 설정함으로써 IO Map을 사용하지 않도록 함
 	tss->ioMapBaseAddr = 0xFFFF;
 }
@@ -73,9 +73,9 @@ void initIDT(void) {
 	int i;
 
 	// IDTR의 시작 어드레스
-	idtr = (IDTR*)IDTR_STARTADDRESS;
+	idtr = (IDTR*)IDTR_STARTADDR;
 	// IDT 테이블의 정보 생성
-	entry = (ENTRY*)(IDTR_STARTADDRESS + sizeof(IDTR));
+	entry = (ENTRY*)(IDTR_STARTADDR + sizeof(IDTR));
 	idtr->baseAddr = (QWORD)entry;
 	idtr->limit = IDT_TABLESIZE - 1;
 
@@ -121,7 +121,7 @@ void initIDT(void) {
 	setEntry(&(entry[46]), ISRHDD1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 	setEntry(&(entry[47]), ISRHDD2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 
-	for(i = 48; i < IDT_MAXENTRYCOUNT; i++) setEntry(&(entry[i]), ISRETC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	for(i = 48; i < IDT_MAXENTRYCNT; i++) setEntry(&(entry[i]), ISRETC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 }
 
 // IDT 게이트 디스크립터에 값 설정

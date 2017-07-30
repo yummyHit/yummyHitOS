@@ -9,6 +9,7 @@
 #define __PORT_H__
 
 #include <Types.h>
+#include <Task.h>
 
 BYTE inByte(WORD port);
 void outByte(WORD port, BYTE data);
@@ -19,5 +20,6 @@ void onInterrupt(void);
 void offInterrupt(void);
 QWORD readRFLAGS(void);
 QWORD readTSC(void);
+void switchContext(CONTEXT *curContext, CONTEXT *nextContext);
 
 #endif /*__PORT_H__*/

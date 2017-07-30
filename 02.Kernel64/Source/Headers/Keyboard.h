@@ -20,7 +20,7 @@
 #define KEY_FLAGS_EXTENDEDKEY	0x02
 
 // 스캔 코드 매핑 테이블에 대한 매크로
-#define KEY_MAPPINGTABLEMAXCOUNT 89
+#define KEY_MAPPINGTABLEMAXCNT	89
 
 #define KEY_UP			0x00
 #define KEY_DOWN		0x01
@@ -63,7 +63,7 @@
 #define KEY_F12			0x9F
 #define KEY_PAUSE		0xA0
 // 키 큐 최대 크기
-#define KEY_MAXQUEUECOUNT 100
+#define KEY_MAXQUEUECNT		100
 
 // 구조체
 #pragma pack(push, 1)
@@ -108,10 +108,10 @@ static QUEUE gs_keyQ;
 static KEYBOARDMANAGER gs_keyManager = {0,};
 
 // 키 저장하는 버퍼
-static KEYDATA gs_keyQBuf[KEY_MAXQUEUECOUNT];
+static KEYDATA gs_keyQBuf[KEY_MAXQUEUECNT];
 
 // 스캔 코드를 ASCII 코드로 변환하는 테이블
-static KEYMAPPINGENTRY gs_keyMapTable[KEY_MAPPINGTABLEMAXCOUNT] =
+static KEYMAPPINGENTRY gs_keyMapTable[KEY_MAPPINGTABLEMAXCNT] =
 {
  	{ KEY_NONE		,	KEY_NONE	}, //    0
 	{ KEY_ESC		,	KEY_ESC		}, //    1

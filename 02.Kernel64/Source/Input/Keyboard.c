@@ -286,7 +286,7 @@ BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag) {
 // 키보드 초기화
 BOOL initKeyboard(void) {
 	// 큐 초기화
-	initQueue(&gs_keyQ, gs_keyQBuf, KEY_MAXQUEUECOUNT, sizeof(KEYDATA));
+	initQueue(&gs_keyQ, gs_keyQBuf, KEY_MAXQUEUECNT, sizeof(KEYDATA));
 
 	// 키보드 활성화
 	return activeKeyboard();

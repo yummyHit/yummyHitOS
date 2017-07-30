@@ -9,6 +9,9 @@
 #include <PIC.h>
 #include <Keyboard.h>
 #include <Console.h>
+#include <Util.h>
+#include <Task.h>
+#include <Descriptor.h>
 
 void printDebug(int vec, int cnt, int handler) {
 	char buf[] = "[INT:  ,  ]";
@@ -19,8 +22,8 @@ void printDebug(int vec, int cnt, int handler) {
 	// 발생 횟수 출력
 	buf[8] = '0' + cnt / 10;
 	buf[9] = '0' + cnt % 10;
-	if(handler == 1) printXY(69, 0, 0x1E, buf);
-	else printXY(0, 0, 0x1E, buf);
+	if(handler == 2) printXY(0, 0, 0x1E, buf);
+	else printXY(69, 0, 0x1E, buf);
 	printXY(34, 0, 0xE5, " YummyHitOS ");
 }
 
@@ -32,15 +35,15 @@ void exceptionHandler(int vecNum, QWORD errCode) {
 	buf[0] = '0' + vecNum / 10;
 	buf[1] = '0' + vecNum % 10;
 
-	printXY(3, 3, 0x1F, "=============================================================           ");
-	printXY(3, 4, 0x1F, "                                                                        ");
-	printXY(3, 5, 0x1B, "                Interrupt Handler Execute                               ");
-	printXY(3, 6, 0x1F, "                                                                        ");
-	printXY(3, 7, 0x1E, "                It is Exception : ");
-	printXY(37, 7, 0x1C, buf);
-	printXY(39, 7, 0x1F, "                                 ");
-	printXY(3, 8, 0x1F, "                                                                        ");
-	printXY(3, 9, 0x1F, "=============================================================           ");
+	printXY(7, 1, 0x1F, "=============================================================           ");
+	printXY(7, 2, 0x1F, "                                                                        ");
+	printXY(7, 3, 0x1B, "                Interrupt Handler Execute                               ");
+	printXY(7, 4, 0x1F, "                                                                        ");
+	printXY(7, 5, 0x1E, "                It is Exception : ");
+	printXY(41, 5, 0x1C, buf);
+	printXY(43, 5, 0x1F, "                                 ");
+	printXY(7, 6, 0x1F, "                                                                        ");
+	printXY(7, 7, 0x1F, "=============================================================           ");
 
 	while(1);
 }
@@ -72,4 +75,19 @@ void keyboardHandler(int vecNum) {
 
 	// EOI 전송
 	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
+}
+
+// 타이머 인터럽트 핸들러
+void timerHandler(int vecNum) {
+	static int ls_timerCnt = 0;
+
+	ls_timerCnt = (ls_timerCnt + 1) % 100;
+	printDebug(vecNum, ls_timerCnt, 3);
+
+	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
+
+	g_tickCnt++;
+
+	reduceProcessorTime();
+	if(isProcessorTime() == TRUE) scheduleInterrupt();
 }

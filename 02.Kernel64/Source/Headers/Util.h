@@ -26,5 +26,8 @@ int hexToStr(QWORD v, char *buf);
 int decimalToStr(long v, char *buf);
 int sprintF(char *buf, const char *format, ...);
 int vsprintF(char *buf, const char *format, va_list v);
+QWORD getTickCnt(void);
+
+extern volatile QWORD g_tickCnt;
 
 #endif /*__UTIL_H__*/

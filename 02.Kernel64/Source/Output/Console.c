@@ -69,7 +69,7 @@ void printF(const char *format, ...) {
 
 // 개행문자가 포함된 문자열 출력 후 화면상 다음 출력 위치 반환
 int csPrint(const char *buf) {
-	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
+	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
 	int i, j, len, printOffset;
 
 	// 문자열 출력 위치 저장
@@ -90,7 +90,7 @@ int csPrint(const char *buf) {
 		// 출력 위치가 화면의 최대값(80 * 25)을 벗어났으면 스크롤 처리
 		if(printOffset >= (CONSOLE_HEIGHT * CONSOLE_WIDTH)) {
 			// 가장 윗줄 제외 나머지 한 줄 위로 복사
-			memCpy(CONSOLE_VIDEOMEMORYADDRESS, CONSOLE_VIDEOMEMORYADDRESS + CONSOLE_WIDTH * sizeof(CHARACTER), (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH * sizeof(CHARACTER));
+			memCpy(CONSOLE_VIDEOMEMADDR, CONSOLE_VIDEOMEMADDR + CONSOLE_WIDTH * sizeof(CHARACTER), (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH * sizeof(CHARACTER));
 
 			// 가장 마지막 라인은 공백
 			for(j = (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH; j < (CONSOLE_HEIGHT * CONSOLE_WIDTH); j++) {
@@ -108,7 +108,7 @@ int csPrint(const char *buf) {
 
 // 전체 화면 삭제
 void clearMonitor(void) {
-	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
+	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
 	int i;
 
 	// 화면 전체를 공백으로 채우고 커서 위치를 0, 0으로 이동
@@ -128,7 +128,7 @@ BYTE getCh(void) {
 
 // 문자열을 X, Y 위치에 출력
 void printXY(int x, int y, BYTE color, const char *str) {
-	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
+	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
 	int i;
 
 	// 비디오 메모리 어드레스에서 현재 출력할 위치 계산

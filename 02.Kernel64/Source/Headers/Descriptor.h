@@ -46,13 +46,13 @@ GDT
 #define GDT_TSSSEGMENT		0x18
 
 // 기타 GDT에 관련된 매크로, GDTR의 시작 어드레스, 1MB에서 264KB까지는 페이지 테이블 영역
-#define GDTR_STARTADDRESS	0x142000
+#define GDTR_STARTADDR		0x142000
 // 8바이트 엔트리 개수, 널 디스크립터|커널코드|커널데이터
-#define GDT_MAXENTRY8COUNT	3
+#define GDT_MAXENTRY8CNT	3
 // 16바이트 엔트리 개수, TSS
-#define GDT_MAXENTRY16COUNT	1
+#define GDT_MAXENTRY16CNT	1
 // GDT 테이블 크기
-#define GDT_TABLESIZE		((sizeof(ENTRY8) * GDT_MAXENTRY8COUNT) + (sizeof(ENTRY16) * GDT_MAXENTRY16COUNT))
+#define GDT_TABLESIZE		((sizeof(ENTRY8) * GDT_MAXENTRY8CNT) + (sizeof(ENTRY16) * GDT_MAXENTRY16CNT))
 #define TSS_SEGMENTSIZE		(sizeof(TSS))
 
 /* IDT */
@@ -72,15 +72,15 @@ GDT
 #define IDT_FLAGS_USER		( IDT_FLAGS_DPL3 | IDT_FLAGS_P )
 
 // 기타 IDT에 관련된 매크로, IDT 엔트리 개수
-#define IDT_MAXENTRYCOUNT	100
+#define IDT_MAXENTRYCNT		100
 // IDTR의 시작 어드레스, TSS 세그먼트 뒤쪽에 위치
-#define IDTR_STARTADDRESS	( GDTR_STARTADDRESS + sizeof(GDTR) + GDT_TABLESIZE + TSS_SEGMENTSIZE)
+#define IDTR_STARTADDR		( GDTR_STARTADDR + sizeof(GDTR) + GDT_TABLESIZE + TSS_SEGMENTSIZE)
 // IDT 테이블 시작 어드레스
-#define IDT_STARTADDRESS	( IDTR_STARTADDRESS + sizeof(IDTR) )
+#define IDT_STARTADDR		( IDTR_STARTADDR + sizeof(IDTR) )
 // IDT 테이블 전체 크기
-#define IDT_TABLESIZE		( IDT_MAXENTRYCOUNT * sizeof(ENTRY) )
+#define IDT_TABLESIZE		( IDT_MAXENTRYCNT * sizeof(ENTRY) )
 // IST 시작 어드레스
-#define IST_STARTADDRESS	0x700000
+#define IST_STARTADDR		0x700000
 // IST 크기
 #define IST_SIZE		0x100000
 

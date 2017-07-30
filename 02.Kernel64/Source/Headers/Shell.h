@@ -11,8 +11,8 @@
 #include <Types.h>
 
 // 매크로
-#define SHELL_MAXCOMMANDBUFFERCOUNT	300
-#define SHELL_PROMPTMESSAGE		"sh-yummyHit \$ "
+#define SHELL_MAXCMDBUFCNT	300
+#define SHELL_PROMPTMSG		"sh-yummyHit \$ "
 
 // 문자열 포인터를 파라미터로 받는 함수 포인터 타입 정의
 typedef void (*CMDFunc)(const char *param);
@@ -59,5 +59,6 @@ void csWait(const char *buf);
 void csRTSC(const char *buf);
 void csCPUSpeed(const char *buf);
 void csDate(const char *buf);
+void csCreateTask(const char *buf);
 
 #endif /*__SHELL_H__*/

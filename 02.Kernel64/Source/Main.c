@@ -9,6 +9,7 @@
 #include <Keyboard.h>
 #include <Descriptor.h>
 #include <PIC.h>
+#include <PIT.h>
 #include <Console.h>
 #include <Shell.h>
 
@@ -28,7 +29,7 @@ void Main(void) {
 	getCursor(&x, &y);	y++;
 	printXY(7, 6, 0x1F, "GDT Initialize And Switch For IA-32e Mode ........");
 	initGDTNTSS();
-	loadGDTR(GDTR_STARTADDRESS);
+	loadGDTR(GDTR_STARTADDR);
 	printXY(57, 6, 0x1A, "[  Hit  ]");
 
 	printXY(7, 6, 0x1F, "TSS Segment Load .................................");
@@ -37,13 +38,18 @@ void Main(void) {
 
 	printXY(7, 6, 0x1F, "IDT Initialize ...................................");
 	initIDT();
-	loadIDTR(IDTR_STARTADDRESS);
+	loadIDTR(IDTR_STARTADDR);
 	printXY(57, 6, 0x1A, "[  Hit  ]");
 
 	printXY(7, 6, 0x1F, "Memory Size Check ................................[     MB]");
 	chkTotalMemSize();
 	setCursor(58, y++);
 	printF("%d", getTotalMemSize());
+
+	printXY(7, 7, 0x1F, "TCB Pool And Scheduler Initialize.................");
+	initScheduler();
+	initPIT(MSTOCOUNT(1),1);	// 1ms 당 한 번씩 인터럽트 발생
+	printXY(57, 7, 0x1A, "[  Hit  ]");
 
 	printXY(7, 7, 0x1F, "Keyboard Activate And Queue Initialize ...........");
 	if(initKeyboard() == TRUE) {

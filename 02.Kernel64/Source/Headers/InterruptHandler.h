@@ -13,5 +13,6 @@
 void exceptionHandler(int vecNum, QWORD errCode);
 void interruptHandler(int vecNum);
 void keyboardHandler(int vecNum);
+void timerHandler(int verNum);
 
 #endif /*__INTERRUPTHANDLER_H__*/

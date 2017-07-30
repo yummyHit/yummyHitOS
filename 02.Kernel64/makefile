@@ -27,11 +27,11 @@ ExecuteInternalBuild: dep
 	
 Kernel64.bin: ExecuteInternalBuild
 	$(OBJCOPY64) $(OBJDIR)/Kernel64.elf $@
+	rm -f $(SRCDIR)/Headers/*.gch
 	
 clean:
 	rm -f *.bin
 	rm -f $(OBJDIR)/*.*
-	rm -f $(SRCDIR)/Headers/*.gch
 	
 #########################################
 # Make에 의해 다시 호출되는 부분, Temp 디렉터리를 기준으로 수행됨

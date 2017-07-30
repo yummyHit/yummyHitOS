@@ -12,11 +12,12 @@
 #include <PIT.h>
 #include <RTC.h>
 #include <AsmUtil.h>
+#include <Task.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
 	{"help", "### Show Commands ###", csHelp},
-	{"clear", "### Clear Monitor ###", csClear},
+	{"clear", "### Clear mon ###", csClear},
 	{"tot_free", "### Show your total memory ###", csFree},
 	{"strConvert", "### String To Number(Decimal or HexaDecimal) ###", csStrConvert},
 	{"shutdown", "### Shutdown & Reboot ###", csHalt},
@@ -25,17 +26,18 @@ SHELLENTRY gs_cmdTable[] = {
 	{"rdtsc", "### Read Time Stamp Counter ###", csRTSC},
 	{"cpuSpeed", "### Measure Processor Speed ###", csCPUSpeed},
 	{"date", "### Show Date & Time ###", csDate},
+	{"createTask", "### Create Task. ex)createTask 1(type) 10(count) ###", csCreateTask},
 };
 
 // 셸 메인 루프
 void startShell(void) {
-	char buf[SHELL_MAXCOMMANDBUFFERCOUNT];
+	char buf[SHELL_MAXCMDBUFCNT];
 	int bufIdx = 0;
 	BYTE key;
 	int x, y;
 
 	// 프롬프트 출력
-	printF(SHELL_PROMPTMESSAGE);
+	printF(SHELL_PROMPTMSG);
 
 	while(1) {
 		// 키가 수신될 때까지 대기
@@ -58,8 +60,8 @@ void startShell(void) {
 			}
 
 			// 프롬프트 출력 및 커맨드 버퍼 초기화
-			printF("%s", SHELL_PROMPTMESSAGE);
-			memSet(buf, '\0', SHELL_MAXCOMMANDBUFFERCOUNT);
+			printF("%s", SHELL_PROMPTMSG);
+			memSet(buf, '\0', SHELL_MAXCMDBUFCNT);
 			bufIdx = 0;
 		} else if((key == KEY_LSHIFT) || (key == KEY_RSHIFT) || (key == KEY_CAPSLOCK) || (key == KEY_NUMLOCK) || (key == KEY_SCROLLLOCK)) {
 			;
@@ -68,7 +70,7 @@ void startShell(void) {
 			if(key == KEY_TAB) key = ' ';
 
 			// 버퍼에 공간이 남아있을 때만 가능
-			if(bufIdx < SHELL_MAXCOMMANDBUFFERCOUNT) {
+			if(bufIdx < SHELL_MAXCMDBUFCNT) {
 				buf[bufIdx++] = key;
 				printF("%c", key);
 			}
@@ -295,4 +297,95 @@ void csDate(const char *buf) {
 
 	printF("Date : %d/%d/%d %s, ", year, month, day, convertWeek(week));
 	printF("Time : %d:%d:%d\n", hour, min, sec);
+}
+
+// TCB 자료구조와 스택 정의
+static TCB gs_task[2] = {0,};
+static QWORD gs_stack[1024] = {0,};
+
+// 태스크 전환 테스트 태스크
+void taskTest1(void) {
+	BYTE data;
+	int i = 0, x = 0, y = 0, margin;
+	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
+	TCB *runningTask;
+
+	// 자신의 ID 얻어서 화면 오프셋으로 사용
+	runningTask = getRunningTask();
+	margin = (runningTask->link.id & 0xFFFFFFFF) % 10;
+
+	// 화면 네 귀퉁이를 돌며 문자 출력
+	while(1) {
+		switch(i) {
+		case 0:
+			x++;
+			if(x >= (CONSOLE_WIDTH - margin)) i = 1;
+			break;
+
+		case 1:
+			y++;
+			if(y >= (CONSOLE_HEIGHT - margin)) i = 2;
+			break;
+
+		case 2:
+			x--;
+			if(x < margin) i = 3;
+			break;
+
+		case 3:
+			y--;
+			if(y < margin) i = 4;
+			break;
+		}
+
+		mon[y * CONSOLE_WIDTH + x].character = data;
+		mon[y * CONSOLE_WIDTH + x].color = data & 0x0F;
+		data++;
+
+		schedule();
+	}
+}
+
+void taskTest2(void) {
+	int i = 0, offset;
+	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
+	TCB *runningTask;
+	char data[4] = {'-', '\\', '|', '/'};
+
+	// 자신의 ID를 얻어 화면 오프셋으로 사용
+	runningTask = getRunningTask();
+	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
+	offset = CONSOLE_WIDTH * CONSOLE_HEIGHT - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+
+	while(1) {
+		mon[offset].character = data[i % 4];
+		mon[offset].color = (offset % 15) + 1;
+		i++;
+		schedule();
+	}
+}
+
+// 태스크 생성하여 멀티태스킹
+void csCreateTask(const char *buf) {
+	PARAMLIST list;
+	char type[30], cnt[30];
+	int i;
+
+	// 파라미터 추출
+	initParam(&list, buf);
+	getNextParam(&list, type);
+	getNextParam(&list, cnt);
+
+	switch(aToi(type, 10)) {
+	case 1:
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(0, (QWORD)taskTest1) == NULL) break;
+		printF("Task Test 1 %d Created.\n", i);
+		break;
+
+	case 2:
+	default:
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(0, (QWORD)taskTest2) == NULL) break;
+		printF("Task Test 2 %d Created.\n", i);
+		break;
+	}
 }
