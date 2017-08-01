@@ -5,7 +5,9 @@
 #      Author: Yummy
 #
 
-all: BootLoader Kernel32 Kernel64 Disk.img Utility
+BINFILES = BinFiles
+
+all: BootLoader Kernel32 Kernel64 Utility Disk.img
 
 BootLoader:
 	@echo
@@ -39,21 +41,7 @@ Kernel64:
 	@echo
 	@echo =============== Build Complete ===============
 	@echo
-	
-Disk.img: 00.BootLoader/BootLoader.bin 01.Kernel32/Kernel32.bin 02.Kernel64/Kernel64.bin # BootLoader Kernel32 Kernel 64
-	@echo
-	@echo =============== Disk Image Build Start ===============
-	@echo
-	
-#	cat 00.BootLoader/BootLoader.bin 01.Kernel32/VirtualOS.bin > Disk.img
-#	cat $^ > Disk.img	# $^는 Dependency(: 의 오른쪽)에 나열된 전체 파일을 의미함
-	./ImageMaker.exe $^
-	
-	@echo
-	@echo =============== All Build Complete ===============
-	@echo
-	
-# 유틸리티 빌드
+
 Utility: 
 	@echo 
 	@echo =============== Utility Build Start ===============
@@ -65,9 +53,17 @@ Utility:
 	@echo =============== Utility Build Complete ===============
 	@echo 
 	
+Disk.img: $(BINFILES)/BootLoader.bin $(BINFILES)/Kernel32.bin $(BINFILES)/Kernel64.bin
+	@echo
+	@echo =============== Disk Image Build Start ===============
+	@echo
+	
+	$(BINFILES)/ImageMaker.exe $^
+	
+	@echo
+	@echo =============== All Build Complete ===============
+	@echo
+	
 clean:
-	make -C 00.BootLoader clean
-	make -C 01.Kernel32 clean
-	make -C 02.Kernel64 clean
-	make -C 04.Utility clean
+	rm -f ./BinFiles/*.*
 	rm -f Disk.img

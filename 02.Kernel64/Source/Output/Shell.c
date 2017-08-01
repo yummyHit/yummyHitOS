@@ -27,6 +27,10 @@ SHELLENTRY gs_cmdTable[] = {
 	{"cpuSpeed", "### Measure Processor Speed ###", csCPUSpeed},
 	{"date", "### Show Date & Time ###", csDate},
 	{"createTask", "### Create Task. ex)createTask 1(type) 10(count) ###", csCreateTask},
+	{"changePriority", "### Change Task Priority. ex)changePriority 1(ID) 2(Priority) ###", csChangePriority},
+	{"tasklist", "### Show Task List ###", csTaskList},
+	{"taskill", "### Task Kill. ex)taskill 1(ID) ###", csTaskill},
+	{"cpuload", "### Show Processor Load ###", csCPULoad},
 };
 
 // 셸 메인 루프
@@ -42,6 +46,7 @@ void startShell(void) {
 	while(1) {
 		// 키가 수신될 때까지 대기
 		key = getCh();
+
 		// Backspace 키 처리
 		if(key == KEY_BACKSPACE) {
 			if(bufIdx > 0) {
@@ -129,7 +134,7 @@ int getNextParam(PARAMLIST *list, char *param) {
 }
 
 // 도움말 출력
-void csHelp(const char *buf) {
+static void csHelp(const char *buf) {
 	int i, cnt, x, y, len, maxLen = 0;
 
 	printF("   ============================================================\n");
@@ -154,19 +159,19 @@ void csHelp(const char *buf) {
 }
 
 // 화면 지움
-void csClear(const char *buf) {
+static void csClear(const char *buf) {
 	// 1번째 라인은 디버깅, 미관을 위해 2번째 라인으로 커서 이동
 	clearMonitor();
 	setCursor(0, 2);
 }
 
 // 총 메모리 크기 출력
-void csFree(const char *buf) {
+static void csFree(const char *buf) {
 	printF("    %d MB\n", getTotalMemSize());
 }
 
 // 문자열로 된 숫자를 숫자로 변환해 출력
-void csStrConvert(const char *buf) {
+static void csStrConvert(const char *buf) {
 	char param[100];
 	int len, cnt = 0;
 	PARAMLIST list;
@@ -196,14 +201,14 @@ void csStrConvert(const char *buf) {
 }
 
 // PC 재부팅
-void csHalt(const char *buf) {
+static void csHalt(const char *buf) {
 	printF("Press any key on your keyboard for reboot PC !\n");
 	getCh();
 	reBoot();
 }
 
 // PIT 컨트롤러 카운터 0 설정
-void csSetTime(const char *buf) {
+static void csSetTime(const char *buf) {
 	char param[100];
 	PARAMLIST list;
 	long v;
@@ -226,12 +231,12 @@ void csSetTime(const char *buf) {
 	}
 	term = aToi(param, 10);
 
-	initPIT(MSTOCOUNT(v), term);
+	initPIT(MSTOCNT(v), term);
 	printF("Time = %d ms, Term = %d Change Complete\n", v, term);
 }
 
 // PIT 컨트롤러를 직접 사용해 ms 동안 대기
-void csWait(const char *buf) {
+static void csWait(const char *buf) {
 	char param[100];
 	int len, i;
 	PARAMLIST list;
@@ -248,17 +253,17 @@ void csWait(const char *buf) {
 
 	// 인터럽트 비활성화 후 PIT 컨트롤러를 통해 직접 시간 측정
 	offInterrupt();
-	for(i = 0; i < ms / 30; i++) waitPIT(MSTOCOUNT(30));
-	waitPIT(MSTOCOUNT(ms % 30));
+	for(i = 0; i < ms / 30; i++) waitPIT(MSTOCNT(30));
+	waitPIT(MSTOCNT(ms % 30));
 	onInterrupt();
 	printF("### %d ms Sleep Complete ###\n", ms);
 
 	// 타이머 복원
-	initPIT(MSTOCOUNT(1), TRUE);
+	initPIT(MSTOCNT(1), TRUE);
 }
 
 // 타임 스탬프 카운터 읽음
-void csRTSC(const char *buf) {
+static void csRTSC(const char *buf) {
 	QWORD TSC;
 	
 	TSC = readTSC();
@@ -266,7 +271,7 @@ void csRTSC(const char *buf) {
 }
 
 // 프로세서 속도 측정
-void csCPUSpeed(const char *buf) {
+static void csCPUSpeed(const char *buf) {
 	int i;
 	QWORD last, total = 0;
 
@@ -276,18 +281,18 @@ void csCPUSpeed(const char *buf) {
 	offInterrupt();
 	for(i = 0; i < 200; i++) {
 		last = readTSC();
-		waitPIT(MSTOCOUNT(50));
+		waitPIT(MSTOCNT(50));
 		total += readTSC() - last;
 		printF(".");
 	}
 	// 타이머 복원
-	initPIT(MSTOCOUNT(1), TRUE);
+	initPIT(MSTOCNT(1), TRUE);
 	onInterrupt();
 	printF("\n### CPU Speed = %d MHz ###\n", total / 10 / 1000 / 1000);
 }
 
 // RTC 컨트롤러에 저장된 일자 및 시간 정보 표시
-void csDate(const char *buf) {
+static void csDate(const char *buf) {
 	BYTE sec, min, hour, week, day, month;
 	WORD year;
 
@@ -304,9 +309,9 @@ static TCB gs_task[2] = {0,};
 static QWORD gs_stack[1024] = {0,};
 
 // 태스크 전환 테스트 태스크
-void taskTest1(void) {
+static void taskTest1(void) {
 	BYTE data;
-	int i = 0, x = 0, y = 0, margin;
+	int i = 0, x = 0, y = 0, margin, j;
 	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
 	TCB *runningTask;
 
@@ -315,7 +320,7 @@ void taskTest1(void) {
 	margin = (runningTask->link.id & 0xFFFFFFFF) % 10;
 
 	// 화면 네 귀퉁이를 돌며 문자 출력
-	while(1) {
+	for(j = 0; j < 20000; j++) {
 		switch(i) {
 		case 0:
 			x++;
@@ -341,12 +346,11 @@ void taskTest1(void) {
 		mon[y * CONSOLE_WIDTH + x].character = data;
 		mon[y * CONSOLE_WIDTH + x].color = data & 0x0F;
 		data++;
-
-		schedule();
 	}
+	taskExit();
 }
 
-void taskTest2(void) {
+static void taskTest2(void) {
 	int i = 0, offset;
 	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
 	TCB *runningTask;
@@ -361,12 +365,11 @@ void taskTest2(void) {
 		mon[offset].character = data[i % 4];
 		mon[offset].color = (offset % 15) + 1;
 		i++;
-		schedule();
 	}
 }
 
 // 태스크 생성하여 멀티태스킹
-void csCreateTask(const char *buf) {
+static void csCreateTask(const char *buf) {
 	PARAMLIST list;
 	char type[30], cnt[30];
 	int i;
@@ -378,14 +381,85 @@ void csCreateTask(const char *buf) {
 
 	switch(aToi(type, 10)) {
 	case 1:
-		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(0, (QWORD)taskTest1) == NULL) break;
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW, (QWORD)taskTest1) == NULL) break;
 		printF("Task Test 1 %d Created.\n", i);
 		break;
 
 	case 2:
 	default:
-		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(0, (QWORD)taskTest2) == NULL) break;
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW, (QWORD)taskTest2) == NULL) break;
 		printF("Task Test 2 %d Created.\n", i);
 		break;
 	}
+}
+
+// 태스크 우선순위 변경
+static void csChangePriority(const char *buf) {
+	PARAMLIST list;
+	char id[30], priority[30];
+	QWORD _id;
+	BYTE _priority;
+
+	// 파라미터 추출
+	initParam(&list, buf);
+	getNextParam(&list, id);
+	getNextParam(&list, priority);
+
+	// 태스크 우선순위 변경
+	if(memCmp(id, "0x", 2) == 0) _id = aToi(id + 2, 16);
+	else _id = aToi(id, 10);
+
+	_priority = aToi(priority, 10);
+
+	printF("### Change Task Priority ID [0x%q] Priority[%d] ", _id, _priority);
+	if(changePriority(_id, _priority) == TRUE) printF("Success !!\n");
+	else printF("Fail...\n");
+}
+
+// 현재 생성된 모든 태스크 정보 출력
+static void csTaskList(const char *buf) {
+	int i, cnt = 0;
+	TCB *tcb;
+
+	printF("   ===================Task Total Count [%d]====================\n", getTaskCnt());
+	for(i = 0; i < TASK_MAXCNT; i++) {
+		// TCB 구해서 TCB가 사용 중이면 ID 출력
+		tcb = getTCB(i);
+		if((tcb->link.id >> 32) != 0) {
+			// 태스크가 10개 출력될 때마다 태스크 정보 표시할지 여부 확인
+			if((cnt != 0) && ((cnt % 10) == 0)) {
+				printF("Press any key to continue... ('q' is exit) : ");
+				if(getCh() == 'q') {
+					printF("\n");
+					break;
+				}
+				printF("\n");
+			}
+			printF("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q]\n", 1 + cnt++, tcb->link.id, GETPRIORITY(tcb->flag), tcb->flag);
+		}
+	}
+}
+
+// 태스크 종료
+static void csTaskill(const char *buf) {
+	PARAMLIST list;
+	char id[30];
+	QWORD _id;
+
+	// 파라미터 추출
+	initParam(&list, buf);
+	getNextParam(&list, id);
+
+	// 태스크 종료
+	if(memCmp(id, "0x", 2) == 0) _id = aToi(id + 2, 16);
+	else _id = aToi(id, 10);
+
+	printF("Kill Task ID [0x%q] ", _id);
+	if(taskFin(_id) == TRUE) printF("Success !!\n");
+	else printF("Fail...\n");
+}
+
+// 프로세서 사용률 표시
+static void csCPULoad(const char *buf) {
+	printF("Processor Load : %d%%\n", getProcessorLoad());
 }

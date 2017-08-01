@@ -9,7 +9,6 @@
 
 // PIC 초기화
 void initPIC(void) {
-	/* 마스터 PIC 컨트롤러 초기화 */
 	// ICW1(포트 0x20), IC4 비트(비트 0) = 1
 	outByte(PIC_MASTER_PORT_A, 0x11);
 

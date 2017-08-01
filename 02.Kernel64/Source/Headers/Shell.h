@@ -49,16 +49,20 @@ void initParam(PARAMLIST *list, const char *param);
 int getNextParam(PARAMLIST *list, char *param);
 
 // 커맨드 처리 함수
-void csHelp(const char *buf);
-void csClear(const char *buf);
-void csFree(const char *buf);
-void csStrConvert(const char *buf);
-void csHalt(const char *buf);
-void csSetTime(const char *buf);
-void csWait(const char *buf);
-void csRTSC(const char *buf);
-void csCPUSpeed(const char *buf);
-void csDate(const char *buf);
-void csCreateTask(const char *buf);
+static void csHelp(const char *buf);
+static void csClear(const char *buf);
+static void csFree(const char *buf);
+static void csStrConvert(const char *buf);
+static void csHalt(const char *buf);
+static void csSetTime(const char *buf);
+static void csWait(const char *buf);
+static void csRTSC(const char *buf);
+static void csCPUSpeed(const char *buf);
+static void csDate(const char *buf);
+static void csCreateTask(const char *buf);
+static void csChangePriority(const char *buf);
+static void csTaskList(const char *buf);
+static void csTaskill(const char *buf);
+static void csCPULoad(const char *buf);
 
 #endif /*__SHELL_H__*/

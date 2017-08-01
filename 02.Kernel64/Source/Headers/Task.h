@@ -55,6 +55,26 @@
 // 태스크가 최대로 쓸 수 있는 프로세서 시간(5ms)
 #define TASK_PROCESSORTIME	5
 
+// 준비 리스트의 수
+#define TASK_MAXREADYCNT	5
+
+// 태스크의 우선순위
+#define TASK_FLAGS_HIGHEST	0
+#define TASK_FLAGS_HIGH		1
+#define TASK_FLAGS_MEDIUM	2
+#define TASK_FLAGS_LOW		3
+#define TASK_FLAGS_LOWEST	4
+#define TASK_FLAGS_WAIT		0xFF
+
+// 태스크의 플래그
+#define TASK_FLAGS_FIN		0x8000000000000000
+#define TASK_FLAGS_IDLE		0x0800000000000000
+
+// 함수 매크로
+#define GETPRIORITY(x)		((x) & 0xFF)
+#define SETPRIORITY(x, priority)	((x) = ((x) & 0xFFFFFFFFFFFFFF00) | (priority))
+#define GETTCBOFFSET(x)		((x) & 0xFFFFFFFF)
+
 // 구조체, 1바이트로 정렬
 #pragma pack(push, 1)
 
@@ -98,8 +118,20 @@ typedef struct scheduler {
 	// 현재 수행중 태스크가 사용할 수 있는 프로세서 시간
 	int time;
 
-	// 실행할 태스크가 준비중인 리스트
-	LIST readyList;
+	// 실행할 태스크가 준비 중인 리스트, 태스크의 우선순위에 따라 구분
+	LIST readyList[TASK_MAXREADYCNT];
+
+	// 종료할 태스크가 대기 중인 리스트
+	LIST waitList;
+
+	// 각 우선순위별 태스크 실행 횟수를 저장하는 자료구조
+	int exeCnt[TASK_MAXREADYCNT];
+
+	// 프로세서 부하를 계산하기 위한 자료구조
+	QWORD processorLoad;
+
+	// 유휴 태스크에서 사용한 프로세서 시간
+	QWORD loopIdleTask;
 } SCHEDULER;
 
 #pragma pack(pop)
@@ -114,10 +146,22 @@ void initScheduler(void);
 void setRunningTask(TCB *task);
 TCB *getRunningTask(void);
 TCB *getNextTask(void);
-void addReadyList(TCB *task);
+BOOL addReadyList(TCB *task);
 void schedule(void);
 BOOL scheduleInterrupt(void);
 void reduceProcessorTime(void);
 BOOL isProcessorTime(void);
+TCB *delReadyList(QWORD id);
+BOOL changePriority(QWORD id, BYTE priority);
+BOOL taskFin(QWORD id);
+void taskExit(void);
+int getReadyCnt(void);
+int getTaskCnt(void);
+TCB *getTCB(int offset);
+BOOL isTaskExist(QWORD id);
+QWORD getProcessorLoad(void);
+
+void idleTask(void);
+void haltProcessor(void);
 
 #endif /*__TASK_H__*/

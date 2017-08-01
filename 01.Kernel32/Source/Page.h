@@ -23,7 +23,7 @@
 #define PAGE_FLAGS_EXB		0x80000000	// Execute Disable Bit
 #define PAGE_FLAGS_DEFAULT	( PAGE_FLAGS_P | PAGE_FLAGS_RW )
 #define PAGE_TABLESIZE		0x1000
-#define PAGE_MAXENTRYCOUNT	512
+#define PAGE_MAXENTRYCNT	512
 #define PAGE_DEFAULTSIZE	0x200000
 
 // 구조체
@@ -35,15 +35,15 @@ typedef struct pageTableEntry {
 	// 1비트 P, RW, US, PWT, PCD, A / 3비트 Reserved / 3비트 Avail / 20비트 Base Address
 	// PDE의 경우
 	// 1비트 P, RW, US, PWT, PCD, A, D / 1로 설정한 G / 3비트 Avail / 1비트 PAT / 8비트 Avail / 11비트 Base Address
-	DWORD lowAddress;
+	DWORD lowAddr;
 	// 8비트 Upper BaseAddress, 12비트 Reserved, 11비트 Avail, 1비트 EXB
-	DWORD highAddress;
+	DWORD highAddr;
 } PML4TENTRY, PDPTENTRY, PDENTRY, PTENTRY;
 #pragma pack(pop)
 
 // 함수
 void initTables(void);
-void setEntry(PTENTRY *entry, DWORD highBaseAddress, DWORD lowBaseAddress, DWORD lowFlags, DWORD highFlags);
+void setEntry(PTENTRY *entry, DWORD highBaseAddr, DWORD lowBaseAddr, DWORD lowFlags, DWORD highFlags);
 
 #endif /*__PAGE_H__*/
 

@@ -123,7 +123,10 @@ BYTE getCh(void) {
 	KEYDATA data;
 
 	// 키가 눌러질 때까지 대기, 키 큐에 데이터가 수신되면 키가 눌렸다는 데이터 수신시 ASCII 코드 반환
-	while(1) if(rmKeyData(&data) == TRUE) if(data.flag & KEY_FLAGS_DOWN) return data.ascii;
+	while(1) {
+		while(rmKeyData(&data) == FALSE) schedule();
+		if(data.flag & KEY_FLAGS_DOWN) return data.ascii;
+	}
 }
 
 // 문자열을 X, Y 위치에 출력
@@ -133,6 +136,7 @@ void printXY(int x, int y, BYTE color, const char *str) {
 
 	// 비디오 메모리 어드레스에서 현재 출력할 위치 계산
 	mon += (y * 80) + x;
+
 	// 문자열 길이만큼 루프 돌면서 문자와 속성 저장
 	for(i = 0; str[i] != 0; i++) {
 		mon[i].character = str[i];

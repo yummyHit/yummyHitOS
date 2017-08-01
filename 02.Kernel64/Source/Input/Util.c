@@ -69,9 +69,11 @@ void chkTotalMemSize(void) {
 	while(1) {
 		// 이전 메모리에 있던 값 저장
 		preValue = *nowAddr;
+
 		// 0x12345678을 써서 읽었을 때 문제가 없는 곳까지를 유효 메모리 영역으로 인정
 		*nowAddr = 0x12345678;
 		if(*nowAddr != 0x12345678) break;
+
 		// 이전 메모리 값으로 복원
 		*nowAddr = preValue;
 		nowAddr += (0x400000 / 4);

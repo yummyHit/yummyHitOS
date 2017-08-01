@@ -12,10 +12,9 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 ; C언어에서 호출할 수 있도록 이름 노출
 global inByte, outByte, loadGDTR, loadTSS, loadIDTR
 global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
-global readTSC, switchContext
+global readTSC, switchContext, hlt
 
-; 포트로부터 1바이트 읽음
-; PARAM: 포트 번호
+; 포트로부터 1바이트 읽음(PARAM: 포트 번호)
 inByte:
 	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
 			; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
@@ -26,8 +25,7 @@ inByte:
 	pop rdx		; 함수에서 사용이 끝난 레지스터 복원
 	ret		; 함수를 호출한 다음 코드의 위치로 복귀
 
-; 포트에 1바이트 씀
-; PARAM: 포트 번호, 데이터
+; 포트에 1바이트 씀(PARAM: 포트 번호, 데이터)
 outByte:
 	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
 	push rax	; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
@@ -38,20 +36,17 @@ outByte:
 	pop rdx
 	ret
 
-; GDTR 레지스터에 GDT테이블 설정
-; PARAM: GDT테이블 정보 저장하는 자료구조 어드레스
+; GDTR 레지스터에 GDT테이블 설정(PARAM: GDT테이블 정보 저장하는 자료구조 어드레스)
 loadGDTR:
 	lgdt [ rdi ]	; 파라미터 1(GDTR 어드레스)을 프로세서에 로드해 GDT테이블 설정
 	ret
 
-; TR 레지스터에 TSS 세그먼트 디스크립터 설정
-; PARAM: TSS 세그먼트 디스크립터 오프셋
+; TR 레지스터에 TSS 세그먼트 디스크립터 설정(PARAM: TSS 세그먼트 디스크립터 오프셋)
 loadTSS:
 	ltr di		; 파라미터 1(TSS 세그먼트 디스크립터 오프셋)을 프로세서에 설정해 TSS 세그먼트 로드
 	ret
 
-; IDTR 레지스터에 IDT 테이블 설정
-; PARAM: IDT 테이블 정보 저장하는 자료구조 어드레스
+; IDTR 레지스터에 IDT 테이블 설정(PARAM: IDT 테이블 정보 저장하는 자료구조 어드레스)
 loadIDTR:
 	lidt [ rdi ]	; 파라미터 1(IDTR 어드레스)을 프로세서에 로드해 IDT테이블 설정
 	ret
@@ -81,9 +76,6 @@ readTSC:
 	pop rdx
 	ret
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 태스크 관련 어셈블리어 함수
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 콘텍스트 저장, 셀렉터 교체 매크로
 %macro SAVE 0		; 파라미터 전달받지 않는 SAVE 매크로 정의, RBP 레지스터부터 GS 세그먼트 셀렉터까지 모두 스택에 삽입
 	push rbp
@@ -136,21 +128,16 @@ readTSC:
 	pop rbp
 %endmacro		; 매크로 끝
 
-; Current Context에 현재 콘텍스트 저장하고 Next Task에서 콘텍스트 복구
-; PARAM: Current Context(curContext), Next Context(nextContext)
+; Current Context에 현재 콘텍스트 저장하고 Next Task에서 콘텍스트 복구(PARAM: Current Context(curContext), Next Context(nextContext))
 switchContext:
 	push rbp	; 스택에 RBP 레지스터 저장 후 RSP 레지스터를 RBP에 저장
 	mov rbp, rsp
 
-	; Current Context가 NULL이면 콘텍스트 저장 X
 	pushfq		; 아래의 cmp 결과로 RFLAGS 레지스터가 변하지 않게 스택에 저장
 	cmp rdi, 0	; Current Context가 NULL이면 콘텍스트 복원으로 점프
 	je .Load
 	popfq		; 스택에 저장한 RFLAGS 레지스터 복원
 	
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; 현재 테스크 콘텍스트 저장
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	push rax	; 콘텍스트 영역 오프셋으로 사용할 RAX 레지스터 스택에 저장
 
 	; SS, RSP, RFLAGS, CS, RIP 레지스터 순서대로 삽입
@@ -168,15 +155,14 @@ switchContext:
 	mov ax, cs	; CS 레지스터 저장
 	mov qword[ rdi + (20 * 8) ], rax
 
-	mov rax, qword[ rbp + 8 ]	; RIP 레지스터를 return address로 설정해 다음 콘텍스트 복원 시
-	mov qword[ rdi + (19 * 8) ], rax	; 이 함수 호출한 위치로 이동
+	mov rax, qword[ rbp + 8 ]	; RIP 레지스터를 return address로 설정해 다음 콘텍스트 복원 시 이 함수 호출한 위치로 이동
+	mov qword[ rdi + (19 * 8) ], rax
 
 	; 저장한 레지스터를 복구한 후 인터럽트가 발생했을 때처럼 나머지 콘텍스트 모두 저장
 	pop rax
 	pop rbp
 
-	; 가장 끝부분에 SS, RSP, RFLAGS, CS, RIP 레지스터 저장했으니 이전 영역에 push 명령어로
-	; 콘텍스트 저장하기 위한 스택 변경
+	; 가장 끝부분에 SS, RSP, RFLAGS, CS, RIP 레지스터 저장했으니 이전 영역에 push 명령어로 콘텍스트 저장하기 위한 스택 변경
 	add rdi, (19 * 8)
 	mov rsp, rdi
 	sub rdi, (19 * 8)
@@ -184,12 +170,16 @@ switchContext:
 	; 나머지 레지스터를 모두 Context 자료구조에 저장
 	SAVE
 
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; 다음 태스크의 콘텍스트 복원
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 다음 태스크의 콘텍스트 복원
 .Load:
 	mov rsp, rsi
 
 	; Context 자료구조에서 레지스터 복원
 	LOAD
 	iretq
+
+; 프로세서 쉬게 함
+hlt:
+	hlt	; 프로세서를 대기 상태로 진입
+	hlt
+	ret

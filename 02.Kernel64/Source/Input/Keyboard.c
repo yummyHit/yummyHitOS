@@ -256,7 +256,7 @@ BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag) {
 	if(scanCode == 0xE1) {
 		*ascii = KEY_PAUSE;
 		*flag = KEY_FLAGS_DOWN;
-		gs_keyManager.skipForPause = KEY_SKIPCOUNTFORPAUSE;
+		gs_keyManager.skipForPause = KEY_SKIPCNTFORPAUSE;
 		return TRUE;
 	} else if(scanCode == 0xE0) {	// 확장 키 코드가 들어오면 실제 키 값은 다음에 들어오니 플래그만 설정
 		gs_keyManager.exCodeIn = TRUE;

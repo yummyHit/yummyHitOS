@@ -9,7 +9,6 @@
 #include <Util.h>
 #include <ISR.h>
 
-/* GDT, TSS */
 // GDT 테이블 초기화
 void initGDTNTSS(void) {
 	GDTR *gdtr;
@@ -65,7 +64,6 @@ void initTSS(TSS *tss) {
 	tss->ioMapBaseAddr = 0xFFFF;
 }
 
-/* IDT */
 // IDT 테이블 초기화
 void initIDT(void) {
 	IDTR *idtr;
@@ -134,14 +132,3 @@ void setEntry(ENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BY
 	entry->highBaseAddr = ((QWORD)handle >> 32);
 	entry->reserved = 0;
 }
-
-// 임시 예외 또는 인터럽트 핸들러
-/*	인터럽트 핸들러 생성 후 필요없어진 임시 함수
-void dummyHandler(void) {
-	printXY(3, 0, 0x0F, "=====================================================");
-	printXY(3, 1, 0x0B, "		Dummy Interrupt Handler Execute		  ");
-	printXY(3, 2, 0x0E, "		    Interrupt or Exception		  ");
-	printXY(3, 3, 0x0F, "=====================================================");
-	while(1);
-}
-*/

@@ -12,7 +12,7 @@
 #include <Queue.h>
 
 // 매크로. Pause 키를 처리하기 위해 무시해야 하는 나머지 스캔 코드의 수
-#define KEY_SKIPCOUNTFORPAUSE	2
+#define KEY_SKIPCNTFORPAUSE	2
 
 // 키 상태에 대한 플래그
 #define KEY_FLAGS_UP		0x00

@@ -10,10 +10,7 @@
 
 #include <Types.h>
 
-/*
-매크로
-GDT
-*/
+/* GDT */
 // 조합에 사용할 기본 매크로
 #define GDT_TYPE_CODE		0x0A
 #define GDT_TYPE_DATA		0x02

@@ -14,14 +14,14 @@ BOOL initArea(void);
 BOOL isMemEnough(void);
 void copyImage(void);
 
-#define BOOTSTRAPPROCESSOR_FLAGADDRESS  0x7C09
+#define BOOTSTRAP_FLAGADDR  0x7C09
 
 // Main 함수
 void Main(void) {
 	DWORD i, eax, ebx, ecx, edx;
 	char cpuMaker[13] = {0,};
 
-	if(*((BYTE*)BOOTSTRAPPROCESSOR_FLAGADDRESS) == 0) SwitchNExecKernel();
+	if(*((BYTE*)BOOTSTRAP_FLAGADDR) == 0) SwitchNExecKernel();
 
 	// 최소 메모리 크기를 만족하는 지 검사
 	setPrint(7, 3, 0x1F, "Minimum Memory Size Check ........................");
@@ -92,13 +92,11 @@ void setPrint(int x, int y, BYTE color, const char *str) {
 BOOL initArea(void) {
 	DWORD *addr = (DWORD*)0x100000;;
 
-	// 초기화를 시작할 어드레스인 0x100000(1MB)부터
-	// 마지막 어드레스인 0x600000(6MB)까지 루프를 돌면서 4바이트씩 0으로 채움
+	// 초기화를 시작할 어드레스인 0x100000(1MB)부터 마지막 어드레스인 0x600000(6MB)까지 루프를 돌면서 4바이트씩 0으로 채움
 	while((DWORD) addr < 0x600000) {
 		*addr = 0x00;
 
-		// 0으로 저장한 후 다시 읽었을 때 0이 나오지 않으면 해당 어드레스를
-		// 사용하는데 문제가 생긴 것으로 더이상 진행하지 않고 종료
+		// 0으로 저장한 후 다시 읽었을 때 0이 나오지 않으면 해당 어드레스를 사용하는데 문제가 생긴 것으로 더이상 진행하지 않고 종료
 		if(*addr != 0) return FALSE;
 
 		// 다음 어드레스로 이동
@@ -115,8 +113,7 @@ BOOL isMemEnough(void) {
 	while((DWORD)addr < 0x4000000) {
 		*addr = 0x12345678;
 
-		// 0x12345678로 저장한 후 다시 읽었을 때 0x12345678이 나오지 않으면 해당
-		// 어드레스를 사용하는데 문제가 생긴 것이므로 더이상 진행하지 않고 종료
+		// 0x12345678로 저장한 후 다시 읽었을 때 0x12345678이 나오지 않으면 해당 어드레스를 사용하는데 문제가 생긴 것이므로 더이상 진행하지 않고 종료
 		if(*addr != 0x12345678) return FALSE;
 
 		// 1MB씩 이동하면서 확인

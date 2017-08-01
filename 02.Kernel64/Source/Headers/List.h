@@ -19,15 +19,6 @@ typedef struct listLink {
 	QWORD id;
 } LISTLINK;
 
-/*
-리스트에 사용할 데이터 정의 예제.
-struct listItemExample {
-	LISTLINK link;
-	int data1;
-	char data2;
-};
-*/
-
 // 리스트 관리 자료구조
 typedef struct listManager {
 	// 리스트 데이터 수

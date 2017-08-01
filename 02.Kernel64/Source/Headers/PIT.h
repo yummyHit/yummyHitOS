@@ -12,8 +12,8 @@
 
 // Macro
 #define PIT_FREQUENCY			1193182
-#define MSTOCOUNT(x)			(PIT_FREQUENCY * (x) / 1000)
-#define USTOCOUNT(x)			(PIT_FREQUENCY * (x) / 1000000)
+#define MSTOCNT(x)			(PIT_FREQUENCY * (x) / 1000)
+#define USTOCNT(x)			(PIT_FREQUENCY * (x) / 1000000)
 
 // I/O Port
 #define PIT_PORT_CONTROL		0x43

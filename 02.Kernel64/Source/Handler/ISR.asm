@@ -22,8 +22,7 @@ global ISRTimer, ISRKeyboard, ISRSlavePIC, ISRSerial2, ISRSerial1, ISRParallel2,
 global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, ISRHDD1, ISRHDD2, ISRETC
 
 ; 콘텍스트를 저장하고 셀렉터를 교체하는 매크로
-%macro SAVE 0	; 파라미터를 전달받지 않는 매크로 정의
-	; RBP 레지스터부터 GS 세그먼트 셀렉터까지 모두 스택에 삽입
+%macro SAVE 0	; 파라미터를 전달받지 않는 매크로 정의. RBP 레지스터부터 GS 세그먼트 셀렉터까지 모두 스택에 삽입
 	push rbp
 	mov rbp, rsp
 	push rax
@@ -57,8 +56,7 @@ global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, 
 %endmacro
 
 ; 콘텍스트 복원 매크로
-%macro LOAD 0	; 파라미터 전달받지 않는 매크로 정의
-	; GS 세그먼트 셀렉터부터 RBP 레지스터까지 모두 스택에서 꺼내 복원
+%macro LOAD 0	; 파라미터 전달받지 않는 매크로 정의. GS 세그먼트 셀렉터부터 RBP 레지스터까지 모두 스택에서 꺼내 복원
 	pop gs
 	pop fs
 	pop rax
@@ -83,7 +81,6 @@ global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, 
 	pop rbp
 %endmacro
 
-; 예외 핸들러
 ; #0, Divide Error ISR
 ISRDivErr:
 	SAVE	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체

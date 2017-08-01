@@ -21,5 +21,6 @@ void offInterrupt(void);
 QWORD readRFLAGS(void);
 QWORD readTSC(void);
 void switchContext(CONTEXT *curContext, CONTEXT *nextContext);
+void hlt(void);
 
 #endif /*__PORT_H__*/
