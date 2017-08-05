@@ -10,6 +10,7 @@
 
 #include <Types.h>
 
+#pragma once
 // 매크로. IO 포트 정의
 #define PIC_MASTER_PORT_A	0x20
 #define PIC_MASTER_PORT_B	0x21

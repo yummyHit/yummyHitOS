@@ -32,7 +32,7 @@ void Main(void) {
 	} else setPrint(57, 3, 0x1A, "[  Hit  ]");
 
 	// IA-32e 모드의 커널 영역을 초기화
-	setPrint(7, 3, 0x1F, "IA-32 Kernel Area Initialize .....................");
+	setPrint(7, 3, 0x1F, "IA-32e Kernel Area Initialize .....................");
 	if(initArea() == FALSE) {
 		setPrint(57, 3, 0x1C, "[  Err  ]");
 		setPrint(7, 4, 0x1C, "Kernel Area Initialization Fail !!");

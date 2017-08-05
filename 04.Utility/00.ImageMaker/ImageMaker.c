@@ -15,7 +15,6 @@
 #include <errno.h>
 
 #define BYTESOFSECTOR 512
-#define BINARY 0x10000
 
 // 함수 선언
 int sectorSize(int fd, int srcSize);

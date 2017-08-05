@@ -10,6 +10,7 @@
 
 #include <Types.h>
 
+#pragma once
 // Macro
 #define PIT_FREQUENCY			1193182
 #define MSTOCNT(x)			(PIT_FREQUENCY * (x) / 1000)

@@ -12,7 +12,8 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 ; C언어에서 호출할 수 있도록 이름 노출
 global inByte, outByte, loadGDTR, loadTSS, loadIDTR
 global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
-global readTSC, switchContext, hlt
+global readTSC, switchContext, hlt, testNSet
+global initFPU, saveFPU, loadFPU, setTS, clearTS
 
 ; 포트로부터 1바이트 읽음(PARAM: 포트 번호)
 inByte:
@@ -182,4 +183,54 @@ switchContext:
 hlt:
 	hlt	; 프로세서를 대기 상태로 진입
 	hlt
+	ret
+
+; 테스트와 설정을 하나의 명령으로 처리. dest와 cmp를 비교해 같으면 dest에 src값 삽입
+; PARAM: 값 저장할 어드레스(dest, rdi), 비교할 값(cmp, rsi), 설정할 값(src, rdx)
+testNSet:
+	mov rax, rsi	; 두 번째 파라미터인 cmp를 RAX 레지스터에 저장
+
+	; RAX 레지스터에 저장된 cmp와 dest값 비교 후 두 값이 같으면 src값을 dest가 가리키는 어드레스에 삽입
+	lock cmpxchg byte [ rdi ], dl
+	je .EQUAL
+
+.DIFFER			; dest와 cmp가 다른 경우
+	mov rax, 0x00
+	ret
+
+.EQUAL			; dest와 cmp가 같은 경우
+	mov rax, 0x01
+	ret
+
+; FPU 초기화
+initFPU:
+	finit
+	ret
+
+; FPU 관련 레지스터를 콘텍스트 버퍼에 저장
+; PARAM: Buffer Address
+saveFPU:
+	fxsave [ rdi ]	; 첫 번째 파라미터로 전달된 버퍼에 FPU 레지스터를 저장
+	ret
+
+; FPU 관련 레지스터를 콘텍스트 버퍼에서 복원
+; PARAM: Buffer Address
+loadFPU:
+	fxrstor [ rdi ]	; 첫 번째 파라미터로 전달된 버퍼에서 FPU 레지스터를 복원
+	ret
+
+; CR0 컨트롤 레지스터의 TS 비트를 1로 설정
+setTS:
+	push rax	; 스택에 RAX 레지스터 값 저장
+
+	mov rax, cr0	; CR0 컨트롤 레지스터 값을 RAX 레지스터로 저장
+	or rax, 0x08	; TS 비트(비트 7)를 1로 설정
+	mov cr0, rax	; TS 비트가 1로 설정된 값을 CR0 컨트롤 레지스터로 저장
+
+	pop rax		; 스택에서 RAX 레지스터 값 복원
+	ret
+
+; CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
+clearTS:
+	clts
 	ret

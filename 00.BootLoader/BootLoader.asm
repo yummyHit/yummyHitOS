@@ -31,8 +31,8 @@ START:
 
 	push LOADINGMSG
 	push 0x1F		; 흰색
-	push 7
 	push 1
+	push 7
 	call PRINTMSG
 	add sp, 8
 
@@ -97,8 +97,8 @@ READEND:
 	; OS 이미지가 완료되었다는 메시지 출력
 	push HITMSG			; 출력할 메시지의 어드레스를 스택에 삽입
 	push 0x1A			; 초록색
-	push 57				; 화면 X 좌표(57)를 스택에 삽입
 	push 1				; 화면 Y 좌표(1)를 스택에 삽입
+	push 57				; 화면 X 좌표(57)를 스택에 삽입
 	call PRINTMSG			; PRINTMSG 함수 호출
 	add sp, 8			; 삽입한 파라미터 제거
 
@@ -109,8 +109,8 @@ READEND:
 HANDLEDISKERROR:		; 에러 처리 코드
 	push ERRORMSG		; 에러 문자열의 어드레스를 스택에 삽입
 	push 0x1C		; 빨간색
-	push 57			; 화면 X 좌표(57)를 스택에 삽입
 	push 1			; 화면 Y 좌표(1)를 스택에 삽입
+	push 57			; 화면 X 좌표(57)를 스택에 삽입
 	call PRINTMSG		; PRINTMSG 함수 호출
 	add sp, 8
 	jmp $			; 현재 위치에서 무한 루프 수행
@@ -133,20 +133,20 @@ PRINTMSG:
 	mov es, ax		; ES 세그먼트 레지스터에 설정
 
 	; Y 좌표를 이용해서 먼저 라인 어드레스를 구함
-	mov ax, word [ bp + 4 ]	; 파라미터 2(화면 좌표 Y)를 AX 레지스터에 설정
+	mov ax, word [ bp + 6 ]	; 파라미터 2(화면 좌표 Y)를 AX 레지스터에 설정
 	mov si, 160		; 한 라인의 바이트 수(2 * 80 컬럼)를 SI 레지스터에 설정
 	mul si			; AX 레지스터와 SI 레지스터를 곱하여 화면 Y 어드레스 계산
 	mov di, ax		; 계산된 화면 Y 어드레스를 DI 레지스터에 설정
 
 	; X 좌표를 이용해서 2를 곱한 후 최종 어드레스를 구함
-	mov ax, word [ bp + 6 ]	; 파라미터 1(화면 좌표 X)를 AX 레지스터에 설정
+	mov ax, word [ bp + 4 ]	; 파라미터 1(화면 좌표 X) AX 레지스터에 설정
 	mov si, 2		; 한 문자를 나타내는 바이트 수(2)를 SI 레지스터에 설정
 	mul si			; AX 레지스터와 SI 레지스터를 곱하여 화면 X 어드레스를 계산
 	add di, ax		; 화면 Y 어드레스와 계산된 X 어드레스를 더해서 실제 비디오 메모리 어드레스 계산
 
 	; 출력할 문자열의 어드레스
-	mov si, word [ bp + 10 ]	; 파라미터 3(출력할 문자열의 어드레스)
-	mov bl, byte [ bp + 8 ]
+	mov bl, byte [ bp + 8 ]	; 파라미터 3(배경과 글자 색을 지정)을 BL 비트에 설정
+	mov si, word [ bp + 10 ]
 
 .MSGLOOP:			; 메시지 출력 루프
 	mov cl, byte [ si ]	; SI 레지스터가 가리키는 문자열 위치에서 한 문자를 CL 레지스터에 복사

@@ -13,6 +13,7 @@
 #include <RTC.h>
 #include <AsmUtil.h>
 #include <Task.h>
+#include <Synchronize.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -29,8 +30,12 @@ SHELLENTRY gs_cmdTable[] = {
 	{"createTask", "### Create Task. ex)createTask 1(type) 10(count) ###", csCreateTask},
 	{"changePriority", "### Change Task Priority. ex)changePriority 1(ID) 2(Priority) ###", csChangePriority},
 	{"tasklist", "### Show Task List ###", csTaskList},
-	{"taskill", "### Task Kill. ex)taskill 1(ID) ###", csTaskill},
+	{"taskill", "### Task Kill. ex)taskill 1(ID) or 0xffffffff(ALL Task) ###", csTaskill},
 	{"cpuload", "### Show Processor Load ###", csCPULoad},
+	{"mutexTest", "### Mutex Test Command ###", csMutexTest},
+	{"threadTest", "### Thread And Process Test ###", csThreadTest},
+	{"matrix", "### Show Matrix on your Monitor ###", csMatrix},
+	{"getPIE", "### Get PIE(3.14) Calculation ###", csGetPIE},
 };
 
 // 셸 메인 루프
@@ -381,13 +386,13 @@ static void csCreateTask(const char *buf) {
 
 	switch(aToi(type, 10)) {
 	case 1:
-		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW, (QWORD)taskTest1) == NULL) break;
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest1) == NULL) break;
 		printF("Task Test 1 %d Created.\n", i);
 		break;
 
 	case 2:
 	default:
-		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW, (QWORD)taskTest2) == NULL) break;
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest2) == NULL) break;
 		printF("Task Test 2 %d Created.\n", i);
 		break;
 	}
@@ -435,7 +440,8 @@ static void csTaskList(const char *buf) {
 				}
 				printF("\n");
 			}
-			printF("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q]\n", 1 + cnt++, tcb->link.id, GETPRIORITY(tcb->flag), tcb->flag);
+			printF("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + cnt++, tcb->link.id, GETPRIORITY(tcb->flag), tcb->flag, getListCnt(&(tcb->childThreadList)));
+			printF("     Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n", tcb->parentProcID, tcb->memAddr, tcb->memSize);
 		}
 	}
 }
@@ -445,6 +451,8 @@ static void csTaskill(const char *buf) {
 	PARAMLIST list;
 	char id[30];
 	QWORD _id;
+	TCB *tcb;
+	int i;
 
 	// 파라미터 추출
 	initParam(&list, buf);
@@ -454,12 +462,215 @@ static void csTaskill(const char *buf) {
 	if(memCmp(id, "0x", 2) == 0) _id = aToi(id + 2, 16);
 	else _id = aToi(id, 10);
 
-	printF("Kill Task ID [0x%q] ", _id);
-	if(taskFin(_id) == TRUE) printF("Success !!\n");
-	else printF("Fail...\n");
+	// 특정 ID만 종료하는 경우
+	if(_id != 0xFFFFFFFF) {
+		tcb = getTCB(GETTCBOFFSET(_id));
+		_id = tcb->link.id;
+
+		// 시스템 테스트는 제외
+		if(((_id >> 32) != 0) && ((tcb->flag & TASK_FLAGS_SYSTEM) == 0x00)) {
+			printF("Kill Task ID [0x%q] ", _id);
+			if(taskFin(_id) == TRUE) printF("Success !!\n");
+			else printF("Fail...\n");
+		} else printF("Task does not exist or task is system task.\n");
+	} else { // 콘솔 셸과 유후 태스크 제외 모든 태스크 종료
+		for(i = 0; i < TASK_MAXCNT; i++) {
+			tcb = getTCB(i);
+			_id = tcb->link.id;
+
+			// 시스템 테스트는 삭제 목록에서 제외
+			if(((_id >> 32) != 0) && ((tcb->flag & TASK_FLAGS_SYSTEM) == 0x00)) {
+				printF("Kill Task ID [0x%q] ", _id);
+				if(taskFin(_id) == TRUE) printF("Success !!\n");
+				else printF("Fail...\n");
+			}
+		}
+	}
 }
 
 // 프로세서 사용률 표시
 static void csCPULoad(const char *buf) {
 	printF("Processor Load : %d%%\n", getProcessorLoad());
+}
+
+// 뮤텍스 테스트용 뮤텍스와 변수
+static MUTEX gs_mut;
+static volatile QWORD gs_add;
+
+// 뮤텍스 테스트 태스크
+static void printNumTask(void) {
+	int i, j;
+	QWORD tickCnt;
+
+	// 50ms 정도 대기하여 콘솔 셸이 출력하는 메시지와 겹치지 않도록 함
+	tickCnt = getTickCnt();
+	while((getTickCnt() - tickCnt) < 50) schedule();
+
+	// 루프 돌면서 숫자 출력
+	for(i = 0; i < 5; i++) {
+		_lock(&gs_mut);
+		printF("Task ID [0x%Q] Value[%d]\n", getRunningTask()->link.id, gs_add);
+		gs_add += 1;
+		_unlock(&gs_mut);
+
+		// 프로세서 소모를 늘리려고 추가한 테스트 코드
+		for(j = 0; j < 30000; j++);
+	}
+
+	// 모든 태스크가 종료할 때까지 1초(100ms) 정도 대기
+	tickCnt = getTickCnt();
+	while((getTickCnt() - tickCnt) < 1000) schedule();
+
+	// 태스크 종료
+	taskExit();
+}
+
+// 뮤텍스 테스트하는 태스크 생성
+static void csMutexTest(const char *buf) {
+	int i;
+	gs_add = 1;
+
+	// 뮤텍스 초기화
+	initMutex(&gs_mut);
+
+	for(i = 0; i < 3; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)printNumTask);
+	printF("Wait Util %d Task Finishing...\n", i);
+	getCh();
+}
+
+// 태스크 2를 자신의 쓰레드로 생성하는 태스크
+static void createThreadTask(void) {
+	int i;
+
+	for(i = 0; i < 3; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest2);
+	while(1) _sleep(1);
+}
+
+// 쓰레드를 테스트하는 태스크 생성
+static void csThreadTest(const char *buf) {
+	TCB *proc;
+
+	proc = createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (QWORD)createThreadTask);
+
+	if(proc != NULL) printF("Process [0x%Q] Create Success !\n", proc->link.id);
+	else printF("Process Create Fail...\n");
+}
+
+// 난수 발생을 위한 변수
+static volatile QWORD gs_matrixValue = 0;
+
+// 임의의 난수 반환
+QWORD _rand(void) {
+	gs_matrixValue = (gs_matrixValue * 412153 + 5571031) >> 16;
+	return gs_matrixValue;
+}
+
+// 철자를 흘러내리게 하는 쓰레드
+static void dropMatrixChar(void) {
+	int x, y, i;
+	char txt[2] = {0,};
+
+	x = _rand() % CONSOLE_WIDTH;
+
+	while(1) {
+		_sleep(_rand() % 20);
+		if((_rand() % 20) < 15) {
+			txt[0] = ' ';
+			for(i = 0; i < CONSOLE_HEIGHT - 1; i++) {
+				printXY(x, i, 0x0A, txt);
+				_sleep(50);
+			}
+		} else {
+			for(i = 0; i < CONSOLE_HEIGHT - 1; i++) {
+				txt[0] = i + _rand();
+				printXY(x, i, 0x0A, txt);
+				_sleep(50);
+			}
+		}
+	}
+}
+
+// 쓰레드 생성으로 매트릭스 화면 구성 프로세스
+static void matrixProc(void) {
+	int i;
+
+	for(i = 0; i < 300; i++) {
+		if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)dropMatrixChar) == NULL) break;
+		_sleep(_rand() % 5 + 5);
+	}
+	getCh();
+}
+
+// 매트릭스 명령
+static void csMatrix(const char *buf) {
+	TCB *proc;
+
+	clearMatrix();
+	proc = createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (QWORD)matrixProc);
+
+	if(proc != NULL) {
+		printXY(0, 0, 0x0A, "Matrix Process [0x%Q] Create Success !!\n");
+
+		// 태스크 종료시까지 대기
+		while((proc->link.id >> 32) != 0) _sleep(100);
+	} else 	printXY(0, 0, 0x0A, "Matrix Process Create Fail...\n");
+}
+
+// FPU를 테스트하는 태스크
+static void fpuTest(void) {
+	double v1, v2;
+	TCB *runningTask;
+	QWORD cnt = 0, randValue;
+	int i, offset;
+	char data[4] = { '-', '\\', '|', '/' };
+	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
+
+	runningTask = getRunningTask();
+
+	// 자신의 ID를 얻어 화면 오프셋으로 사용
+	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
+	offset = CONSOLE_WIDTH * CONSOLE_HEIGHT - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+
+	// 루프를 무한히 반복해 동일 계산 수행
+	while(1) {
+		v1 = 1;
+		v2 = 1;
+
+		// 테스트를 위해 동일 계산 2번 반복 실행
+		for(i = 0; i < 10; i++) {
+			randValue = _rand();
+			v1 *= (double)randValue;
+			v2 *= (double)randValue;
+
+			_sleep(1);
+
+			randValue = _rand();
+			v1 /= (double)randValue;
+			v2 /= (double)randValue;
+		}
+
+		if(v1 != v2) {
+			printF("Value is Different !! [%f] != [%f]\n", v1, v2);
+			break;
+		}
+		cnt++;
+
+		// 회전하는 바람개비 표시
+		mon[offset].character = data[cnt % 4];
+		mon[offset].color = (offset % 15) + 1;
+	}
+}
+
+// 원주율 계산
+static void csGetPIE(const char *buf) {
+	double res;
+	int i;
+
+	printF("PIE Calculation Test\n");
+	printF("Result: 355 / 113 = ");
+	res = (double)355 / 113;
+	printF("%d.%d%d\n", (QWORD)res, ((QWORD)(res * 10) % 10), ((QWORD)(res * 100) % 10));
+
+	// 실수를 계산하는 태스크 생성
+	for(i = 0; i <100; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest);
 }

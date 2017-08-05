@@ -9,6 +9,7 @@
 #include <AsmUtil.h>
 #include <Keyboard.h>
 #include <Queue.h>
+#include <Synchronize.h>
 
 /* 키보드 컨트롤러와 키보드 제어에 관련된 함수 */
 
@@ -295,41 +296,36 @@ BOOL initKeyboard(void) {
 // 스캔 코드를 내부적으로 사용하는 키 데이터로 바꾼 후 키 큐에 삽입
 BOOL convertNPutCode(BYTE scanCode) {
 	KEYDATA data;
-	BOOL res = FALSE;
-	BOOL preInterrupt;
+	BOOL res = FALSE, preInterrupt;
 
 	// 스캔 코드를 키 데이터에 삽입
 	data.scanCode = scanCode;
 
 	// 스캔 코드를 ASCII 코드와 키 상태로 변환해 키 데이터에 삽입
 	if(convertCode(scanCode, &data.ascii, &data.flag) == TRUE) {
-		// 인터럽트 불가
-		preInterrupt = setInterruptFlag(FALSE);
+		// 임계 영역 시작
+		preInterrupt = lockData();
 
 		// 키 큐에 삽입
 		res = addData(&gs_keyQ, &data);
 
-		// 이전 인터럽트 플래그 복원
-		setInterruptFlag(preInterrupt);
+		// 임계 영역 끝
+		unlockData(preInterrupt);
 	}
 	return res;
 }
 
 // 키 큐에서 키 데이터 제거
 BOOL rmKeyData(KEYDATA *data) {
-	BOOL res;
-	BOOL preInterrupt;
+	BOOL res, preInterrupt;
 
-	// 큐가 비었으면 키 데이터 못꺼냄
-	if(isQEmpty(&gs_keyQ) == TRUE) return FALSE;
-
-	// 인터럽트 불가
-	preInterrupt = setInterruptFlag(FALSE);
+	// 임계 영역 시작
+	preInterrupt = lockData();
 
 	// 키 큐에서 키 데이터 제거
 	res = rmData(&gs_keyQ, data);
 
-	// 이전 인터럽트 플래그 복원
-	setInterruptFlag(preInterrupt);
+	// 임계 영역 끝
+	unlockData(preInterrupt);
 	return res;
 }

@@ -67,22 +67,22 @@ void addListHead(LIST *list, void *item) {
 
 // 리스트에서 데이터 제거 후 데이터 포인터 반환
 void *delList(LIST *list, QWORD id) {
-	LISTLINK *link, *prevLink;
+	LISTLINK *link, *preLink;
 
-	prevLink = (LISTLINK*)list->head;
-	for(link = prevLink; link != NULL; link = link->next) {
+	preLink = (LISTLINK*)list->head;
+	for(link = preLink; link != NULL; link = link->next) {
 		if(link->id == id) {
 			if((link == list->head) && (link == list->tail)) {
 				list->head = NULL;
 				list->tail = NULL;
 			} else if(link == list->head) list->head = link->next;
-			else if(link == list->tail) list->tail = prevLink;
-			else prevLink->next = link->next;
+			else if(link == list->tail) list->tail = preLink;
+			else preLink->next = link->next;
 
 			list->itemCnt--;
 			return link;
 		}
-		prevLink = link;
+		preLink = link;
 	}
 	return NULL;
 }

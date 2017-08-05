@@ -10,6 +10,7 @@
 
 #include <Types.h>
 
+#pragma once
 // 매크로. 비디오 메모리 속성 값 설정
 #define CONSOLE_BACKGROUND_BLACK		0x00
 #define CONSOLE_BACKGROUND_BLUE			0x10
@@ -38,6 +39,7 @@
 #define CONSOLE_FOREGROUND_BRIGHTWHITE		0x0F
 // 기본 문자 색상
 #define CONSOLE_DEFAULTTEXTCOLOR		(CONSOLE_BACKGROUND_BLUE | CONSOLE_FOREGROUND_BRIGHTYELLOW)
+#define MATRIX_COLOR				(CONSOLE_BACKGROUND_BLACK | CONSOLE_FOREGROUND_BRIGHTGREEN)
 
 // 콘솔 너비, 높이, 비디오 메모리 시작 어드레스 설정
 #define CONSOLE_WIDTH		80
@@ -67,6 +69,7 @@ void getCursor(int *x, int *y);
 void printF(const char *format, ...);
 int csPrint(const char *buf);
 void clearMonitor(void);
+void clearMatrix(void);
 BYTE getCh(void);
 void printXY(int x, int y, BYTE color, const char *str);
 

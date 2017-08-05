@@ -10,6 +10,7 @@
 
 #include <Types.h>
 
+#pragma once
 // 구조체, 1바이트로 정렬
 #pragma pack(push, 1)
 

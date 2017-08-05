@@ -10,9 +10,11 @@
 
 #include <Types.h>
 
+#pragma once
 void exceptionHandler(int vecNum, QWORD errCode);
 void interruptHandler(int vecNum);
 void keyboardHandler(int vecNum);
 void timerHandler(int verNum);
+void devFPUHandler(int vecNum);
 
 #endif /*__INTERRUPTHANDLER_H__*/

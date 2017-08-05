@@ -11,7 +11,7 @@ SECTION .text		; text 섹션(세그먼트)을 정의
 
 ; 외부에서 정의된 함수를 쓸 수 있도록 선언(Import)
 extern exceptionHandler, interruptHandler, keyboardHandler
-extern timerHandler
+extern timerHandler, devFPUHandler
 
 ; C언어에서 호출할 수 있도록 이름 노출(Export). 예외(Exception) 처리를 위한 ISR
 global ISRDivErr, ISRDebug, ISRNMI, ISRBP, ISROF, ISRExceed, ISROPErr, ISRDevErr, ISRDoubleErr, ISRSegmentOverrun, ISRTSSErr
@@ -164,7 +164,7 @@ ISRDevErr:
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 7
-	call exceptionHandler
+	call devFPUHandler
 
 	LOAD
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원

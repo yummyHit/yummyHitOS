@@ -11,6 +11,7 @@
 #include <Types.h>
 #include <Queue.h>
 
+#pragma once
 // 매크로. Pause 키를 처리하기 위해 무시해야 하는 나머지 스캔 코드의 수
 #define KEY_SKIPCNTFORPAUSE	2
 

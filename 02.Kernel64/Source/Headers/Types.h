@@ -8,6 +8,8 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
+#pragma once
+
 #define BYTE	unsigned char
 #define WORD	unsigned short
 #define DWORD	unsigned int
@@ -17,6 +19,9 @@
 #define TRUE	1
 #define FALSE	0
 #define NULL	0
+
+// stddef.h 헤더에 포함된 offsetof() 매크로 내용
+#define offsetof(TYPE, MEMBER) __builtin_offsetof (TYPE, MEMBER)
 
 #pragma pack( push, 1 )
 

@@ -67,6 +67,6 @@ void Main(void) {
 	printXY(12, 8, 0x1B, "### Welcome to YummyHitOS !! Please enjoy this !! ###");
 	setCursor(0, ++y);
 
-	createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_IDLE, (QWORD)idleTask);
+	createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (QWORD)idleTask);
 	startShell();
 }

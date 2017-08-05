@@ -118,6 +118,17 @@ void clearMonitor(void) {
 	}
 }
 
+// 매트릭스용 모니터
+void clearMatrix(void) {
+	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
+	int i;
+
+	for(i = 0; i < CONSOLE_WIDTH * CONSOLE_HEIGHT; i++) {
+		mon[i].character = ' ';
+		mon[i].color = MATRIX_COLOR;
+	}
+}
+
 // getch() 함수 구현
 BYTE getCh(void) {
 	KEYDATA data;

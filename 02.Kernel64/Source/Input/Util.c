@@ -239,9 +239,10 @@ int sprintF(char *buf, const char *format, ...) {
 
 // vsprintf() 함수 내부 구현. 버퍼에 포맷 문자열에 따라 데이터 복사
 int vsprintF(char *buf, const char *format, va_list v) {
-	QWORD i, j, qwV;
+	QWORD i, j, k, qwV;
 	int bufIdx = 0, fmLen, cpLen, iV;
 	char *cpStr;
+	double dV;
 
 	// 포맷 문자열 길이를 읽어 문자열 길이만큼 데이터를 출력 버퍼에 출력
 	fmLen = strLen(format);
@@ -286,6 +287,26 @@ int vsprintF(char *buf, const char *format, va_list v) {
 				qwV = (QWORD)(va_arg(v, QWORD));
 				bufIdx += iToa(qwV, buf + bufIdx, 16);
 				break;
+				// 소수점 둘째 자리까지 실수 출력
+			case 'f':
+				dV = (double)(va_arg(v, double));
+				// 셋째 자리에서 반올림 처리
+				dV += 0.005;
+				// 소수점 둘째 자리부터 차례로 저장해 버퍼를 뒤집음
+				buf[bufIdx] = '0' + (QWORD)(dV * 100) % 10;
+				buf[bufIdx + 1] = '0' + (QWORD)(dV * 10) % 10;
+				buf[bufIdx + 2] = '.';
+				for(k = 0;; k++) {
+					// 정수 부분이 0이면 종료
+					if(((QWORD)dV == 0) && (k != 0)) break;
+					buf[bufIdx + 3 + k] = '0' + ((QWORD)dV % 10);
+					dV = dV / 10;
+				}
+				buf[bufIdx + 3 + k] = '\0';
+				// 값이 저장된 길이만큼 뒤집고 길이를 증가시킴
+				revStr(buf + bufIdx);
+				bufIdx += 3 + k;
+				break;
 			default:
 				buf[bufIdx] = format[i];
 				bufIdx++;
@@ -306,4 +327,13 @@ int vsprintF(char *buf, const char *format, va_list v) {
 // Tick Count 반환
 QWORD getTickCnt(void) {
 	return g_tickCnt;
+}
+
+// ms 동안 대기
+void _sleep(QWORD ms) {
+	QWORD lastTickCnt;
+
+	lastTickCnt = g_tickCnt;
+
+	while((g_tickCnt - lastTickCnt) <= ms) schedule();
 }

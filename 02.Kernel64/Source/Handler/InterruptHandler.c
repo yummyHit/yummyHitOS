@@ -12,18 +12,20 @@
 #include <Util.h>
 #include <Task.h>
 #include <Descriptor.h>
+#include <AsmUtil.h>
 
 void printDebug(int vec, int cnt, int handler) {
-	char buf[] = "[INT:  ,  ]";
+	char int_buf[] = "[INT:  ,  ]", exc_buf[] = "[EXC:  ,  ]";
 
 	// 인터럽트가 발생했음을 알리기 위해 메시지 출력하는 부분. 화면 오른쪽 위 2자리 정수로 출력
-	buf[5] = '0' + vec / 10;
-	buf[6] = '0' + vec % 10;
+	exc_buf[5] = int_buf[5] = '0' + vec / 10;
+	exc_buf[6] = int_buf[6] = '0' + vec % 10;
 	// 발생 횟수 출력
-	buf[8] = '0' + cnt / 10;
-	buf[9] = '0' + cnt % 10;
-	if(handler == 2) printXY(0, 0, 0x1E, buf);
-	else printXY(69, 0, 0x1E, buf);
+	exc_buf[8] = int_buf[8] = '0' + cnt / 10;
+	exc_buf[9] = int_buf[9] = '0' + cnt % 10;
+	if(handler == 2) printXY(0, 0, 0x1E, int_buf);
+	else if(handler == 4) printXY(0, 0, 0x1E, exc_buf);
+	else printXY(69, 0, 0x1E, int_buf);
 	printXY(34, 0, 0xE5, " YummyHitOS ");
 }
 
@@ -45,7 +47,7 @@ void exceptionHandler(int vecNum, QWORD errCode) {
 	printXY(7, 6, 0x1F, "                                                                        ");
 	printXY(7, 7, 0x1F, "=============================================================           ");
 
-	while(1);
+//	while(1);
 }
 
 // 공통으로 사용하는 인터럽트 핸들러
@@ -90,4 +92,37 @@ void timerHandler(int vecNum) {
 
 	reduceProcessorTime();
 	if(isProcessorTime() == TRUE) scheduleInterrupt();
+}
+
+// Device Not Available 예외 핸들러
+void devFPUHandler(int vecNum) {
+	TCB *fpu, *curTask;
+	QWORD lastID;
+	static int ls_devCnt = 0;
+	// FPU 예외가 발생했음을 알리려고 메시지 출력
+	ls_devCnt = (ls_devCnt + 1) % 100;
+	printDebug(vecNum, ls_devCnt, 4);
+
+	// CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
+	clearTS();
+
+	// 이전 FPU를 사용한 태스크가 있는지 확인해 있다면 FPU의 상태를 태스크에 저장
+	lastID = getLastFPU();
+	curTask = getRunningTask();
+
+	// 이전 FPU를 사용한 것이 자신이면 아무것도 안 함
+	if(lastID == curTask->link.id) return;
+	else if(lastID != TASK_INVALID_ID) { // FPU를 사용한 태스크가 있으면 FPU 상태 저장
+		fpu = getTCB(GETTCBOFFSET(lastID));
+		if((fpu != NULL) && (fpu->link.id == lastID)) saveFPU(fpu->contextFPU);
+	}
+
+	// 현재 태스크가 FPU를 사용한 적이 있는지 확인해 FPU를 사용한 적이 없다면 초기화, 있다면 저장된 FPU 콘텍스트 복원
+	if(curTask->fpuUsed == FALSE) {
+		initFPU();
+		curTask->fpuUsed = TRUE;
+	} else loadFPU(curTask->contextFPU);
+
+	// FPU를 사용한 태스크 ID를 현재 태스크로 변경
+	setLastFPU(curTask->link.id);
 }

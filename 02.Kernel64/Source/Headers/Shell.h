@@ -10,6 +10,7 @@
 
 #include <Types.h>
 
+#pragma once
 // 매크로
 #define SHELL_MAXCMDBUFCNT	300
 #define SHELL_PROMPTMSG		"sh-yummyHit \$ "
@@ -64,5 +65,9 @@ static void csChangePriority(const char *buf);
 static void csTaskList(const char *buf);
 static void csTaskill(const char *buf);
 static void csCPULoad(const char *buf);
+static void csMutexTest(const char *buf);
+static void csThreadTest(const char *buf);
+static void csMatrix(const char *buf);
+static void csGetPIE(const char *buf);
 
 #endif /*__SHELL_H__*/

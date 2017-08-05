@@ -10,6 +10,7 @@
 
 #include <Types.h>
 
+#pragma once
 /* GDT */
 // 조합에 사용할 기본 매크로
 #define GDT_TYPE_CODE		0x0A

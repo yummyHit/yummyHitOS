@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <Types.h>
 
+#pragma once
 void memSet(void *dest, BYTE data, int size);
 int memCpy(void *dest, const void *src, int size);
 int memCmp(const void *dest, const void *src, int size);
@@ -27,6 +28,7 @@ int decimalToStr(long v, char *buf);
 int sprintF(char *buf, const char *format, ...);
 int vsprintF(char *buf, const char *format, va_list v);
 QWORD getTickCnt(void);
+void _sleep(QWORD ms);
 
 extern volatile QWORD g_tickCnt;
 

@@ -10,6 +10,7 @@
 
 #include <Types.h>
 
+#pragma once
 // I/O Port
 #define RTC_CMOSADDR		0x70
 #define RTC_CMOSDATA		0x71

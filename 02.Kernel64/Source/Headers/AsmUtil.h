@@ -1,16 +1,17 @@
 /*
- * Port.h
+ * AsmUtil.h
  *
  *  Created on: 2017. 7. 20.
  *      Author: Yummy
  */
 
-#ifndef __PORT_H__
-#define __PORT_H__
+#ifndef __ASMUTIL_H__
+#define __ASMUTIL_H__
 
 #include <Types.h>
 #include <Task.h>
 
+#pragma once
 BYTE inByte(WORD port);
 void outByte(WORD port, BYTE data);
 void loadGDTR(QWORD GDTRAddr);
@@ -22,5 +23,12 @@ QWORD readRFLAGS(void);
 QWORD readTSC(void);
 void switchContext(CONTEXT *curContext, CONTEXT *nextContext);
 void hlt(void);
+BOOL testNSet(volatile BYTE *dest, BYTE cmp, BYTE src);
 
-#endif /*__PORT_H__*/
+void initFPU(void);
+void saveFPU(void *contextFPU);
+void loadFPU(void *contextFPU);
+void setTS(void);
+void clearTS(void);
+
+#endif /*__ASMUTIL_H__*/

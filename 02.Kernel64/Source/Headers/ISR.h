@@ -7,6 +7,7 @@
 #ifndef __ISR_H__
 #define __ISR_H__
 
+#pragma once
 // 예외처리용 ISR
 void ISRDivErr(void);
 void ISRDebug(void);
