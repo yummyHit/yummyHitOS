@@ -14,6 +14,7 @@
 #include <AsmUtil.h>
 #include <Task.h>
 #include <Synchronize.h>
+#include <DynMem.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -36,6 +37,9 @@ SHELLENTRY gs_cmdTable[] = {
 	{"threadTest", "### Thread And Process Test ###", csThreadTest},
 	{"matrix", "### Show Matrix on your Monitor ###", csMatrix},
 	{"getPIE", "### Get PIE(3.14) Calculation ###", csGetPIE},
+	{"dynamicInfo", "### Show Dynamic Memory Information ###", csDynMemInfo},
+	{"seqAlloc", "### Sequential Allocation & Free Test ###", csSeqAllocTest},
+	{"randAlloc", "### Random Allocation & Free Test ###", csRandAllocTest},
 };
 
 // 셸 메인 루프
@@ -160,6 +164,16 @@ static void csHelp(const char *buf) {
 		getCursor(&x, &y);
 		setCursor(maxLen, y);
 		printF("  - %s\n", gs_cmdTable[i].help);
+
+		// 목록이 많을 경우 나눠서 보여중
+		if((i != 0) && ((i % 20) == 0)) {
+			printF("Press any key to continue... ('q' is exit) : ");
+			if(getCh() == 'q') {
+				printF("\n");
+				break;
+			}
+			printF("\n");
+		}
 	}
 }
 
@@ -605,11 +619,10 @@ static void matrixProc(void) {
 static void csMatrix(const char *buf) {
 	TCB *proc;
 
-	clearMatrix();
 	proc = createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (QWORD)matrixProc);
 
 	if(proc != NULL) {
-		printXY(0, 0, 0x0A, "Matrix Process [0x%Q] Create Success !!\n");
+		clearMatrix();
 
 		// 태스크 종료시까지 대기
 		while((proc->link.id >> 32) != 0) _sleep(100);
@@ -618,7 +631,7 @@ static void csMatrix(const char *buf) {
 
 // FPU를 테스트하는 태스크
 static void fpuTest(void) {
-	double v1, v2;
+	double dV1, dV2;
 	TCB *runningTask;
 	QWORD cnt = 0, randValue;
 	int i, offset;
@@ -629,30 +642,32 @@ static void fpuTest(void) {
 
 	// 자신의 ID를 얻어 화면 오프셋으로 사용
 	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
-	offset = CONSOLE_WIDTH * CONSOLE_HEIGHT - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+	offset = (CONSOLE_WIDTH * CONSOLE_HEIGHT) - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
 
-	// 루프를 무한히 반복해 동일 계산 수행
+	// 루프를 무한히 반복해 동일 계산 수행 :: 13번 General Protection Exception 뜨는데 무슨문제일까?
 	while(1) {
-		v1 = 1;
-		v2 = 1;
+
+		dV1 = 1;
+		dV2 = 1;
 
 		// 테스트를 위해 동일 계산 2번 반복 실행
 		for(i = 0; i < 10; i++) {
 			randValue = _rand();
-			v1 *= (double)randValue;
-			v2 *= (double)randValue;
+			dV1 *= (double)randValue;
+			dV2 *= (double)randValue;
 
 			_sleep(1);
 
 			randValue = _rand();
-			v1 /= (double)randValue;
-			v2 /= (double)randValue;
+			dV1 /= (double)randValue;
+			dV2 /= (double)randValue;
 		}
 
-		if(v1 != v2) {
-			printF("Value is Different !! [%f] != [%f]\n", v1, v2);
+		if(dV1 != dV2) {
+			printF("Value is Different !! [%f] != [%f]\n", dV1, dV2);
 			break;
 		}
+
 		cnt++;
 
 		// 회전하는 바람개비 표시
@@ -665,12 +680,126 @@ static void fpuTest(void) {
 static void csGetPIE(const char *buf) {
 	double res;
 	int i;
-
+	
 	printF("PIE Calculation Test\n");
 	printF("Result: 355 / 113 = ");
 	res = (double)355 / 113;
 	printF("%d.%d%d\n", (QWORD)res, ((QWORD)(res * 10) % 10), ((QWORD)(res * 100) % 10));
 
 	// 실수를 계산하는 태스크 생성
-	for(i = 0; i <100; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest);
+	for(i = 0; i < 100; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest);
+}
+
+// 동적 메모리 정보 표시
+static void csDynMemInfo(const char *buf) {
+	QWORD startAddr, totalSize, metaSize, usedSize;
+
+	getDynMemInfo(&startAddr, &totalSize, &metaSize, &usedSize);
+
+	printF("   ================ Dynamic Memory Information ================\n");
+	printF("Start Address:	[0x%Q]\n", startAddr);
+	printF("Total Size:	[0x%Q]byte, [%d]MB\n", totalSize, totalSize / 1024 / 1024);
+	printF("Meta Size:	[0x%Q]byte, [%d]KB\n", metaSize, metaSize / 1024);
+	printF("Used Size:	[0x%Q]byte, [%d]KB\n", usedSize, usedSize / 1204);\
+}
+
+// 모든 블록 리스트의 블록을 순차적으로 할당하고 해제하는 테스트
+static void csSeqAllocTest(const char *buf) {
+	DYNMEM *mem;
+	long i, j, k;
+	QWORD *_buf;
+
+	printF("   ================ Dynamic Memory Information ================\n");
+	mem = getDynMemManager();
+
+	for(i = 0; i < mem->maxLvCnt; i++) {
+		printF("Block List [%d] Test Start\n", i);
+		printF("Allocation And Compare: ");
+
+		// 모든 블록을 할당받아 값을 채운 후 검사
+		for(j = 0; j < (mem->smallBlockCnt >> i); j++) {
+			_buf = allocMem(DYNMEM_MIN_SIZE << i);
+			if(_buf == NULL) {
+				printF("\nAllocation Fail...\n");
+				return;
+			}
+
+			// 값을 채운 후 다시 검사
+			for(k = 0; k < (DYNMEM_MIN_SIZE << i) / 8; k++) _buf[k] = k;
+
+			for(k = 0; k < (DYNMEM_MIN_SIZE << i) / 8; k++) if(_buf[k] != k) {
+				printF("\nCompare Fail...\n");
+				return;
+			}
+			// 진행 과정을 . 으로 표시
+			printF(".");
+		}
+
+		printF("\nFree: ");
+		// 할당 받은 블록 모두 반환
+		for(j = 0; j < (mem->smallBlockCnt >> i); j++) {
+			if(freeMem((void*)(mem->startAddr + (DYNMEM_MIN_SIZE << i) * j)) == FALSE) {
+				printF("\nFree Fail...\n");
+				return;
+			}
+			// 진행 과정을 . 으로 표시
+			printF(".");
+		}
+		printF("\n");
+	}
+	printF("Sequential Allocation Test is Finished Successfully !!\n");
+}
+
+// 임의로 메모리 할당 후 해제하는 것을 반복하는 태스크
+static void randAllocTask(void) {
+	TCB *task;
+	QWORD memSize;
+	char buf[200];
+	BYTE *allocBuf;
+	int i, j, y;
+
+	task = getRunningTask();
+	y = (task->link.id) % 15 + 9;
+
+	for(j = 0; j < 10; j++) { // 1KB ~ 32M까지 할당
+		do {
+			memSize = ((_rand() % (32 * 1024)) + 1) * 1024;
+			allocBuf = allocMem(memSize);
+
+			// 만일 버퍼를 할당받지 못하면 다른 태스크가 메모리를 사용할 수 있으니 잠시 대기 후 재시도
+			if(allocBuf == 0) _sleep(1);
+		} while(allocBuf == 0);
+
+		sprintF(buf, "|Address: [0x%Q] Size: [0x%Q] Allocation Success", allocBuf, memSize);
+		// 자신의 ID를 Y좌표로 하여 데이터 출력
+		printXY(20, y, CONSOLE_DEFAULTTEXTCOLOR, buf);
+		_sleep(200);
+
+		// 버퍼를 반으로 나눠 랜덤한 데이터를 똑같이 채움
+		sprintF(buf, "|Address: [0x%Q] Size: [0x%Q] Data Write...     ", allocBuf, memSize);
+		printXY(20, y, CONSOLE_DEFAULTTEXTCOLOR, buf);
+		for(i = 0; i < memSize / 2; i++) {
+			allocBuf[i] = _rand() & 0xFF;
+			allocBuf[i + (memSize / 2)] = allocBuf[i];
+		}
+		_sleep(200);
+
+		// 채운 데이터가 정상적인지 다시 확인
+		sprintF(buf, "|Address: [0x%Q] Size: [0x%Q] Data Verify...    ", allocBuf, memSize);
+		printXY(20, y, CONSOLE_DEFAULTTEXTCOLOR, buf);
+		for(i = 0; i < memSize / 2; i++) if(allocBuf[i] != allocBuf[i + (memSize / 2)]) {
+			printF("Task ID[0x%Q] Verify Fail...\n", task->link.id);
+			taskExit();
+		}
+		freeMem(allocBuf);
+		_sleep(200);
+	}
+	taskExit();
+}
+
+// 태스크를 여러 개 생성해 임의의 메모리 할당 후 해제하는 것 반복하는 테스트
+static void csRandAllocTest(const char *buf) {
+	int i;
+		// 3.14 원주율 구하는 FPU 예제에 이어서 이것까지 13번 에러.. 이 쯤 되면 createTask쪽 엉킨게 있는건데...
+	for(i = 0; i < 1000; i++) createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (QWORD)randAllocTask);
 }

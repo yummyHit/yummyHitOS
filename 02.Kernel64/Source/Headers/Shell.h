@@ -69,5 +69,8 @@ static void csMutexTest(const char *buf);
 static void csThreadTest(const char *buf);
 static void csMatrix(const char *buf);
 static void csGetPIE(const char *buf);
+static void csDynMemInfo(const char *buf);
+static void csSeqAllocTest(const char *buf);
+static void csRandAllocTest(const char *buf);
 
 #endif /*__SHELL_H__*/

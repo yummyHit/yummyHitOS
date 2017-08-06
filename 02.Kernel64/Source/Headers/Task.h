@@ -120,6 +120,9 @@ typedef struct taskControlBlock {
 
 	// FPU 사용 여부
 	BOOL fpuUsed;
+
+	// TCB 전체를 16바이트 배수로 맞추기 위한 패딩
+	char pad[9];
 } TCB;
 
 // TCB 풀 상태 관리 자료구조

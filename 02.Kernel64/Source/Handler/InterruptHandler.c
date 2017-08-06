@@ -23,9 +23,9 @@ void printDebug(int vec, int cnt, int handler) {
 	// 발생 횟수 출력
 	exc_buf[8] = int_buf[8] = '0' + cnt / 10;
 	exc_buf[9] = int_buf[9] = '0' + cnt % 10;
-	if(handler == 2) printXY(0, 0, 0x1E, int_buf);
+	if(handler == 1 || handler == 3) printXY(69, 0, 0x1E, int_buf);
+	else if(handler == 2) printXY(0, 0, 0x1E, int_buf);
 	else if(handler == 4) printXY(0, 0, 0x1E, exc_buf);
-	else printXY(69, 0, 0x1E, int_buf);
 	printXY(34, 0, 0xE5, " YummyHitOS ");
 }
 
@@ -47,7 +47,7 @@ void exceptionHandler(int vecNum, QWORD errCode) {
 	printXY(7, 6, 0x1F, "                                                                        ");
 	printXY(7, 7, 0x1F, "=============================================================           ");
 
-//	while(1);
+	while(1);
 }
 
 // 공통으로 사용하는 인터럽트 핸들러

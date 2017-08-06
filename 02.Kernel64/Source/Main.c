@@ -13,6 +13,7 @@
 #include <Console.h>
 #include <Shell.h>
 #include <Task.h>
+#include <DynMem.h>
 
 // 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
@@ -43,8 +44,12 @@ void Main(void) {
 	setCursor(58, y++);
 	printF("%d", getTotalMemSize());
 
-	printXY(7, 7, 0x1F, "TCB Pool And Scheduler Initialize.................");
+	printXY(7, 7, 0x1F, "TCB Pool And Scheduler Initialize ................");
 	initScheduler();
+
+	printXY(7, 7, 0x1F, "Dynamic Memory Initialize ........................");
+	initDynMem();
+
 	initPIT(MSTOCNT(1),1);	// 1ms 당 한 번씩 인터럽트 발생
 	printXY(57, 7, 0x1A, "[  Hit  ]");
 

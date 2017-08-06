@@ -393,12 +393,12 @@ BOOL scheduleInterrupt(void) {
 		addReadyList(runningTask);
 	}
 
-	// 임계 영역 끝
-	unlockData(preFlag);
-
 	// 다음에 수행할 태스크가 FPU를 쓴 태스크가 아니라면 TS 비트 설정
 	if(gs_scheduler.lastFPU != nextTask->link.id) setTS();
 	else clearTS();
+
+	// 임계 영역 끝
+	unlockData(preFlag);
 
 	// 전환해서 실행할 태스크를 Running Task로 설정하고, 콘텍스트를 IST에 복사해 자동으로 태스크 전환하게 함
 	memCpy(contextAddr, &(nextTask->context), sizeof(CONTEXT));
