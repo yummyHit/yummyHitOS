@@ -21,8 +21,8 @@ void onInterrupt(void);
 void offInterrupt(void);
 QWORD readRFLAGS(void);
 QWORD readTSC(void);
-void switchContext(CONTEXT *curContext, CONTEXT *nextContext);
-void hlt(void);
+void switchContext(CONTEXT *nowContext, CONTEXT *nextContext);
+void _hlt(void);
 BOOL testNSet(volatile BYTE *dest, BYTE cmp, BYTE src);
 
 void initFPU(void);
@@ -30,5 +30,8 @@ void saveFPU(void *contextFPU);
 void loadFPU(void *contextFPU);
 void setTS(void);
 void clearTS(void);
+
+WORD inWord(WORD port);
+void outWord(WORD port, WORD data);
 
 #endif /*__ASMUTIL_H__*/

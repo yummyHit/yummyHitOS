@@ -41,7 +41,7 @@ WORD readCntZero(void) {
 // 카운터 0을 직접 설정해 일정 시간 이상 대기. 함수 호출시 PIT 컨트롤러 설정이 변하여 이후 PIT 컨트롤러 재설정
 // 정확히 측정하려면 함수 사용 전 인터럽트를 비활성화 해야 함. 약 50ms까지 측정 가능
 void waitPIT(WORD cnt) {
-	WORD last, current;
+	WORD last, now;
 
 	// PIT 컨트롤러를 0x0000 ~ 0xFFFF까지 반복하여 카운팅하도록 설정
 	initPIT(0, TRUE);
@@ -50,7 +50,7 @@ void waitPIT(WORD cnt) {
 	last = readCntZero();
 	while(1) {
 		// 현재 카운터 0값 반환
-		current = readCntZero();
-		if(((last - current) & 0xFFFF) >= cnt) break;
+		now = readCntZero();
+		if(((last - now) & 0xFFFF) >= cnt) break;
 	}
 }

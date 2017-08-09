@@ -41,6 +41,6 @@ void *delListTail(LIST *list);
 void *findList(const LIST *list, QWORD id);
 void *getListHead(const LIST *list);
 void *getListTail(const LIST *list);
-void *getNextList(const LIST *list, void *cur);
+void *getNextList(const LIST *list, void *now);
 
 #endif /*__LIST_H__*/

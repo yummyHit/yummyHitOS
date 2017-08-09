@@ -127,9 +127,9 @@ void *getListTail(const LIST *list) {
 }
 
 // 다음 아이템 반환
-void *getNextList(const LIST *list, void *cur) {
+void *getNextList(const LIST *list, void *now) {
 	LISTLINK *link;
 
-	link = (LISTLINK*)cur;
+	link = (LISTLINK*)now;
 	return link->next;
 }

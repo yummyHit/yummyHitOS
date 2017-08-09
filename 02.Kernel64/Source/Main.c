@@ -14,6 +14,8 @@
 #include <Shell.h>
 #include <Task.h>
 #include <DynMem.h>
+#include <HardDisk.h>
+#include <FileSystem.h>
 
 // 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
@@ -68,6 +70,14 @@ void Main(void) {
 	maskPIC(0);
 	onInterrupt();
 	printXY(57, 7, 0x1A, "[  Hit  ]");
+
+	printXY(7, 7, 0x1F, "Hard Disk Drive Initialize .......................");
+	if(initHDD() == TRUE) printXY(57, 7, 0x1A, "[  Hit  ]");
+	else printXY(57, 7, 0x1C, "[  Err  ]");
+
+	printXY(7, 7, 0x1F, "File System Initialize ...........................");
+	if(initFileSystem() == TRUE) printXY(57, 7, 0x1A, "[  Hit  ]");
+	else printXY(57, 7, 0x1C, "[  Err  ]");
 
 	printXY(12, 8, 0x1B, "### Welcome to YummyHitOS !! Please enjoy this !! ###");
 	setCursor(0, ++y);

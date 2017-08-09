@@ -15,6 +15,8 @@
 #include <Task.h>
 #include <Synchronize.h>
 #include <DynMem.h>
+#include <HardDisk.h>
+#include <FileSystem.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -40,6 +42,15 @@ SHELLENTRY gs_cmdTable[] = {
 	{"dynamicInfo", "### Show Dynamic Memory Information ###", csDynMemInfo},
 	{"seqAlloc", "### Sequential Allocation & Free Test ###", csSeqAllocTest},
 	{"randAlloc", "### Random Allocation & Free Test ###", csRandAllocTest},
+	{"HDDInfo", "### Show HDD Information ###", csHDDInfo},
+	{"readSector", "### Read HDD Sector, ex)readSector 0(LBA) 10(Count) ###", csReadSector},
+	{"writeSector", "### Write HDD Sector, ex)writeSector 0(LBA) 10(Count) ###", csWriteSector},
+	{"HDDMount", "### Mount HDD ###", csMountHDD},
+	{"HDDFormat", "### Format HDD ###", csFormatHDD},
+	{"fileSystemInfo", "### Show File System Information ###", csFileSystemInfo},
+	{"mkFile", "### Make File. ex)mkFile a.txt", csMakeFile},
+	{"rmFile", "### Remove File. ex)rmFile a.txt", csRemoveFile},
+	{"ls", "### Show Directory ###", csRootDir},
 };
 
 // 셸 메인 루프
@@ -802,4 +813,321 @@ static void csRandAllocTest(const char *buf) {
 	int i;
 		// 3.14 원주율 구하는 FPU 예제에 이어서 이것까지 13번 에러.. 이 쯤 되면 createTask쪽 엉킨게 있는건데...
 	for(i = 0; i < 1000; i++) createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (QWORD)randAllocTask);
+}
+
+// 하드 디스크 정보 표시
+static void csHDDInfo(const char *buf) {
+	HDDINFO hdd;
+	char _buf[100];
+
+	// 하드 디스크 정보 읽음
+	if(getHDDInfo(&hdd) == FALSE) {
+		printF("HDD Information Read Fail...\n");
+		return;
+	}
+
+	printF("   ============== Primary Master HDD Information ==============\n");
+
+	// 모델 번호 출력
+	memCpy(_buf, hdd.modelNum, sizeof(hdd.modelNum));
+	_buf[sizeof(hdd.modelNum) - 1] = '\0';
+	printF("Model Number:\t %s\n", _buf);
+
+	// 시리얼 번호 출력
+	memCpy(_buf, hdd.serialNum, sizeof(hdd.serialNum));
+	_buf[sizeof(hdd.serialNum) - 1] = '\0';
+	printF("Serial Number:\t %s\n", _buf);
+
+	// 헤드, 실린더, 실린더 당 섹터 수 출력
+	printF("Head Count:\t %d\n", hdd.headNum);
+	printF("Cylinder Count:\t %d\n", hdd.cylinderNum);
+	printF("Sector Count:\t %d\n", hdd.perSectorNum);
+
+	// 총 섹터 수 출력
+	printF("Total Sector:\t %d Secotr, %dMB\n", hdd.totalSector, hdd.totalSector / 2 / 1024);
+}
+
+// 하드 디스크에서 파라미터로 넘어온 LBA 어드레스부터 섹터 수만큼 읽음
+static void csReadSector(const char *buf) {
+	PARAMLIST list;
+	char lba[50], sectorCnt[50];
+	DWORD _lba;
+	int _sectorCnt, i, j;
+	char *_buf;
+	BYTE data;
+	BOOL exit = FALSE;
+
+	// 파라미터 리스트 초기화 후 LBA 어드레스와 섹터 수 추출
+	initParam(&list, buf);
+	if((getNextParam(&list, lba) == 0) || (getNextParam(&list, sectorCnt) == 0)) {
+		printF("ex)readSector 0(LBA) 10(Count)\n");
+		return;
+	}
+	_lba = aToi(lba, 10);
+	_sectorCnt = aToi(sectorCnt, 10);
+
+	// 섹터 수만큼 메모리 할당받아 읽기 수행
+	_buf = allocMem(_sectorCnt * 512);
+	if(readHDDSector(TRUE, TRUE, _lba, _sectorCnt, _buf) == _sectorCnt) {
+		printF("LBA [%d], [%d] Sector Read Success !!", _lba, _sectorCnt);
+		// 데이터 버퍼 내용 출력
+		for(j = 0; j < _sectorCnt; j++) {
+			for(i = 0; i < 512; i++) {
+				if(!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
+					printF("\nPress any key to continue... ('q' is exit) : ");
+					if(getCh() == 'q') {
+						exit = TRUE;
+						break;
+					}
+				}
+				if((i % 16) == 0) printF("\n[LBA:%d, Offset:%d]\t| ", _lba + j, i);
+
+				// 모두 두 자리로 표시하려고 16보다 작은 경우 0추가
+				data = _buf[j * 512 + i] & 0xFF;
+				if(data < 16) printF("0");
+				printF("%X ", data);
+			}
+			if(exit == TRUE) break;
+		}
+		printF("\n");
+	} else printF("Read Fail...\n");
+
+	freeMem(_buf);
+}
+
+// 하드 디스크에서 파라미터로 넘어온 LBA 어드레스부터 섹터 수만큼 씀
+static void csWriteSector(const char *buf) {
+	PARAMLIST list;
+	char lba[50], sectorCnt[50];
+	DWORD _lba;
+	int _sectorCnt, i, j;
+	char *_buf;
+	BOOL exit = FALSE;
+	BYTE data;
+	static DWORD ls_writeCnt = 0;
+
+	// 파라미터 리스트를 초기화해 LBA 어드레스와 섹터 수 추출
+	initParam(&list, buf);
+	if((getNextParam(&list, lba) == 0) || (getNextParam(&list, sectorCnt) == 0)) {
+		printF("ex)writeSector 0(LBA) 10(Count)\n");
+		return;
+	}
+	_lba = aToi(lba, 10);
+	_sectorCnt = aToi(sectorCnt, 10);
+
+	ls_writeCnt++;
+	// 버퍼를 할당받아 데이터 채움. 패턴은 4바이트의 LBA 어드레스와 4바이트 쓰기가 수행된 횟수로 생성
+	_buf = allocMem(_sectorCnt * 512);
+	for(j = 0; j < _sectorCnt; j++) for(i = 0; i < 512; i += 8) {
+		*(DWORD*)&(_buf[j * 512 + i]) = _lba + j;
+		*(DWORD*)&(_buf[j * 512 + i + 4]) = ls_writeCnt;
+	}
+
+	// 쓰기 수행
+	if(writeHDDSector(TRUE, TRUE, _lba, _sectorCnt, _buf) != _sectorCnt) {
+		printF("Write Fail...\n");
+		return;
+	}
+	printF("LBA [%d], [%d] Sector Write Success !!\n", _lba, _sectorCnt);
+
+	// 데이터 버퍼의 내용 출력
+	for(j = 0; j < _sectorCnt; j++) {
+		for(i = 0; i < 512; i++) {
+			if(!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
+				printF("\nPress any key to continue... ('q' is exit) : ");
+				if(getCh() == 'q') {
+					exit = TRUE;
+					break;
+				}
+			}
+			if((i % 16) == 0) printF("\n[LBA:%d, Offset:%d]\t| ", _lba + j, i);
+
+			// 모두 두 자리로 표시하기위해 16보다 작은 경우 0 추가
+			data = _buf[j * 512 + i] & 0xFF;
+			if(data < 16) printF("0");
+			printF("%X ", data);
+		}
+		if(exit == TRUE) break;
+	}
+	printF("\n");
+	freeMem(_buf);
+}
+
+// 하드 디스크 연결
+static void csMountHDD(const char *buf) {
+	if(_mount() == FALSE) {
+		printF("HDD Mount Fail...\n");
+		return;
+	}
+	printF("HDD Mount Success !!\n");
+}
+
+// 하드 디스크에 파일 시스템 생성(포맷)
+static void csFormatHDD(const char *buf) {
+	if(_format() == FALSE) {
+		printF("HDD Format Fail...\n");
+		return;
+	}
+	printF("HDD Format Success !!\n");
+}
+
+// 파일 시스템 정보 표시
+static void csFileSystemInfo(const char *buf) {
+	FILESYSTEMMANAGER manager;
+
+	getFileSystemInfo(&manager);
+
+	printF("   ================= File System Information ==================\n");
+	printF("Mounted:\t\t\t\t %d\n", manager.mnt);
+	printF("Reserved Sector Count:\t\t\t %d Sector\n", manager.reserved_sectorCnt);
+	printF("Cluster Link Table Start Address:\t %d Sector\n", manager.linkStartAddr);
+	printF("Cluster Link Table Size:\t\t %d Sector\n", manager.linkSectorCnt);
+	printF("Data Area Start Address:\t\t %d Sector\n", manager.dataStartAddr);
+	printF("Total Cluster Count:\t\t\t %d Cluster\n", manager.totalClusterCnt);
+}
+
+// 루트 디렉터리에 빈 파일 생성
+static void csMakeFile(const char *buf) {
+	PARAMLIST list;
+	char name[50];
+	int len, i;
+	DWORD cluster;
+	DIRENTRY entry;
+
+	// 파라미터 리스트 초기화해 파일 이름 추출
+	initParam(&list, buf);
+	len = getNextParam(&list, name);
+	name[len] = '\0';
+	if((len > (sizeof(entry.name) - 1)) || (len == 0)) {
+		printF("Too Long or Too Short File Name\n");
+		return;
+	}
+
+	// 빈 클러스터 찾아 할당된 것으로 설정
+	cluster  = findFreeCluster();
+	if((cluster == FILESYSTEM_LAST_CLUSTER) || (setClusterLink(cluster, FILESYSTEM_LAST_CLUSTER) == FALSE)) {
+		printF("Cluster Allocation Fail...\n");
+		return;
+	}
+
+	// 빈 디렉터리 엔트리 검색
+	i = findFreeDirEntry();
+	if(i == -1) {
+		// 실패할 경우 할당받은 클러스터 반환
+		setClusterLink(cluster, FILESYSTEM_FREE_CLUSTER);
+		printF("Directory Entry is FULL...\n");
+		return;
+	}
+
+	// 디렉터리 엔트리 설정
+	memCpy(entry.name, name, len + 1);
+	entry.startClusterIdx = cluster;
+	entry.size = 0;
+
+	// 디렉터리 엔트리 등록
+	if(setDirEntry(i, &entry) == FALSE) {
+		// 실패할 경우 할당받은 클러스터 반환
+		setClusterLink(cluster, FILESYSTEM_FREE_CLUSTER);
+		printF("Directory Entry Set Fail...\n");
+	}
+	printF("Make a File Success !!\n");
+}
+
+// 루트 디렉터리에서 파일 삭제
+static void csRemoveFile(const char *buf) {
+	PARAMLIST list;
+	char name[50];
+	int len, offset;
+	DIRENTRY entry;
+
+	// 파라미터 리스트 초기화해 파일 이름 추출
+	initParam(&list, buf);
+	len = getNextParam(&list, name);
+	name[len] = '\0';
+
+	if((len > (sizeof(entry.name) -1)) || (len == 0)) {
+		printF("Too Long or Too Short File Name\n");
+		return;
+	}
+
+	// 파일 이름으로 디렉터리 엔트리 검색
+	offset = findDirEntry(name, &entry);
+	if(offset == -1) {
+		printF("File Not Found...\n");
+		return;
+	}
+
+	// 클러스터 반환
+	if(setClusterLink(entry.startClusterIdx, FILESYSTEM_FREE_CLUSTER) == FALSE) {
+		printF("Cluster Free Fail...\n");
+		return;
+	}
+
+	// 디렉터리 엔트리를 모두 초기화해 빈 것으로 설정한 후 해당 오프셋에 덮어씀
+	memSet(&entry, 0, sizeof(entry));
+	if(setDirEntry(offset, &entry) == FALSE) {
+		printF("Root Directory Update Fail...\n");
+		return;
+	}
+	printF("Remove a File Success !!\n");
+}
+
+// 루트 디렉터리 파일 목록 표시
+static void csRootDir(const char *buf) {
+	BYTE *clusterBuf;
+	int i, cnt, totalCnt;
+	DIRENTRY *entry;
+	char *_buf[400], tmp[50];
+	DWORD totalByte;
+
+	clusterBuf = allocMem(FILESYSTEM_PERSECTOR * 512);
+
+	// 루트 디렉터리 읽음
+	if(readCluster(0, clusterBuf) == FALSE) {
+		printF("Root Directory Read Fail...\n");
+		return;
+	}
+
+	// 먼저 루프 돌며 디렉터리에 있는 파일 개수와 전체 파일이 사용한 크기 계산
+	entry = (DIRENTRY*)clusterBuf;
+	totalCnt = 0;
+	totalByte = 0;
+	for(i = 0; i < FILESYSTEM_MAXDIRENTRYCNT; i++) {
+		if(entry[i].startClusterIdx == 0) continue;
+		totalCnt++;
+		totalByte += entry[i].size;
+	}
+
+	// 실제 파일의 내용을 표시하는 루프
+	entry = (DIRENTRY*)clusterBuf;
+	cnt = 0;
+	for(i = 0; i< FILESYSTEM_MAXDIRENTRYCNT; i++) {
+		if(entry[i].startClusterIdx == 0) continue;
+		// 전부 공백으로 초기화한 후 각 위치에 값 대입
+		memSet(_buf, ' ', sizeof(_buf) - 1);
+		_buf[sizeof(_buf) - 1] = '\0';
+
+		// 파일 이름 삽입
+		memCpy(_buf, entry[i].name, strLen(entry[i].name));
+		// 파일 길이 삽입
+		sprintF(tmp, "%d Byte", entry[i].size);
+		memCpy(_buf + 3, tmp, strLen(tmp));
+		// 파일 시작 클러스터 삽입
+		sprintF(tmp, "0x%X Cluster", entry[i].startClusterIdx);
+		memCpy(_buf + 6, tmp, strLen(tmp) + 1);
+		printF("    %s\n", _buf);
+
+		if((cnt != 0) && (cnt % 20) == 0) {
+			printF("Press any key to continue... ('q' is exit) : ");
+			if(getCh() == 'q') {
+				printF("\n");
+				break;
+			}
+		}
+		cnt++;
+	}
+
+	// 총 파일 개수와 파일 총 크기 출력
+	printF("\t Total File Count: %d\t Total File Size: %d Byte\n", totalCnt, totalByte);
+	freeMem(clusterBuf);
 }

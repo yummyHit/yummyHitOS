@@ -13,6 +13,7 @@
 #include <Task.h>
 #include <Descriptor.h>
 #include <AsmUtil.h>
+#include <HardDisk.h>
 
 void printDebug(int vec, int cnt, int handler) {
 	char int_buf[] = "[INT:  ,  ]", exc_buf[] = "[EXC:  ,  ]";
@@ -26,6 +27,7 @@ void printDebug(int vec, int cnt, int handler) {
 	if(handler == 1 || handler == 3) printXY(69, 0, 0x1E, int_buf);
 	else if(handler == 2) printXY(0, 0, 0x1E, int_buf);
 	else if(handler == 4) printXY(0, 0, 0x1E, exc_buf);
+	else if(handler == 5) printXY(11, 0, 0x1E, int_buf);
 	printXY(34, 0, 0xE5, " YummyHitOS ");
 }
 
@@ -96,7 +98,7 @@ void timerHandler(int vecNum) {
 
 // Device Not Available 예외 핸들러
 void devFPUHandler(int vecNum) {
-	TCB *fpu, *curTask;
+	TCB *fpu, *nowTask;
 	QWORD lastID;
 	static int ls_devCnt = 0;
 	// FPU 예외가 발생했음을 알리려고 메시지 출력
@@ -108,21 +110,37 @@ void devFPUHandler(int vecNum) {
 
 	// 이전 FPU를 사용한 태스크가 있는지 확인해 있다면 FPU의 상태를 태스크에 저장
 	lastID = getLastFPU();
-	curTask = getRunningTask();
+	nowTask = getRunningTask();
 
 	// 이전 FPU를 사용한 것이 자신이면 아무것도 안 함
-	if(lastID == curTask->link.id) return;
+	if(lastID == nowTask->link.id) return;
 	else if(lastID != TASK_INVALID_ID) { // FPU를 사용한 태스크가 있으면 FPU 상태 저장
 		fpu = getTCB(GETTCBOFFSET(lastID));
 		if((fpu != NULL) && (fpu->link.id == lastID)) saveFPU(fpu->contextFPU);
 	}
 
 	// 현재 태스크가 FPU를 사용한 적이 있는지 확인해 FPU를 사용한 적이 없다면 초기화, 있다면 저장된 FPU 콘텍스트 복원
-	if(curTask->fpuUsed == FALSE) {
+	if(nowTask->fpuUsed == FALSE) {
 		initFPU();
-		curTask->fpuUsed = TRUE;
-	} else loadFPU(curTask->contextFPU);
+		nowTask->fpuUsed = TRUE;
+	} else loadFPU(nowTask->contextFPU);
 
 	// FPU를 사용한 태스크 ID를 현재 태스크로 변경
-	setLastFPU(curTask->link.id);
+	setLastFPU(nowTask->link.id);
+}
+
+// 하드 디스크에서 발생하는 인터럽트 핸들러
+void hardDiskHandler(int vecNum) {
+	static int ls_hddCnt = 0;
+	BYTE tmp;
+
+	ls_hddCnt = (ls_hddCnt + 1) % 100;
+	printDebug(vecNum, ls_hddCnt, 5);
+
+	// 첫 번째 PATA 포트의 인터럽트 벡터(IRQ 14) 처리
+	if(vecNum - PIC_IRQSTARTVECTOR == 14) setHDDInterruptFlag(TRUE, TRUE);	// 첫 번째 PATA 포트 인터럽트 발생 여부 TRUE
+	else setHDDInterruptFlag(FALSE, TRUE);	// 두 번째 PATA 포트 인터럽트 벡터(IRQ 15) 발생 여부 TRUE
+
+	// EOI 전송
+	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
 }

@@ -72,5 +72,14 @@ static void csGetPIE(const char *buf);
 static void csDynMemInfo(const char *buf);
 static void csSeqAllocTest(const char *buf);
 static void csRandAllocTest(const char *buf);
+static void csHDDInfo(const char *buf);
+static void csReadSector(const char *buf);
+static void csWriteSector(const char *buf);
+static void csMountHDD(const char *buf);
+static void csFormatHDD(const char *buf);
+static void csFileSystemInfo(const char *buf);
+static void csMakeFile(const char *buf);
+static void csRemoveFile(const char *buf);
+static void csRootDir(const char *buf);
 
 #endif /*__SHELL_H__*/

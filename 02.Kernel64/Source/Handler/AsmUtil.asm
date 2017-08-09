@@ -12,8 +12,9 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 ; C언어에서 호출할 수 있도록 이름 노출
 global inByte, outByte, loadGDTR, loadTSS, loadIDTR
 global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
-global readTSC, switchContext, hlt, testNSet
+global readTSC, switchContext, _hlt, testNSet
 global initFPU, saveFPU, loadFPU, setTS, clearTS
+global inWord, outWord
 
 ; 포트로부터 1바이트 읽음(PARAM: 포트 번호)
 inByte:
@@ -78,7 +79,7 @@ readTSC:
 	ret
 
 ; 콘텍스트 저장, 셀렉터 교체 매크로
-%macro SAVE 0		; 파라미터 전달받지 않는 SAVE 매크로 정의, RBP 레지스터부터 GS 세그먼트 셀렉터까지 모두 스택에 삽입
+%macro SAVE_ASMUTIL 0		; 파라미터 전달받지 않는 SAVE 매크로 정의, RBP 레지스터부터 GS 세그먼트 셀렉터까지 모두 스택에 삽입
 	push rbp
 	push rax
 	push rbx
@@ -104,7 +105,7 @@ readTSC:
 %endmacro		; 매크로 끝
 
 ; 콘텍스트 복원 매크로
-%macro LOAD 0		; 파라미터 전달받지 않는 LOAD 매크로 정의, GS 세그먼트 셀렉터부터 RAX 레지스터까지 모두 스택에서 꺼내 복원
+%macro LOAD_ASMUTIL 0		; 파라미터 전달받지 않는 LOAD 매크로 정의, GS 세그먼트 셀렉터부터 RAX 레지스터까지 모두 스택에서 꺼내 복원
 	pop gs
 	pop fs
 	pop rax
@@ -129,7 +130,7 @@ readTSC:
 	pop rbp
 %endmacro		; 매크로 끝
 
-; Current Context에 현재 콘텍스트 저장하고 Next Task에서 콘텍스트 복구(PARAM: Current Context(curContext), Next Context(nextContext))
+; Current Context에 현재 콘텍스트 저장하고 Next Task에서 콘텍스트 복구(PARAM: Current Context(nowContext), Next Context(nextContext))
 switchContext:
 	push rbp	; 스택에 RBP 레지스터 저장 후 RSP 레지스터를 RBP에 저장
 	mov rbp, rsp
@@ -169,18 +170,18 @@ switchContext:
 	sub rdi, (19 * 8)
 
 	; 나머지 레지스터를 모두 Context 자료구조에 저장
-	SAVE
+	SAVE_ASMUTIL
 
 ; 다음 태스크의 콘텍스트 복원
 .Load:
 	mov rsp, rsi
 
 	; Context 자료구조에서 레지스터 복원
-	LOAD
+	LOAD_ASMUTIL
 	iretq
 
 ; 프로세서 쉬게 함
-hlt:
+_hlt:
 	hlt	; 프로세서를 대기 상태로 진입
 	hlt
 	ret
@@ -233,4 +234,30 @@ setTS:
 ; CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
 clearTS:
 	clts
+	ret
+
+; 포트로부터 2바이트 읽음
+; PARAM: 포트 번호
+inWord:
+	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장. 함수 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
+
+	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호) 저장
+	mov rax, 0	; RAX 레지스터 초기화
+	in ax, dx	; DX 레지스터에 저장된 포트 주소에서 두 바이트 읽어 AX 레지스터에 저장, AX 레지스터는 함수 반환 값으로 사용
+
+	pop rdx		; 사용 끝난 레지스터 복원
+	ret
+
+; 포트에 2바이트 씀
+; PARAM: 포트 번호, 데이터
+outWord:
+	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
+	push rax	; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
+
+	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호) 저장
+	mov rax, rsi	; RAX 레지스터에 파라미터 2(데이터) 저장
+	out dx, ax	; DX 레지스터에 저장된 포트 어드레스를 AX 레지스터에 저장된 2바이트 씀
+
+	pop rax
+	pop rdx
 	ret

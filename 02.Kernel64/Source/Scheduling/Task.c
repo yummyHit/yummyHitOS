@@ -7,7 +7,7 @@
 
 #include <Task.h>
 #include <Descriptor.h>
-//#include <Synchronize.h>
+#include <Synchronize.h>
 
 // 스케쥴러 관련 자료구조
 static SCHEDULER gs_scheduler;
@@ -537,7 +537,7 @@ static TCB *getProcThread(TCB *thread) {
 // 대기 큐에 삭제 대기 중인 태스크 정리
 void idleTask(void) {
 	TCB *task, *childThread, *proc;
-	QWORD lastTickCnt, lastIdleTask, curTickCnt, curIdleTask, taskID;
+	QWORD lastTickCnt, lastIdleTask, nowTickCnt, nowIdleTask, taskID;
 	BOOL preFlag;
 	int i, cnt;
 	void *threadLink;
@@ -548,16 +548,16 @@ void idleTask(void) {
 
 	while(1) {
 		// 현재 상태 저장
-		curTickCnt = getTickCnt();
-		curIdleTask = gs_scheduler.loopIdleTask;
+		nowTickCnt = getTickCnt();
+		nowIdleTask = gs_scheduler.loopIdleTask;
 
 		// 프로세서 사용량 계산(100 - 유휴 태스크가 사용한 프로세서 시간) * 100 / 시스템 전체에서 사용한 프로세서 시간)
-		if(curTickCnt - lastTickCnt == 0) gs_scheduler.processorLoad = 0;
-		else gs_scheduler.processorLoad = 100 - (curIdleTask - lastIdleTask) * 100 / (curTickCnt - lastTickCnt);
+		if(nowTickCnt - lastTickCnt == 0) gs_scheduler.processorLoad = 0;
+		else gs_scheduler.processorLoad = 100 - (nowIdleTask - lastIdleTask) * 100 / (nowTickCnt - lastTickCnt);
 
 		// 현재 상태를 이전 상태에 보관
-		lastTickCnt = curTickCnt;
-		lastIdleTask = curIdleTask;
+		lastTickCnt = nowTickCnt;
+		lastIdleTask = nowIdleTask;
 
 		// 프로세서의 부하에 따라 쉬게 함
 		haltProcessor();
@@ -625,10 +625,10 @@ void idleTask(void) {
 // 측정된 프로세서 부하에 따라 프로세서를 쉬게 함
 void haltProcessor(void) {
 	if(gs_scheduler.processorLoad < 40) {
-		hlt(); hlt(); hlt();
+		_hlt(); _hlt(); _hlt();
 	} else if(gs_scheduler.processorLoad < 80) {
-		hlt(); hlt();
-	} else if(gs_scheduler.processorLoad < 95) hlt();
+		_hlt(); _hlt();
+	} else if(gs_scheduler.processorLoad < 95) _hlt();
 }
 
 // 마지막으로 FPU를 사용한 태스크 ID 반환

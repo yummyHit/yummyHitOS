@@ -8,6 +8,7 @@
 #include <DynMem.h>
 #include <Util.h>
 #include <Task.h>
+#include <Synchronize.h>
 
 static DYNMEM gs_dynmem;
 
@@ -15,7 +16,7 @@ static DYNMEM gs_dynmem;
 void initDynMem(void) {
 	QWORD memSize;
 	int i, j, cntLv, blockCnt;
-	BYTE *curBitmap;
+	BYTE *nowBitmap;
 
 	// 동적 메모리 영역으로 사용할 메모리 크기를 이용해 블록을 관리. 필요한 메모리 크기를 최소 블록 단위로 계산
 	memSize = calcDynMemSize();
@@ -36,29 +37,29 @@ void initDynMem(void) {
 	// 비트맵 자료구조 시작 어드레스 지정
 	gs_dynmem.bitmapLv = (BITMAP*)(DYNMEM_START_ADDR + (sizeof(BYTE) * gs_dynmem.smallBlockCnt));
 	// 실제 비트맵 어드레스 지정
-	curBitmap = ((BYTE*)gs_dynmem.bitmapLv) + (sizeof(BYTE) * gs_dynmem.maxLvCnt);
+	nowBitmap = ((BYTE*)gs_dynmem.bitmapLv) + (sizeof(BYTE) * gs_dynmem.maxLvCnt);
 	// 블록 리스트 별 루프를 돌며 비트맵 생성. 초기 상태는 가장 큰 블록과 짜투리 블록만 있으니 나머지는 비어 있게 설정
 	for(j = 0; j < gs_dynmem.maxLvCnt; j++) {
-		gs_dynmem.bitmapLv[j].bitmap = curBitmap;
+		gs_dynmem.bitmapLv[j].bitmap = nowBitmap;
 		gs_dynmem.bitmapLv[j].bitCnt = 0;
 		blockCnt = gs_dynmem.smallBlockCnt >> j;
 
 		// 8개 이상 남았으면 상위 블록으로 모두 결합 가능하므로 모두 비어 있게 설정
 		for(i = 0; i < blockCnt / 8; i++) {
-			*curBitmap = 0x00;
-			curBitmap++;
+			*nowBitmap = 0x00;
+			nowBitmap++;
 		}
 
 		// 8로 나누어 떨어지지 않는 나머지 블록 처리
 		if((blockCnt % 8) != 0) {
-			*curBitmap = 0x00;
+			*nowBitmap = 0x00;
 			// 남은 블록이 홀수라면 마지막 한 블록은 결합되어 상위 블록으로 이동 못하므로 마지막 블록을 현재 리스트의 짜투리 블록으로 설정
 			i = blockCnt % 8;
 			if((i % 2) == 1) {
-				*curBitmap |= (DYNMEM_EXIST << (i - 1));
+				*nowBitmap |= (DYNMEM_EXIST << (i - 1));
 				gs_dynmem.bitmapLv[j].bitCnt = 1;
 			}
-			curBitmap++;
+			nowBitmap++;
 		}
 	}
 
