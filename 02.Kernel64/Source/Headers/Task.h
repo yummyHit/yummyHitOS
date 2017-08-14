@@ -10,6 +10,7 @@
 
 #include <Types.h>
 #include <List.h>
+#include <Synchronize.h>
 
 #pragma once
 // SS, RSP, RFLAGS, CS, RIP + ISR에서 저장하는 19개의 레지스터
@@ -73,6 +74,7 @@
 #define TASK_FLAGS_PROCESS	0x2000000000000000
 #define TASK_FLAGS_THREAD	0x1000000000000000
 #define TASK_FLAGS_IDLE		0x0800000000000000
+#define TASK_FLAGS_USERLV	0x0400000000000000
 
 // 함수 매크로
 #define GETPRIORITY(x)		((x) & 0xFF)
@@ -121,8 +123,8 @@ typedef struct taskControlBlock {
 	// FPU 사용 여부
 	BOOL fpuUsed;
 
-	// TCB 전체를 16바이트 배수로 맞추기 위한 패딩
-	char pad[9];
+	// 패딩 비트
+	char pad[11];
 } TCB;
 
 // TCB 풀 상태 관리 자료구조

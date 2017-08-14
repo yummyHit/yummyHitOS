@@ -81,5 +81,8 @@ static void csFileSystemInfo(const char *buf);
 static void csMakeFile(const char *buf);
 static void csRemoveFile(const char *buf);
 static void csRootDir(const char *buf);
+static void csFileWrite(const char *buf);
+static void csFileRead(const char *buf);
+static void csFileIOTest(const char *buf);
 
 #endif /*__SHELL_H__*/

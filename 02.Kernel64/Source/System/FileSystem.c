@@ -8,6 +8,8 @@
 #include <FileSystem.h>
 #include <HardDisk.h>
 #include <DynMem.h>
+#include <Task.h>
+#include <Util.h>
 
 // 파일 시스템 자료구조
 static FILESYSTEMMANAGER gs_fileSystemManager;
@@ -35,6 +37,19 @@ BOOL initFileSystem(void) {
 
 	// 파일 시스템 연결
 	if(_mount() == FALSE) return FALSE;
+
+	// 핸들을 위한 공간 할당
+	gs_fileSystemManager.handle = (FILE*)allocMem(FILESYSTEM_HANDLE_MAXCNT * sizeof(FILE));
+
+	// 메모리 할당이 실패하면 하드 디스크가 인식되지 않은 것으로 설정
+	if(gs_fileSystemManager.handle == NULL) {
+		gs_fileSystemManager.mnt = FALSE;
+		return FALSE;
+	}
+
+	// 핸들 풀 모두 0으로 설정해 초기화
+	memSet(gs_fileSystemManager.handle, 0, FILESYSTEM_HANDLE_MAXCNT * sizeof(FILE));
+
 	return TRUE;
 }
 
@@ -166,31 +181,31 @@ BOOL getHDDInfo(HDDINFO *info) {
 }
 
 // 클러스터 링크 테이블 내 오프셋에서 한 섹터 읽음
-BOOL readClusterLink(DWORD offset, BYTE *buf) {
+static BOOL readClusterLink(DWORD offset, BYTE *buf) {
 	// 클러스터 링크 테이블 영역 시작 어드레스를 더함
 	return gs_readHDDSector(TRUE, TRUE, offset + gs_fileSystemManager.linkStartAddr, 1, buf);
 }
 
 // 클러스터 링크 테이블 내 오프셋에 한 섹터 씀
-BOOL writeClusterLink(DWORD offset, BYTE *buf) {
+static BOOL writeClusterLink(DWORD offset, BYTE *buf) {
 	// 클러스터 링크 테이블 영역 시작 어드레스를 더함
 	return gs_writeHDDSector(TRUE, TRUE, offset + gs_fileSystemManager.linkStartAddr, 1, buf);
 }
 
 // 데이터 영역 오프셋에서 한 클러스터 읽음
-BOOL readCluster(DWORD offset, BYTE *buf) {
+static BOOL readCluster(DWORD offset, BYTE *buf) {
 	// 데이터 영역 시작 주소 더함
 	return gs_readHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PERSECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PERSECTOR, buf);
 }
 
 // 데이터 영역 오프셋에 한 클러스터 씀
-BOOL writeCluster(DWORD offset, BYTE *buf) {
+static BOOL writeCluster(DWORD offset, BYTE *buf) {
 	// 데이터 영역 시작 주소 더함
 	return gs_writeHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PERSECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PERSECTOR, buf);
 }
 
 // 클러스터 링크 테이블 영역에서 빈 클러스터 검색
-DWORD findFreeCluster(void) {
+static DWORD findFreeCluster(void) {
 	DWORD linkCnt, lastOffset, nowOffset, i, j;
 
 	// 파일 시스템을 인식 못하면 실패
@@ -225,7 +240,7 @@ DWORD findFreeCluster(void) {
 }
 
 // 클러스터 링크 테이블에 값 설정
-BOOL setClusterLink(DWORD idx, DWORD data) {
+static BOOL setClusterLink(DWORD idx, DWORD data) {
 	DWORD offset;
 
 	// 파일 시스템을 인식 못하면 실패
@@ -245,7 +260,7 @@ BOOL setClusterLink(DWORD idx, DWORD data) {
 }
 
 // 클러스터 링크 테이블 값 반환
-BOOL getClusterLink(DWORD idx, DWORD *data) {
+static BOOL getClusterLink(DWORD idx, DWORD *data) {
 	DWORD offset;
 
 	// 파일 시스템을 인식 못하면 실패
@@ -264,7 +279,7 @@ BOOL getClusterLink(DWORD idx, DWORD *data) {
 }
 
 // 루트 디렉터리에서 빈 디렉터리 엔트리 반환
-int findFreeDirEntry(void) {
+static int findFreeDirEntry(void) {
 	DIRENTRY *entry;
 	int i;
 
@@ -282,7 +297,7 @@ int findFreeDirEntry(void) {
 }
 
 // 루트 디렉터리의 해당 인덱스에 디렉터리 엔트리 설정
-BOOL setDirEntry(int idx, DIRENTRY *entry) {
+static BOOL setDirEntry(int idx, DIRENTRY *entry) {
 	DIRENTRY *root;
 
 	// 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
@@ -340,4 +355,624 @@ int findDirEntry(const char *name, DIRENTRY *entry) {
 // 파일 시스템 정보 반환
 void getFileSystemInfo(FILESYSTEMMANAGER *manager) {
 	memCpy(manager, &gs_fileSystemManager, sizeof(gs_fileSystemManager));
+}
+
+// 비어 있는 핸들 할당
+static void *allocFileDirHandle(void) {
+	int i;
+	FILE *file;
+
+	// 핸들 풀 모두 검색해 빈 핸들 반환
+	file = gs_fileSystemManager.handle;
+	for(i = 0; i < FILESYSTEM_HANDLE_MAXCNT; i++) {
+		// 비어있으면 반환
+		if(file->type == FILESYSTEM_TYPE_FREE) {
+			file->type = FILESYSTEM_TYPE_FILE;
+			return file;
+		}
+
+		// 다음으로 이동
+		file++;
+	}
+	return NULL;
+}
+
+// 사용한 핸들 반환
+static void freeFileDirHandle(FILE *file) {
+	// 전체 영역 초기화
+	memSet(file, 0, sizeof(FILE));
+
+	// 비어 있는 타입으로 설정
+	file->type = FILESYSTEM_TYPE_FREE;
+}
+
+// 파일 생성
+static BOOL makeFile(const char *name, DIRENTRY *entry, int *dirEntryIdx) {
+	DWORD cluster;
+
+	// 빈 클러스터 찾아 할당된 것으로 설정
+	cluster = findFreeCluster();
+	if((cluster == FILESYSTEM_LAST_CLUSTER) || (setClusterLink(cluster, FILESYSTEM_LAST_CLUSTER) == FALSE)) return FALSE;
+
+	// 빈 디렉터리 엔트리 검색
+	*dirEntryIdx = findFreeDirEntry();
+	if(*dirEntryIdx == -1) {
+		// 실패하면 할당받은 클러스터 반환
+		setClusterLink(cluster, FILESYSTEM_FREE_CLUSTER);
+		return FALSE;
+	}
+
+	// 디렉터리 엔트리 설정
+	memCpy(entry->name, name, strLen(name) + 1);
+	entry->startClusterIdx = cluster;
+	entry->size = 0;
+
+	// 디렉터리 엔트리 등록
+	if(setDirEntry(*dirEntryIdx, entry) == FALSE) {
+		// 실패하면 할당받은 클러스터 반환
+		setClusterLink(cluster, FILESYSTEM_FREE_CLUSTER);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+// 파라미터로 넘어온 클러스터부터 파일의 끝까지 연결된 클러스터 모두 반환
+static BOOL freeClusterAll(DWORD idx) {
+	DWORD nowIdx, nextIdx;
+
+	// 클러스터 인덱스 초기화
+	nowIdx = idx;
+
+	while(nowIdx != FILESYSTEM_LAST_CLUSTER) {
+		// 다음 클러스터 인덱스 가져옴
+		if(getClusterLink(nowIdx, &nextIdx) == FALSE) return FALSE;
+
+		// 현재 클러스터를 빈 것으로 설정해 해제
+		if(setClusterLink(nowIdx, FILESYSTEM_FREE_CLUSTER) == FALSE) return FALSE;
+
+		// 현재 클러스터 인덱스를 다음 클러스터의 인덱스로 바꿈
+		nowIdx = nextIdx;
+	}
+	return TRUE;
+}
+
+// 파일을 열거나 생성
+FILE *fileOpen(const char *name, const char *mode) {
+	DIRENTRY entry;
+	int offset, len;
+	DWORD secCluster;
+	FILE *file;
+
+	// 파일 이름 검사
+	len = strLen(name);
+	if((len > (sizeof(entry.name) - 1)) || (len == 0)) return NULL;
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 파일이 먼저 존재하는지 확인 후 없으면 옵션을 보고 파일 생성
+	offset = findDirEntry(name, &entry);
+	if(offset == -1) {
+		// 파일이 없다면 읽기 옵션은 실패
+		if(mode[0] == 'r') {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return NULL;
+		}
+
+		// 나머지 옵션은 파일 생성
+		if(makeFile(name, &entry, &offset) == FALSE) {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return NULL;
+		}
+	} else if(mode[0] == 'w') { 	// 파일 내용을 비워야 한다면 파일에 연결된 클러스터를 모두 제거 후 파일 크기 0으로 설정
+		// 시작 클러스터의 다음 클러스터 찾음
+		if(getClusterLink(entry.startClusterIdx, &secCluster) == FALSE) {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return NULL;
+		}
+
+		// 시작 클러스터를 마지막 클러스터로 만듬
+		if(setClusterLink(entry.startClusterIdx, FILESYSTEM_LAST_CLUSTER) == FALSE) {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return NULL;
+		}
+
+		// 다음 클러스터부터 마지막 클러스터까지 모두 해제
+		if(freeClusterAll(secCluster) == FALSE) {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return NULL;
+		}
+
+		// 파일 내용이 모두 비워졌으니 크기를 0으로 설정
+		entry.size = 0;
+		if(setDirEntry(offset, &entry) == FALSE) {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return NULL;
+		}
+	}
+
+	// 파일 핸들을 할당받아 데이터 설정
+	file = allocFileDirHandle();
+	if(file == NULL) {
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return NULL;
+	}
+
+	// 파일 핸들에 파일 정보 설정
+	file->type = FILESYSTEM_TYPE_FILE;
+	file->fileHandle.dirEntryOffset = offset;
+	file->fileHandle.size = entry.size;
+	file->fileHandle.startClusterIdx = entry.startClusterIdx;
+	file->fileHandle.nowClusterIdx = entry.startClusterIdx;
+	file->fileHandle.preClusterIdx = entry.startClusterIdx;
+	file->fileHandle.nowOffset = 0;
+
+	// 만약 Append 옵션이면 파일의 끝으로 이동
+	if(mode[0] == 'a') fileSeek(file, 0, FILESYSTEM_SEEK_END);
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+	return file;
+}
+
+// 파일을 읽어 버퍼로 복사
+DWORD fileRead(void *buf, DWORD size, DWORD cnt, FILE *file) {
+	DWORD totalCnt, readCnt = 0, offset, copySize, nextClusterIdx;
+	FILEHANDLE *handle;
+
+	// 핸들이 파일 타입이 아니면 실패
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+
+	// 파일의 끝이거나 마지막 클러스터면 종료
+	if((handle->nowOffset == handle->size) || (handle->nowClusterIdx == FILESYSTEM_LAST_CLUSTER)) return 0;
+
+	// 파일 끝과 비교해 실제로 읽을 수 있는 값 계산
+	totalCnt = _MIN(size * cnt, handle->size - handle->nowOffset);
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 계산된 값만큼 다 읽을때까지 반복
+	while(readCnt != totalCnt) {
+		// 현재 클러스터를 읽음
+		if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+
+		// 클러스터 내 파일 포인터가 존재하는 오프셋 계산
+		offset = handle->nowOffset % FILESYSTEM_CLUSTER_SIZE;
+
+		// 여러 클러스터에 걸쳐져 있다면 현재 클러스터에서 남은 만큼 읽고 다음 클러스터로 이동
+		copySize = _MIN(FILESYSTEM_CLUSTER_SIZE - offset, totalCnt - readCnt);
+		memCpy((char*)buf + readCnt, gs_tmpBuf + offset, copySize);
+
+		// 읽은 바이트 수와 파일 포인터 위치 갱신
+		readCnt += copySize;
+		handle->nowOffset += copySize;
+
+		// 현재 클러스터를 다 읽었으면 다음 클러스터로 이동
+		if((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) == 0) {
+			// 현재 클러스터의 링크 데이터를 찾아 다음 클러스터 얻음
+			if(getClusterLink(handle->nowClusterIdx, &nextClusterIdx) == FALSE) break;
+
+			// 클러스터 정보 갱신
+			handle->preClusterIdx = handle->nowClusterIdx;
+			handle->nowClusterIdx = nextClusterIdx;
+		}
+	}
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+	return readCnt;
+}
+
+// 루트 디렉터리에서 디렉터리 엔트리 값 갱신
+static BOOL updateDirEntry(FILEHANDLE *handle) {
+	DIRENTRY entry;
+
+	// 디렉터리 엔트리 검색
+	if((handle == NULL) || (getDirEntry(handle->dirEntryOffset, &entry) == FALSE)) return FALSE;
+
+	// 파일 크기와 시작 클러스터 변경
+	entry.size = handle->size;
+	entry.startClusterIdx = handle->startClusterIdx;
+
+	// 변경된 디렉터리 엔트리 설정
+	if(setDirEntry(handle->dirEntryOffset, &entry) == FALSE) return FALSE;
+	return TRUE;
+}
+
+// 버퍼 데이터를 파일에 씀
+DWORD fileWrite(const void *buf, DWORD size, DWORD cnt, FILE *file) {
+	DWORD writeCnt, totalCnt, offset, copySize, allocIdx, nextIdx;
+	FILEHANDLE *handle;
+
+	// 핸들이 파일 타입이 아니면 실패
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+
+	// 총 바이트 수
+	totalCnt = size * cnt;
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 다 쓸 때까지 반복
+	writeCnt = 0;
+	while(writeCnt != totalCnt) {
+		// 현재 클러스터가 파일의 끝이면 클러스터 할당해 연결
+		if(handle->nowClusterIdx == FILESYSTEM_LAST_CLUSTER) {
+			// 빈 클러스터 검색
+			allocIdx = findFreeCluster();
+			if(allocIdx == FILESYSTEM_LAST_CLUSTER) break;
+
+			// 검색된 클러스터를 마지막 클러스터로 설정
+			if(setClusterLink(allocIdx, FILESYSTEM_LAST_CLUSTER) == FALSE) break;
+
+			// 파일의 마지막 클러스터에 할당된 클러스터 연결
+			if(setClusterLink(handle->preClusterIdx, allocIdx) == FALSE) {
+				// 실패하면 할당된 클러스터 해제
+				setClusterLink(allocIdx, FILESYSTEM_FREE_CLUSTER);
+				break;
+			}
+
+			// 현재 클러스터를 할당된 것으로 변경
+			handle->nowClusterIdx = allocIdx;
+
+			// 새로 할당받았으니 임시 클러스터 버퍼를 0으로 채움
+			memSet(gs_tmpBuf, 0, FILESYSTEM_LAST_CLUSTER);
+		} else if(((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) != 0) || ((totalCnt - writeCnt) < FILESYSTEM_CLUSTER_SIZE)) {
+			// 한 클러스터를 채우지 못하면 클러스터를 읽어 임시 클러스터로 복사
+			// 전체 클러스터를 덮어쓰는 경우가 아니면 부분만 덮어써야 하니 현재 클러스터를 읽음
+			if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		}
+
+		// 클러스터 내 파일 포인터가 존재하는 오프셋 계산
+		offset = handle->nowOffset % FILESYSTEM_CLUSTER_SIZE;
+
+		// 여러 클러스터에 걸쳐져 있다면 현재 클러스터에서 남은 만큼 쓰고 다음 클러스터로 이동
+		copySize = _MIN(FILESYSTEM_CLUSTER_SIZE - offset, totalCnt - writeCnt);
+		memCpy(gs_tmpBuf + offset, (char*)buf + writeCnt, copySize);
+
+		// 임시 버퍼에 삽입된 값을 디스크에 씀
+		if(writeCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+
+		// 쓴 바이트 수와 파일 포인터 위치 갱신
+		writeCnt += copySize;
+		handle->nowOffset += copySize;
+
+		// 현재 클러스터 끝까지 다 썼으면 다음 클러스터로 이동
+		if((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) == 0) {
+			// 현재 클러스터의 링크 데이터로 다음 클러스터 얻음
+			if(getClusterLink(handle->nowClusterIdx, &nextIdx) == FALSE) break;
+
+			// 클러스터 정보 갱신
+			handle->preClusterIdx = handle->nowClusterIdx;
+			handle->nowClusterIdx = nextIdx;
+		}
+	}
+
+	// 파일 크기가 변했다면 루트 디렉터리에 있는 디렉터리 엔트리 정보 갱신
+	if(handle->size < handle->nowOffset) {
+		handle->size = handle->nowOffset;
+		updateDirEntry(handle);
+	}
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+	return writeCnt;
+}
+
+// 파일을 count만큼 0으로 채움
+BOOL filePadding(FILE *file, DWORD cnt) {
+	BYTE *buf;
+	DWORD remainCnt, writeCnt;
+
+	// 핸들이 NULL이면 실패
+	if(file == NULL) return FALSE;
+
+	// 속도 향상을 위해 메모리를 할당받아 클러스터 단위로 쓰기 수행 메모리 할당
+	buf = (BYTE*)allocMem(FILESYSTEM_CLUSTER_SIZE);
+	if(buf == NULL) return FALSE;
+
+	// 0으로 채움
+	memSet(buf, 0, FILESYSTEM_CLUSTER_SIZE);
+	remainCnt = cnt;
+
+	// 클러스터 단위로 반복해 쓰기 수행
+	while(remainCnt != 0) {
+		writeCnt = _MIN(remainCnt, FILESYSTEM_CLUSTER_SIZE);
+		if(fileWrite(buf, 1, writeCnt, file) != writeCnt) {
+			freeMem(buf);
+			return FALSE;
+		}
+		remainCnt -= writeCnt;
+	}
+	freeMem(buf);
+	return TRUE;
+}
+
+// 파일 포인터 위치 이동
+int fileSeek(FILE *file, int offset, int point) {
+	DWORD realOffset, moveOffset, nowOffset, lastOffset, moveCnt, i, startClusterIdx, preClusterIdx, nowClusterIdx;
+	FILEHANDLE *handle;
+
+	// 핸들이 파일 타입이 아니면 종료
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+
+	// 옵션에 따라 실제 위치 계산. 음수면 파일의 시작 방향으로 이동, 양수면 파일의 끝 방향으로 이동
+	switch(point) {
+	// 파일 시작을 기준으로 이동
+	case FILESYSTEM_SEEK_SET:
+		// 파일의 처음이므로 이동할 오프셋이 음수면 0으로 설정
+		if(offset <= 0) realOffset = 0;
+		else realOffset = offset;
+		break;
+	// 현재 위치를 기준으로 이동
+	case FILESYSTEM_SEEK_CUR:
+		// 이동할 오프셋이 음수이며 현재 파일 포인터 값보다 크면 더 이상 갈 수 없으니 처음으로 이동
+		if((offset < 0) && (handle->nowOffset <= (DWORD)-offset)) realOffset = 0;
+		else realOffset = handle->nowOffset + offset;
+		break;
+	// 파일 끝부분을 기준으로 이동
+	case FILESYSTEM_SEEK_END:
+		// 이동할 오프셋이 음수이며 현재 파일 포인터 값보다 크면 더 이상 갈 수 없으므로 처음으로 이동
+		if((offset < 0) && (handle->size <= (DWORD)-offset)) realOffset = 0;
+		else realOffset = handle->size + offset;
+		break;
+	}
+
+	// 파일의 마지막 클러스터 오프셋
+	lastOffset = handle->size / FILESYSTEM_CLUSTER_SIZE;
+	// 파일 포인터가 옮겨질 위치의 클러스터 오프셋
+	moveOffset = realOffset / FILESYSTEM_CLUSTER_SIZE;
+	// 현재 파일 포인터가 있는 클러스터 오프셋
+	nowOffset = handle->nowOffset / FILESYSTEM_CLUSTER_SIZE;
+
+	// 이동하는 클러스터 위치가 파일 마지막 클러스터 오프셋을 넘기면 현재 클러스터에서 마지막까지 이동 후 write 함수를 이용해 공백으로 나머지 채움
+	if(lastOffset < moveOffset) {
+		moveCnt = lastOffset - nowOffset;
+		startClusterIdx = handle->nowClusterIdx;
+	} else if(nowOffset <= moveOffset) {	// 이동하는 클러스터 위치가 현재 클러스터와 같거나 다음이라면 현재 클러스터 기준 차이나는 만큼 이동
+		moveCnt = moveOffset - nowOffset;
+		startClusterIdx = handle->nowClusterIdx;
+	} else {	// 이동하는 클러스터 위치가 현재 클러스터 이전이라면, 첫 번째 클러스터부터 이동하며 검색
+		moveCnt = moveOffset;
+		startClusterIdx = handle->startClusterIdx;
+	}
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 클러스터 이동
+	nowClusterIdx = startClusterIdx;
+	for(i = 0; i < moveCnt; i++) {
+		// 값 보관
+		preClusterIdx = nowClusterIdx;
+
+		// 다음 클러스터 인덱스 읽음
+		if(getClusterLink(preClusterIdx, &nowClusterIdx) == FALSE) {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return -1;
+		}
+	}
+
+	// 클러스터를 이동했으면 클러스터 정보 갱신
+	if(moveCnt > 0) {
+		handle->preClusterIdx = preClusterIdx;
+		handle->nowClusterIdx = nowClusterIdx;
+	} else if(startClusterIdx == handle->startClusterIdx) {	// 첫 번째 클러스터로 이동하는 경우 핸들의 클러스터 값을 시작 클러스터로 설정
+		handle->preClusterIdx = handle->startClusterIdx;
+		handle->nowClusterIdx = handle->startClusterIdx;
+	}
+
+	// 실제 파일 크기를 넘어 파일 포인터가 이동했으면 파일 끝에서부터 남은 크기만큼 0으로 채워줌
+	if(lastOffset < moveOffset) {
+		handle->nowOffset = handle->size;
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+
+		// 남은 크기만큼 0으로 채움
+		if(filePadding(file, realOffset - handle->size) == FALSE) return 0;
+	}
+
+	handle->nowOffset = realOffset;
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+	return 0;
+}
+
+// 파일 닫음
+int fileClose(FILE *file) {
+	// 핸들 타입이 파일이 아니면 실패
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return -1;
+
+	// 핸들 반환
+	freeFileDirHandle(file);
+	return 0;
+}
+
+// 핸들 풀 검사해 파일이 열려있는지 확인
+BOOL isFileOpen(const DIRENTRY *entry) {
+	int i;
+	FILE *file;
+
+	// 핸들 풀의 시작 어드레스부터 끝까지 열린 파일만 검색
+	file = gs_fileSystemManager.handle;
+	// 파일 타입 중 시작 클러스터가 일치하면 반환
+	for(i = 0; i < FILESYSTEM_HANDLE_MAXCNT; i++) if((file[i].type == FILESYSTEM_TYPE_FILE) && (file[i].fileHandle.startClusterIdx == entry->startClusterIdx)) return TRUE;
+	return FALSE;
+}
+
+// 파일 삭제
+int removeFile(const char *name) {
+	DIRENTRY entry;
+	int offset, len;
+
+	// 파일 이름 검사
+	len = strLen(name);
+	if((len > (sizeof(entry.name) - 1)) || (len == 0)) return NULL;
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 파일이 존재하는지 확인
+	offset = findDirEntry(name, &entry);
+	if(offset == -1) {
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return -1;
+	}
+
+	// 다른 태스크에서 해당 파일을 열고 있는지 핸들 풀을 검색해 파일이 열려있으면 삭제 불가
+	if(isFileOpen(&entry) == TRUE) {
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return -1;
+	}
+
+	// 파일 구성 클러스터 모두 해제
+	if(freeClusterAll(entry.startClusterIdx) == FALSE) {
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return -1;
+	}
+
+	// 디렉터리 엔트리를 빈 것으로 설정
+	memSet(&entry, 0, sizeof(entry));
+	if(setDirEntry(offset, &entry) == FALSE) {
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return -1;
+	}
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+	return 0;
+}
+
+// 디렉터리 오픈
+DIR *dirOpen(const char *name) {
+	DIR *dir;
+	DIRENTRY *buf;
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 루트 디렉터리밖에 없으니 디렉터리 이름은 무시하고 핸들만 할당받아 반환
+	dir = allocFileDirHandle();
+	if(dir == NULL) {
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return NULL;
+	}
+
+	// 루트 디렉터리를 저장할 버퍼 할당
+	buf = (DIRENTRY*)allocMem(FILESYSTEM_CLUSTER_SIZE);
+	if(dir == NULL) {
+		// 실패하면 핸들 반환
+		freeFileDirHandle(dir);
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return NULL;
+	}
+
+	// 루트 디렉터리 읽음
+	if(readCluster(0, (BYTE*)buf) == FALSE) {
+		// 실패하면 핸들과 메모리 모두 반환
+		freeFileDirHandle(dir);
+		freeMem(buf);
+		// 동기화 처리
+		_unlock(&(gs_fileSystemManager.mut));
+		return NULL;
+	}
+
+	// 디렉터리 타입으로 설정 후 현재 디렉터리 엔트리 오프셋 초기화
+	dir->type = FILESYSTEM_TYPE_DIR;
+	dir->dirHandle.nowOffset = 0;
+	dir->dirHandle.dirBuf = buf;
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+	return dir;
+}
+
+// 디렉터리 엔트리를 반환하고 다음으로 이동
+struct directoryEntry *dirRead(DIR *dir) {
+	DIRHANDLE *handle;
+	DIRENTRY *entry;
+
+	// 핸들 타입이 디렉터리가 아니면 실패
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return NULL;
+	handle = &(dir->dirHandle);
+
+	// 오프셋 범위가 클러스터에 존재하는 최댓값 넘으면 실패
+	if((handle->nowOffset < 0) || (handle->nowOffset >= FILESYSTEM_MAXDIRENTRYCNT)) return NULL;
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 루트 디렉터리에 있는 최대 디렉터리 엔트리 개수만큼 검색
+	entry = handle->dirBuf;
+	while(handle->nowOffset < FILESYSTEM_MAXDIRENTRYCNT) {
+		// 파일이 존재하면 해당 디렉터리 엔트리 반환
+		if(entry[handle->nowOffset].startClusterIdx != 0) {
+			// 동기화 처리
+			_unlock(&(gs_fileSystemManager.mut));
+			return &(entry[handle->nowOffset++]);
+		}
+		handle->nowOffset++;
+	}
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+	return NULL;
+}
+
+// 디렉터리 포인터를 디렉터리 처음으로 이동
+void dirRewind(DIR *dir) {
+	DIRHANDLE *handle;
+
+	// 핸들 타입이 디렉터리가 아니면 실패
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return;
+	handle  = &(dir->dirHandle);
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 디렉터리 엔트리 포인터만 0으로 바꿔줌
+	handle->nowOffset = 0;
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+}
+
+// 열린 디렉터리 닫음
+int dirClose(DIR *dir) {
+	DIRHANDLE *handle;
+
+	// 핸들 타입이 디렉터리가 아니면 실패
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return -1;
+	handle = &(dir->dirHandle);
+
+	// 동기화 처리
+	_lock(&(gs_fileSystemManager.mut));
+
+	// 루트 디렉터리의 버퍼를 해제하고 핸들을 반환
+	freeMem(handle->dirBuf);
+	freeFileDirHandle(dir);
+
+	// 동기화 처리
+	_unlock(&(gs_fileSystemManager.mut));
+
+	return 0;
 }

@@ -187,9 +187,9 @@ BOOL isPadScanCode(BYTE scanCode) {
 }
 
 // 조합된 키 값을 사용해야 하는지 여부 반환
-BOOL isCombineCode(BOOL scanCode) {
+BOOL isCombineCode(BYTE scanCode) {
 	BYTE downScanCode;
-	BOOL combineKey;
+	BOOL combineKey = FALSE;
 
 	downScanCode = scanCode & 0x7F;
 

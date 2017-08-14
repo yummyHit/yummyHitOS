@@ -82,7 +82,7 @@ static QWORD calcDynMemSize(void) {
 // 동적 메모리 영역을 관리하는데 필요한 정보가 차지하는 공간 계산. 최소 블록 단위로 정렬 후 반환
 static int calcMetaBlockCnt(QWORD memSize) {
 	long smallBlockCnt, i;
-	DWORD allocBlockIdxSize, bitmapSize;
+	DWORD allocBlockIdxSize, bitmapSize = 0;
 
 	// 가장 크기가 작은 블록 개수를 계산해 이를 기준으로 비트맵 영역과 할당된 크기 저장하는 영역 계산
 	smallBlockCnt = memSize / DYNMEM_MIN_SIZE;
@@ -90,7 +90,6 @@ static int calcMetaBlockCnt(QWORD memSize) {
 	allocBlockIdxSize = smallBlockCnt * sizeof(BYTE);
 
 	// 비트맵 저장하는데 필요한 공간 계산
-	bitmapSize = 0;
 	for(i = 0; (smallBlockCnt >> i) > 0; i++) {
 		// 블록 리스트의 비트맵 포인터를 위한 공간
 		bitmapSize += sizeof(BITMAP);

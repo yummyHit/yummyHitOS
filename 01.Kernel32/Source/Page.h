@@ -43,7 +43,7 @@ typedef struct pageTableEntry {
 
 // 함수
 void initTables(void);
-void setEntry(PTENTRY *entry, DWORD highBaseAddr, DWORD lowBaseAddr, DWORD lowFlags, DWORD highFlags);
+void setPageEntry(PTENTRY *entry, DWORD highBaseAddr, DWORD lowBaseAddr, DWORD lowFlags, DWORD highFlags);
 
 #endif /*__PAGE_H__*/
 

@@ -12,6 +12,10 @@
 #include <Types.h>
 
 #pragma once
+
+#define _MIN(x, y)	(((x) < (y)) ? (x) : (y))
+#define _MAX(x, y)	(((x) > (y)) ? (x) : (y))
+
 void memSet(void *dest, BYTE data, int size);
 int memCpy(void *dest, const void *src, int size);
 int memCmp(const void *dest, const void *src, int size);

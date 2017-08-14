@@ -6,7 +6,7 @@
 #
 
 NASM32 = nasm
-GCC32 = gcc -g -std=c99 -C -m32 -ffreestanding
+GCC32 = gcc -g -std=c99 -C -m32 -I ../../02.Kernel64/Source/Headers -ffreestanding
 LD32 = ld -elf_i386 -T ../Linker32.x -nostdlib -e Main -Ttext 0x10200
 OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 

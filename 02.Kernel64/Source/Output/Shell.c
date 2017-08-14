@@ -51,6 +51,9 @@ SHELLENTRY gs_cmdTable[] = {
 	{"mkFile", "### Make File. ex)mkFile a.txt", csMakeFile},
 	{"rmFile", "### Remove File. ex)rmFile a.txt", csRemoveFile},
 	{"ls", "### Show Directory ###", csRootDir},
+	{"fwrite", "### Write Data to File. ex)fwrite a.txt", csFileWrite},
+	{"fread", "### Read Data to File. ex)fread a.txt", csFileRead},
+	{"fileIOTest", "### File I/O Test Function ###", csFileIOTest},
 };
 
 // 셸 메인 루프
@@ -657,10 +660,8 @@ static void fpuTest(void) {
 
 	// 루프를 무한히 반복해 동일 계산 수행 :: 13번 General Protection Exception 뜨는데 무슨문제일까?
 	while(1) {
-
-		dV1 = 1;
+		dV1 = 1;		// 메모리 Leak이 뜨는 것 같긴 한데...
 		dV2 = 1;
-
 		// 테스트를 위해 동일 계산 2번 반복 실행
 		for(i = 0; i < 10; i++) {
 			randValue = _rand();
@@ -691,13 +692,13 @@ static void fpuTest(void) {
 static void csGetPIE(const char *buf) {
 	double res;
 	int i;
-	
 	printF("PIE Calculation Test\n");
 	printF("Result: 355 / 113 = ");
 	res = (double)355 / 113;
+
 	printF("%d.%d%d\n", (QWORD)res, ((QWORD)(res * 10) % 10), ((QWORD)(res * 100) % 10));
 
-	// 실수를 계산하는 태스크 생성
+	// 실수를 계산하는 태스크 생성 :: 이게 문제인데...
 	for(i = 0; i < 100; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest);
 }
 
@@ -993,6 +994,7 @@ static void csMakeFile(const char *buf) {
 	int len, i;
 	DWORD cluster;
 	DIRENTRY entry;
+	FILE *file;
 
 	// 파라미터 리스트 초기화해 파일 이름 추출
 	initParam(&list, buf);
@@ -1003,33 +1005,12 @@ static void csMakeFile(const char *buf) {
 		return;
 	}
 
-	// 빈 클러스터 찾아 할당된 것으로 설정
-	cluster  = findFreeCluster();
-	if((cluster == FILESYSTEM_LAST_CLUSTER) || (setClusterLink(cluster, FILESYSTEM_LAST_CLUSTER) == FALSE)) {
-		printF("Cluster Allocation Fail...\n");
+	file = fopen(name, "w");
+	if(file == NULL) {
+		printF("Make File Fail...\n");
 		return;
 	}
-
-	// 빈 디렉터리 엔트리 검색
-	i = findFreeDirEntry();
-	if(i == -1) {
-		// 실패할 경우 할당받은 클러스터 반환
-		setClusterLink(cluster, FILESYSTEM_FREE_CLUSTER);
-		printF("Directory Entry is FULL...\n");
-		return;
-	}
-
-	// 디렉터리 엔트리 설정
-	memCpy(entry.name, name, len + 1);
-	entry.startClusterIdx = cluster;
-	entry.size = 0;
-
-	// 디렉터리 엔트리 등록
-	if(setDirEntry(i, &entry) == FALSE) {
-		// 실패할 경우 할당받은 클러스터 반환
-		setClusterLink(cluster, FILESYSTEM_FREE_CLUSTER);
-		printF("Directory Entry Set Fail...\n");
-	}
+	fclose(file);
 	printF("Make a File Success !!\n");
 }
 
@@ -1037,84 +1018,80 @@ static void csMakeFile(const char *buf) {
 static void csRemoveFile(const char *buf) {
 	PARAMLIST list;
 	char name[50];
-	int len, offset;
-	DIRENTRY entry;
+	int len;
 
 	// 파라미터 리스트 초기화해 파일 이름 추출
 	initParam(&list, buf);
 	len = getNextParam(&list, name);
 	name[len] = '\0';
 
-	if((len > (sizeof(entry.name) -1)) || (len == 0)) {
+	if((len > (FILESYSTEM_MAXFILENAMELEN -1)) || (len == 0)) {
 		printF("Too Long or Too Short File Name\n");
 		return;
 	}
 
-	// 파일 이름으로 디렉터리 엔트리 검색
-	offset = findDirEntry(name, &entry);
-	if(offset == -1) {
-		printF("File Not Found...\n");
+	if(fremove(name) != 0) {
+		printF("File Not Found or File Opened...\n");
 		return;
 	}
 
-	// 클러스터 반환
-	if(setClusterLink(entry.startClusterIdx, FILESYSTEM_FREE_CLUSTER) == FALSE) {
-		printF("Cluster Free Fail...\n");
-		return;
-	}
-
-	// 디렉터리 엔트리를 모두 초기화해 빈 것으로 설정한 후 해당 오프셋에 덮어씀
-	memSet(&entry, 0, sizeof(entry));
-	if(setDirEntry(offset, &entry) == FALSE) {
-		printF("Root Directory Update Fail...\n");
-		return;
-	}
 	printF("Remove a File Success !!\n");
 }
 
 // 루트 디렉터리 파일 목록 표시
 static void csRootDir(const char *buf) {
-	BYTE *clusterBuf;
-	int i, cnt, totalCnt;
-	DIRENTRY *entry;
-	char *_buf[400], tmp[50];
-	DWORD totalByte;
+	DIR *dir;
+	int cnt = 0, totalCnt = 0;
+	struct dirent *entry;
+	char *_buf[CONSOLE_WIDTH - 5], tmp[50];	// _buf의 크기가 CONSOLE_WIDTH - 5인 이유는 현재 우리의 OS는 총 80만큼의 가로길이이고
+						// 아래에서 미관을 위해 4칸을 띄어준 후 %s를 통해 출력하므로 5만큼 빼준다!
+	DWORD totalByte = 0, usedClusterCnt = 0;
+	FILESYSTEMMANAGER manager;
 
-	clusterBuf = allocMem(FILESYSTEM_PERSECTOR * 512);
+	// 파일 시스템 정보를 얻음
+	getFileSystemInfo(&manager);
 
-	// 루트 디렉터리 읽음
-	if(readCluster(0, clusterBuf) == FALSE) {
-		printF("Root Directory Read Fail...\n");
+	// 루트 디렉터리 오픈
+	dir = dirOpen("/");
+	if(dir == NULL) {
+		printF("Root Directory Open Fail...\n");
 		return;
 	}
 
 	// 먼저 루프 돌며 디렉터리에 있는 파일 개수와 전체 파일이 사용한 크기 계산
-	entry = (DIRENTRY*)clusterBuf;
-	totalCnt = 0;
-	totalByte = 0;
-	for(i = 0; i < FILESYSTEM_MAXDIRENTRYCNT; i++) {
-		if(entry[i].startClusterIdx == 0) continue;
+	while(1) {
+		// 디렉터리에서 엔트리 하나 읽음
+		entry = dirRead(dir);
+		// 더 이상 파일이 없으면 나감
+		if(entry == NULL) break;
 		totalCnt++;
-		totalByte += entry[i].size;
+		totalByte += entry->size;
+
+		// 실제로 사용된 클러스터 개수를 계산
+		if(entry->size == 0) usedClusterCnt++;	// 크기가 0이라도 클러스터 1개는 할당되어 있음
+		else usedClusterCnt += (entry->size + (FILESYSTEM_CLUSTER_SIZE - 1)) / FILESYSTEM_CLUSTER_SIZE;
 	}
 
 	// 실제 파일의 내용을 표시하는 루프
-	entry = (DIRENTRY*)clusterBuf;
-	cnt = 0;
-	for(i = 0; i< FILESYSTEM_MAXDIRENTRYCNT; i++) {
-		if(entry[i].startClusterIdx == 0) continue;
-		// 전부 공백으로 초기화한 후 각 위치에 값 대입
-		memSet(_buf, ' ', sizeof(_buf) - 1);
-		_buf[sizeof(_buf) - 1] = '\0';
+	dirRewind(dir);
+	while(1) {
+		// 디렉터리에서 엔트리 하나를 읽음
+		entry = dirRead(dir);
+		// 더 이상 파일이 없으면 나감
+		if(entry == NULL) break;
+
+		// 전부 공백으로 초기화한 후 각 위치에 값을 대입
+		memSet(_buf, ' ', CONSOLE_WIDTH - 5);
+		_buf[CONSOLE_WIDTH - 6] = '\0';
 
 		// 파일 이름 삽입
-		memCpy(_buf, entry[i].name, strLen(entry[i].name));
+		memCpy(_buf, entry->d_name, strLen(entry->d_name));
 		// 파일 길이 삽입
-		sprintF(tmp, "%d Byte", entry[i].size);
+		sprintF(tmp, "%d Byte", entry->size);
 		memCpy(_buf + 3, tmp, strLen(tmp));
 		// 파일 시작 클러스터 삽입
-		sprintF(tmp, "0x%X Cluster", entry[i].startClusterIdx);
-		memCpy(_buf + 6, tmp, strLen(tmp) + 1);
+		sprintF(tmp, "0x%X Cluster", entry->startClusterIdx);
+		memCpy(_buf + 6, tmp, strLen(tmp));
 		printF("    %s\n", _buf);
 
 		if((cnt != 0) && (cnt % 20) == 0) {
@@ -1128,6 +1105,278 @@ static void csRootDir(const char *buf) {
 	}
 
 	// 총 파일 개수와 파일 총 크기 출력
-	printF("\t Total File Count: %d\t Total File Size: %d Byte\n", totalCnt, totalByte);
-	freeMem(clusterBuf);
+	printF("\t\tTotal File Count: %d\n", totalCnt);
+	printF("\t\tTotal File Size: %d KByte (%d Cluster)\n", totalByte, usedClusterCnt);
+
+	// 남은 클러스터 수를 이용해 여유 공간 출력
+	printF("\t\tFree Space: %d KByte (%d Cluster)\n", (manager.totalClusterCnt - usedClusterCnt) * FILESYSTEM_CLUSTER_SIZE / 1024, manager.totalClusterCnt - usedClusterCnt);
+
+	// 디렉터리를 닫음
+	dirClose(dir);
+}
+
+// 파일을 생성해 키보드로 입력된 데이터 씀
+static void csFileWrite(const char *buf) {
+	PARAMLIST list;
+	char name[50];
+	int len, enterCnt = 0;
+	FILE *fp;
+	BYTE key;
+
+	// 파라미터 리스트를 초기화하여 파일 이름을 추출
+	initParam(&list, buf);
+	len = getNextParam(&list, name);
+	name[len] = '\0';
+	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+		printF("Too Long or Too Short File Name\n");
+		return;
+	}
+
+	// 파일 생성
+	fp = fopen(name, "w");
+	if(fp == NULL) {
+		printF("%s File Open Fail...\n", name);
+		return;
+	}
+
+	// 엔터 키가 연속 3번 눌러질 때까지 내용을 파일에 씀
+	while(1) {
+		key = getCh();
+		// 엔터 키면 연속 3번 눌러졌는가 확인 후 루프를 빠져나감
+		if(key == KEY_ENTER) {
+			enterCnt++;
+			if(enterCnt >= 3) break;
+		} else enterCnt = 0;	// 엔터 키가 아니면 엔터 키 입력 횟수 초기화
+		printF("%c", key);
+		if(fwrite(&key, 1, 1, fp) != 1) {
+			printF("File Write Fail...\n");
+			break;
+		}
+	}
+
+	printF("Write File Success !!\n");
+	fclose(fp);
+}
+
+// 파일을 열어 데이터를 읽음
+static void csFileRead(const char *buf) {
+	PARAMLIST list;
+	char name[50];
+	int len, enterCnt = 0;
+	FILE *fp;
+	BYTE key;
+
+	// 파라미터 리스트를 초기화해 파일 이름을 추출
+	initParam(&list, buf);
+	len = getNextParam(&list, name);
+	name[len] = '\0';
+	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+		printF("Too Long or Too Short File Name\n");
+		return;
+	}
+
+	// 파일 생성
+	fp = fopen(name, "r");
+	if(fp == NULL) {
+		printF("%s File Open Fail...\n", name);
+		return;
+	}
+
+	// 파일 끝까지 출력하는 것 반복
+	while(1) {
+		if(fread(key, 1, 1, fp) != 1) break;
+		printF("%c", key);
+
+		// 만약 엔터 키면 엔터 키 횟수를 증가시키고 20라인까지 출력했으면 더 출력할지 여부 물어봄
+		if(key == KEY_ENTER) {
+			enterCnt++;
+			if((enterCnt != 0) && ((enterCnt % 20) == 0)) {
+				printF("Press any key to continue... ('q' is exit) : ");
+				if(getCh() == 'q') {
+					printF("\n");
+					break;
+				}
+				printF("\n");
+				enterCnt = 0;
+			}
+		}
+	}
+	fclose(fp);
+}
+
+// 파일 I/O 관련된 기능을 테스트
+static void csFileIOTest(const char *buf) {
+	FILE *file;
+	BYTE *_buf;
+	int i, j;
+	DWORD randOffset, byteCnt, maxSize;
+	BYTE _tmpBuf[1024];
+
+	printF("   ================== File I/O Function Test ==================\n");
+
+	// 4MB의 버퍼 할당
+	maxSize = 4 * 1024 * 1024;
+	_buf = allocMem(maxSize);
+	if(_buf == NULL) {
+		printF("Memory Allocation Fail...\n");
+		return;
+	}
+	// 테스트용 파일 삭제
+	fremove("fileIOTest.bin");
+
+	// 파일 열기 테스트
+	printF("1. File Open Fail Test ....");
+	// r 옵션은 파일을 생성하지 않으니 테스트 파일이 없으면 NULL이 되어야 함
+	file = fopen("fileIOTest.bin", "r");
+	if(file == NULL) printF("[  Hit  ]\n");
+	else {
+		printF("[  Err  ]\n");
+		fclose(file);
+	}
+
+	// 파일 생성 테스트
+	printF("2. Make a File Test .......");
+	// w 옵션은 파일을 생성하므로 정상적으로 핸들이 반환되어야 함
+	file = fopen("fileIOTest.bin", "w");
+	if(file != NULL) {
+		printF("[  Hit  ]\n");
+		printF("    File Handle [0x%Q]\n", file);
+	} else printF("[  Err  ]\n");
+
+	// 순차적 영역 쓰기 테스트
+	printF("3. Sequential Write Test(Cluster Size) .............");
+	// 열린 핸들로 쓰기 수행
+	for(i = 0; i < 100; i++) {
+		memSet(_buf, i, FILESYSTEM_CLUSTER_SIZE);
+		if(fwrite(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
+			printF("[  Err  ]\n");
+			printF("    %d Cluster Error\n", i);
+			break;
+		}
+	}
+	if(i >= 100) printF("[  Hit  ]\n");
+
+	// 순차적인 영역 읽기 테스트
+	printF("4. Sequential Read and Verify Test(Cluster Size) ...");
+	// 파일 처음으로 이동
+	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_END);
+
+	// 열린 핸들로 읽기 수행 후 데이터 검증
+	for(i = 0; i < 100; i++) {
+		// 파일 읽음
+		if(fread(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
+			printF("[  Err  ]\n");
+			return;
+		}
+
+		// 데이터 검사
+		for(j = 0; j < FILESYSTEM_CLUSTER_SIZE; j++) if(_buf[j] != (BYTE)i) {
+			printF("[  Err  ]\n");
+			printF("    %d Cluster Error. [%X] != [%X]\n", i, _buf[j], (BYTE)i);
+			break;
+		}
+	}
+	if(i >= 100) printF("[  Hit  ]\n");
+
+	// 임의의 영역 쓰기 테스트
+	printF("5. Random Write Test ...............\n");
+
+	// 버퍼를 모두 0으로 채움
+	memSet(_buf, 0, maxSize);
+	// 여기 저기에 옮겨다니면서 데이터를 쓰고 검증
+	// 파일의 내용을 읽어 버퍼로 복사
+	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_CUR);
+	fread(_buf, 1, maxSize, file);
+
+	// 임의의 위치로 옮기며 데이터를 파일과 버퍼에 씀
+	for(i = 0; i < 100; i ++) {
+		byteCnt = (_rand() % sizeof(_tmpBuf) - 1) + 1;
+		randOffset = _rand() % (maxSize - byteCnt);
+		printF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
+
+		// 파일 포인터 이동
+		fseek(file, randOffset, SEEK_SET);
+		memSet(_tmpBuf, i, byteCnt);
+
+		// 데이터 씀
+		if(fwrite(_tmpBuf, 1, byteCnt, file) != byteCnt) {
+			printF("[  Hit  ]\n");
+			break;
+		} else printF("[  Err  ]\n");
+
+		memSet(_buf + randOffset, i, byteCnt);
+	}
+
+	// 맨 마지막으로 이동해 1바이트 써서 파일 크기를 4MB로 만듬
+	fseek(file, maxSize - 1, SEEK_SET);
+	fwrite(&i, 1, 1, file);
+	_buf[maxSize - 1] = (BYTE)i;
+
+	// 임의의 영역 읽기 테스트
+	printF("6. Random Read And Verify Test .....\n");
+	// 임의의 위치로 옮기며 파일에서 데이터를 읽어 버퍼 내용과 비교
+	for(i = 0; i < 100; i++) {
+		byteCnt = (_rand() % (sizeof(_tmpBuf) -  1)) + 1;
+		randOffset = _rand() % ((maxSize) - byteCnt);
+		printF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
+
+		// 파일 포인터 이동
+		fseek(file, randOffset, SEEK_SET);
+
+		// 데이터 읽음
+		if(fread(_tmpBuf, 1, byteCnt, file) != byteCnt) {
+			printF("[  Err  ]\n");
+			printF("    %d Read Fail...\n", randOffset);
+			break;
+		}
+
+		// 버퍼와 비교
+		if(memCmp(_buf + randOffset, _tmpBuf, byteCnt) != 0) {
+			printF("[  Err  ]\n");
+			printF("    %d Compare Fail\n", randOffset);
+			break;
+		}
+		printF("[  Hit  ]\n");
+	}
+
+	// 다시 순차적 영역 읽기 테스
+	printF("7. Sequential Write, Read and Verify Test(1024 Byte)\n");
+	// 파일의 처음으로 이동
+	fseek(file, -maxSize, SEEK_CUR);
+
+	// 열린 핸들로 쓰기 수행. 앞부분 2MB만 씀
+	for(i = 0; i < (2 * 1024 * 1024 / 1024) ; i++) {
+		printF("    [%d] Offset [%d] Byte [%d] Write .............", i, i * 1024, 1024);
+
+		// 1024바이트씩 파일 읽음
+		if(fread(_tmpBuf, 1, 1024, file) != 1024) {
+			printF("[  Err  ]\n");
+			return;
+		}
+
+		if(memCmp(_buf + (i * 1024), _tmpBuf, 1024) != 0) {
+			printF("[  Err  ]\n");
+			break;
+		} else printF("[  Hit  ]\n");
+	}
+
+	// 파일 삭제 실패 테스트
+	printF("8. File Remove Fail Test ..");
+	// 파일이 열려있는 상태이므로 지울 수 없으니 실패
+	if(fremove("fileIOTest.bin" != 0)) printF("[  Hit  ]\n");
+	else printF("[  Err  ]\n");
+
+	// 파일 닫기 테스트
+	printF("9. File Close Test ........");
+	// 파일이 정상적으로 닫혀야 함
+	if(fclose(file) == 0) printF("[  Hit  ]\n");
+	else printF("[  Err  ]\n");
+
+	// 파일 삭제 테스트
+	printF("10. File Remove Test ......");
+	// 파일이 닫혔으니 정상 삭제
+	if(fremove("fileIOTest.bin") == 0) printF("[  Hit  ]\n");
+	else printF("[  Err  ]\n");
+
+	freeMem(_buf);
 }

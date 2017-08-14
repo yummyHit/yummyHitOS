@@ -29,19 +29,23 @@
 // 실제로 사용할 매크로, Lower Flags는 Code|Data|TSS, DPL0, Present로 설정
 #define GDT_FLAGS_LOWER_KERNELCODE ( GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_LOWER_KERNELDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
-#define GDT_FLAGS_LOWER_TSS ( GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_LOWER_USERCODE ( GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL3 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_LOWER_USERDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL3 | GDT_FLAGS_LOWER_P )
 
 // Upper Flags는 Granulaty로 설정하고 코드 및 데이터는 64비트 추가
 #define GDT_FLAGS_UPPER_CODE ( GDT_FLAGS_UPPER_G | GDT_FLAGS_UPPER_L )
 #define GDT_FLAGS_UPPER_DATA ( GDT_FLAGS_UPPER_G | GDT_FLAGS_UPPER_L )
+#define GDT_FLAGS_LOWER_TSS ( GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_UPPER_TSS ( GDT_FLAGS_UPPER_G )
 
 // 세그먼트 디스크립터 오프셋
 #define GDT_KERNELCODESEGMENT	0x08
 #define GDT_KERNELDATASEGMENT	0x10
 #define GDT_TSSSEGMENT		0x18
+
+// 세그먼트 셀렉터에 설정할 RPL
+#define SELECTOR_RPL_0		0x00
+#define SELECTOR_RPL_3		0x03
 
 // 기타 GDT에 관련된 매크로, GDTR의 시작 어드레스, 1MB에서 264KB까지는 페이지 테이블 영역
 #define GDTR_STARTADDR		0x142000
@@ -50,7 +54,7 @@
 // 16바이트 엔트리 개수, TSS
 #define GDT_MAXENTRY16CNT	1
 // GDT 테이블 크기
-#define GDT_TABLESIZE		((sizeof(ENTRY8) * GDT_MAXENTRY8CNT) + (sizeof(ENTRY16) * GDT_MAXENTRY16CNT))
+#define GDT_TABLESIZE		((sizeof(GDTENTRY8) * GDT_MAXENTRY8CNT) + (sizeof(GDTENTRY16) * GDT_MAXENTRY16CNT))
 #define TSS_SEGMENTSIZE		(sizeof(TSS))
 
 /* IDT */
@@ -76,7 +80,7 @@
 // IDT 테이블 시작 어드레스
 #define IDT_STARTADDR		( IDTR_STARTADDR + sizeof(IDTR) )
 // IDT 테이블 전체 크기
-#define IDT_TABLESIZE		( IDT_MAXENTRYCNT * sizeof(ENTRY) )
+#define IDT_TABLESIZE		( IDT_MAXENTRYCNT * sizeof(IDTENTRY) )
 // IST 시작 어드레스
 #define IST_STARTADDR		0x700000
 // IST 크기
@@ -103,7 +107,7 @@ typedef struct GDTEntry8 {
 	// 4bit segment limit, 1bit AVL, L, D/B, G
 	BYTE highLimitNFlag;
 	BYTE highBaseAddr_B;
-} ENTRY8;
+} GDTENTRY8;
 
 // 16byte 크기 GDT 엔트리 구조
 typedef struct GDTEntry16 {
@@ -117,7 +121,7 @@ typedef struct GDTEntry16 {
 	BYTE midBaseAddr_B;
 	DWORD highBaseAddr;
 	DWORD reserved;
-} ENTRY16;
+} GDTENTRY16;
 
 // TSS Data 구조체
 typedef struct TSSData {
@@ -141,16 +145,15 @@ typedef struct IDTEntry {
 	WORD midBaseAddr;
 	DWORD highBaseAddr;
 	DWORD reserved;
-} ENTRY;
+} IDTENTRY;
 
 #pragma pack(pop)
 
 void initGDTNTSS(void);
-void setEntry8(ENTRY8 *entry, DWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
-void setEntry16(ENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
+void setGDTEntry8(GDTENTRY8 *entry, DWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
+void setGDTEntry16(GDTENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
 void initTSS(TSS *tss);
 void initIDT(void);
-void setEntry(ENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BYTE type);
-//void dummyHandler(void);
+void setIDTEntry(IDTENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BYTE type);
 
 #endif /*__DESCRIPTOR_H__*/

@@ -12,6 +12,7 @@
 volatile QWORD g_tickCnt = 0;
 
 // 메모리를 특정 값으로 채움
+/*
 void memSet(void *dest, BYTE data, int size) {
 	int i;
 	for(i = 0; i < size; i++) ((char*)dest)[i] = data;
@@ -31,6 +32,62 @@ int memCmp(const void *dest, const void *src, int size) {
 	for(i = 0; i < size; i++) {
 		tmp = ((char*)dest)[i] - ((char*)src)[i];
 		if(tmp != 0) return (int)tmp;
+	}
+	return 0;
+}
+*/
+
+void memSet(void *dest, BYTE data, int size) {
+	int i, remainOffset;
+	QWORD _data = 0;
+
+	for(i = 0; i < 8; i++) _data = (_data << 8) | data;
+	for(i = 0; i < (size / 8); i++) ((QWORD*)dest)[i] = _data;
+
+	remainOffset = i * 8;
+	for(i = 0; i < (size % 8); i++) ((char*)dest)[remainOffset++] = data;
+}
+
+inline void memSetWord(void *dest, WORD data, int size) {
+	int i, remainOffset;
+	QWORD _data = 0;
+
+	for(i = 0; i < 4; i++) _data = (_data << 16) | data;
+	for(i = 0; i < (size / 4); i++) ((QWORD*)dest)[i] = _data;
+
+	remainOffset = i * 4;
+	for(i = 0; i < (size % 4); i++) ((WORD*)dest)[remainOffset++] = data;
+}
+
+int memCpy(void *dest, const void *src, int size) {
+	int i, remainOffset;
+
+	for(i = 0; i < (size / 8); i++) ((QWORD*)dest)[i] = ((QWORD*)src)[i];
+
+	remainOffset = i * 8;
+	for(i = 0; i < (size % 8); i++) {
+		((char*)dest)[remainOffset] = ((char*)src)[remainOffset];
+		remainOffset++;
+	}
+	return size;
+}
+
+int memCmp(const void *dest, const void *src, int size) {
+	int i, j, remainOffset;
+	char value;
+	QWORD _value;
+
+	for(i = 0; i < (size / 8); i++) {
+		_value = ((QWORD*)dest)[i] - ((QWORD*)src)[i];
+
+		if(_value != 0) for(i = 0; i < 8; i++) if(((_value >> (i * 8)) & 0xFF) != 0) return (_value >> (i * 8)) & 0xFF;
+	}
+
+	remainOffset = i * 8;
+	for(i = 0; i < (size % 8); i++) {
+		value = ((char*)dest)[remainOffset] - ((char*)src)[remainOffset];
+		if(value != 0) return value;
+		remainOffset++;
 	}
 	return 0;
 }
@@ -263,11 +320,6 @@ int vsprintF(char *buf, const char *format, va_list v) {
 				buf[bufIdx] = (char)(va_arg(v, int));
 				bufIdx++;
 				break;
-			case 'o':
-				// 가변 인자에 들어있는 파라미터를 정수타입으로 변환 후 출력 버퍼에 복사, 그 길이만큼 버퍼 인덱스 이동
-				iV = (int)(va_arg(v, int));
-				bufIdx += iToa(iV, buf + bufIdx, 8);
-				break;
 			case 'd':
 			case 'i':
 				// 가변 인자에 들어있는 파라미터를 정수타입으로 변환 후 출력 버퍼에 복사, 그 길이만큼 버퍼 인덱스 이동
@@ -306,6 +358,11 @@ int vsprintF(char *buf, const char *format, va_list v) {
 				// 값이 저장된 길이만큼 뒤집고 길이를 증가시킴
 				revStr(buf + bufIdx);
 				bufIdx += 3 + k;
+				break;
+			case 'o':
+				// 가변 인자에 들어있는 파라미터를 정수타입으로 변환 후 출력 버퍼에 복사, 그 길이만큼 버퍼 인덱스 이동
+				iV = (int)(va_arg(v, int));
+				bufIdx += iToa(iV, buf + bufIdx, 8);
 				break;
 			default:
 				buf[bufIdx] = format[i];

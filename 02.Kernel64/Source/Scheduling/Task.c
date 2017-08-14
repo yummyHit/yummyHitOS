@@ -71,20 +71,24 @@ TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr) {
 	void *stackAddr;
 	BOOL preFlag;
 
-	// 임계 영역 시작
-	preFlag = lockData();
 	task = allocTCB();
-	if(task == NULL) {
-		// 임계 영역 끝
-		unlockData(preFlag);
+	if(task == NULL) return NULL;
+
+	stackAddr = allocMem(TASK_STACKSIZE);
+	if(stackAddr == NULL) {
+		freeTCB(task->link.id);
 		return NULL;
 	}
+
+	// 임계 영역 시작
+	preFlag = lockData();
 
 	// 현재 프로세스 또는 쓰레드가 속한 프로세스 검색
 	proc = getProcThread(getRunningTask());
 	// 만약 프로세스가 없다면 아무 작업도 안함
 	if(proc == NULL) {
 		freeTCB(task->link.id);
+		freeMem(stackAddr);
 		// 임계 영역 끝
 		unlockData(preFlag);
 		return NULL;
@@ -112,7 +116,7 @@ TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr) {
 	unlockData(preFlag);
 
 	// 태스크 ID로 스택 어드레스 계산, 하위 32비트가 스택 풀의 오프셋 역할 수행
-	stackAddr = (void*)(TASK_STACKPOOLADDR + (TASK_STACKSIZE * (GETTCBOFFSET(task->link.id))));
+//	stackAddr = (void*)(TASK_STACKPOOLADDR + (TASK_STACKSIZE * (GETTCBOFFSET(task->link.id))));
 
 	// TCB를 설정한 후 준비 리스트에 삽입해 스케줄링 될 수 있도록 함
 	setTask(task, flag, epAddr, stackAddr, TASK_STACKSIZE);
@@ -258,7 +262,11 @@ static BOOL addReadyList(TCB *task) {
 	BYTE priority;
 
 	priority = GETPRIORITY(task->flag);
-	if(priority >= TASK_MAXREADYCNT) return FALSE;
+	if(priority == TASK_FLAGS_WAIT) {
+		addListTail(&(gs_scheduler.waitList), task);
+		return TRUE;
+	}
+	else if(priority >= TASK_MAXREADYCNT) return FALSE;
 	addListTail(&(gs_scheduler.readyList[priority]), task);
 	return TRUE;
 }
@@ -568,19 +576,25 @@ void idleTask(void) {
 				// 임계 영역 시작
 				preFlag = lockData();
 				task = delListHead(&(gs_scheduler.waitList));
+				// 임계 영역 끝
+				unlockData(preFlag);
 				if(task == NULL) {
-					// 임계 영역 끝
-					unlockData(preFlag);
 					break;
 				}
 
 				if(task->flag & TASK_FLAGS_PROCESS) {
+					// 임계 영역 시작
+					preFlag = lockData();
 					// 프로세스 종료시 자식 쓰레드가 존재하면 쓰레드 모두 종료 후 다시 자식 쓰레드 리스트에 삽입
 					cnt = getListCnt(&(task->childThreadList));
 					for(i = 0; i < cnt; i++) {
 						// 쓰레드 링크의 어드레스에서 꺼내 쓰레드 종료시킴
 						threadLink = (TCB*)delListHead(&(task->childThreadList));
-						if(threadLink == NULL) break;
+						if(threadLink == NULL) {
+							// 임계 영역 끝
+							unlockData(preFlag);
+							break;
+						}
 						
 						// 자식 쓰레드 리스트에 연결된 정보는 태스크 자료구조에 있는 threadLink의 시작 어드레스이므로
 						// 태스크 자료구조 시작 어드레스를 구하려면 별도 계산이 필요
@@ -590,19 +604,24 @@ void idleTask(void) {
 						// 스스로 리스트에서 제거하도록 함
 						addListTail(&(task->childThreadList), &(childThread->threadLink));
 
+						// 임계 영역 끝
+						unlockData(preFlag);
+
 						// 자식 쓰레드 찾아서 종료
 						taskFin(childThread->link.id);
 					}
 
 					// 아직 자식 쓰레드가 남아있다면 자식 쓰레드가 다 종료될 때까지 기다려야 하므로 다시 대기 리스트에 삽입
 					if(getListCnt(&(task->childThreadList)) > 0) {
+						// 임계 영역 시작
+						preFlag = lockData();
 						addListTail(&(gs_scheduler.waitList), task);
 
 						// 임계 영역 끝
 						unlockData(preFlag);
 						continue;
 					} else { // 프로세스를 종료해야 하므로 할당받은 메모리 영역 삭제
-						// TODO: 추후에 코드 삽입
+						if(task->flag & TASK_FLAGS_USERLV) freeMem(task->memAddr);
 					}
 				} else if(task->flag & TASK_FLAGS_THREAD) {
 					// 쓰레드라면 프로세스의 자식 쓰레드 리스트에서 제거
@@ -612,8 +631,6 @@ void idleTask(void) {
 
 				taskID = task->link.id;
 				freeTCB(taskID);
-				// 임계 영역 끝
-				unlockData(preFlag);
 
 				printF("### IDLE: Task ID[0x%q] is Completely Finished.\n", task->link.id);
 			}

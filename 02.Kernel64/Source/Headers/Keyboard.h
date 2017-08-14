@@ -23,9 +23,6 @@
 // 스캔 코드 매핑 테이블에 대한 매크로
 #define KEY_MAPPINGTABLEMAXCNT	89
 
-#define KEY_UP			0x00
-#define KEY_DOWN		0x01
-#define KEY_EXTEND		0x02
 #define KEY_NONE		0x00
 #define KEY_ENTER		'\n'
 #define KEY_TAB			'\t'

@@ -10,11 +10,11 @@
 SECTION .text			; text 섹션(세그먼트)을 정의
 
 ; C언어에서 호출할 수 있도록 이름 노출
-global inByte, outByte, loadGDTR, loadTSS, loadIDTR
+global inByte, outByte, inWord, outWord
+global loadGDTR, loadTSS, loadIDTR
 global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
 global readTSC, switchContext, _hlt, testNSet
 global initFPU, saveFPU, loadFPU, setTS, clearTS
-global inWord, outWord
 
 ; 포트로부터 1바이트 읽음(PARAM: 포트 번호)
 inByte:
@@ -34,6 +34,30 @@ outByte:
 	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호)을 저장
 	mov rax, rsi	; RAX 레지스터에 파라미터 2(데이터)를 저장
 	out dx, al	; DX 레지스터에 저장된 포트 어드레스에 AL 레지스터에 저장된 한 바이트 사용
+	pop rax
+	pop rdx
+	ret
+
+; 포트로부터 2바이트 읽음(PARAM: 포트 번호)
+inWord:
+	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장. 함수 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
+
+	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호) 저장
+	mov rax, 0	; RAX 레지스터 초기화
+	in ax, dx	; DX 레지스터에 저장된 포트 주소에서 두 바이트 읽어 AX 레지스터에 저장, AX 레지스터는 함수 반환 값으로 사용
+
+	pop rdx		; 사용 끝난 레지스터 복원
+	ret
+
+; 포트에 2바이트 씀(PARAM: 포트 번호, 데이터)
+outWord:
+	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
+	push rax	; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
+
+	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호) 저장
+	mov rax, rsi	; RAX 레지스터에 파라미터 2(데이터) 저장
+	out dx, ax	; DX 레지스터에 저장된 포트 어드레스를 AX 레지스터에 저장된 2바이트 씀
+
 	pop rax
 	pop rdx
 	ret
@@ -137,7 +161,7 @@ switchContext:
 
 	pushfq		; 아래의 cmp 결과로 RFLAGS 레지스터가 변하지 않게 스택에 저장
 	cmp rdi, 0	; Current Context가 NULL이면 콘텍스트 복원으로 점프
-	je .Load
+	je .loadContext
 	popfq		; 스택에 저장한 RFLAGS 레지스터 복원
 	
 	push rax	; 콘텍스트 영역 오프셋으로 사용할 RAX 레지스터 스택에 저장
@@ -173,7 +197,7 @@ switchContext:
 	SAVE_ASMUTIL
 
 ; 다음 태스크의 콘텍스트 복원
-.Load:
+.loadContext:
 	mov rsp, rsi
 
 	; Context 자료구조에서 레지스터 복원
@@ -234,30 +258,4 @@ setTS:
 ; CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
 clearTS:
 	clts
-	ret
-
-; 포트로부터 2바이트 읽음
-; PARAM: 포트 번호
-inWord:
-	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장. 함수 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
-
-	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호) 저장
-	mov rax, 0	; RAX 레지스터 초기화
-	in ax, dx	; DX 레지스터에 저장된 포트 주소에서 두 바이트 읽어 AX 레지스터에 저장, AX 레지스터는 함수 반환 값으로 사용
-
-	pop rdx		; 사용 끝난 레지스터 복원
-	ret
-
-; 포트에 2바이트 씀
-; PARAM: 포트 번호, 데이터
-outWord:
-	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
-	push rax	; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
-
-	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호) 저장
-	mov rax, rsi	; RAX 레지스터에 파라미터 2(데이터) 저장
-	out dx, ax	; DX 레지스터에 저장된 포트 어드레스를 AX 레지스터에 저장된 2바이트 씀
-
-	pop rax
-	pop rdx
 	ret

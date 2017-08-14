@@ -16,36 +16,31 @@
 #include <HardDisk.h>
 
 void printDebug(int vec, int cnt, int handler) {
-	char int_buf[] = "[INT:  ,  ]", exc_buf[] = "[EXC:  ,  ]";
+	char int_buf[] = "[INT:  , ]", exc_buf[] = "[EXC:  , ]";
 
 	// 인터럽트가 발생했음을 알리기 위해 메시지 출력하는 부분. 화면 오른쪽 위 2자리 정수로 출력
 	exc_buf[5] = int_buf[5] = '0' + vec / 10;
 	exc_buf[6] = int_buf[6] = '0' + vec % 10;
 	// 발생 횟수 출력
-	exc_buf[8] = int_buf[8] = '0' + cnt / 10;
-	exc_buf[9] = int_buf[9] = '0' + cnt % 10;
-	if(handler == 1 || handler == 3) printXY(69, 0, 0x1E, int_buf);
+	exc_buf[8] = int_buf[8] = '0' + cnt;
+	if(handler == 1 || handler == 3) printXY(70, 0, 0x1E, int_buf);
 	else if(handler == 2) printXY(0, 0, 0x1E, int_buf);
 	else if(handler == 4) printXY(0, 0, 0x1E, exc_buf);
-	else if(handler == 5) printXY(11, 0, 0x1E, int_buf);
+	else if(handler == 5) printXY(10, 0, 0x1E, int_buf);
 	printXY(34, 0, 0xE5, " YummyHitOS ");
 }
 
 // 공통으로 사용하는 예외 핸들러
 void exceptionHandler(int vecNum, QWORD errCode) {
 	char buf[3] = {0,};
-
-	// 인터럽트 벡터를 화면 오른쪽 위 2자리 정수로 출력
-	buf[0] = '0' + vecNum / 10;
-	buf[1] = '0' + vecNum % 10;
+	TCB *task;
 
 	printXY(7, 1, 0x1F, "=============================================================           ");
 	printXY(7, 2, 0x1F, "                                                                        ");
 	printXY(7, 3, 0x1B, "                Interrupt Handler Execute                               ");
 	printXY(7, 4, 0x1F, "                                                                        ");
-	printXY(7, 5, 0x1E, "                It is Exception : ");
-	printXY(41, 5, 0x1C, buf);
-	printXY(43, 5, 0x1F, "                                 ");
+	sprintF(buf, "Vector:%d, ErrorCode:0x%X, Task ID:0x%Q                       ", vecNum, errCode, task->link.id);
+	printXY(7, 5, 0x1C, buf);
 	printXY(7, 6, 0x1F, "                                                                        ");
 	printXY(7, 7, 0x1F, "=============================================================           ");
 
@@ -56,7 +51,7 @@ void exceptionHandler(int vecNum, QWORD errCode) {
 void interruptHandler(int vecNum) {
 	static int ls_interruptCnt = 0;
 
-	ls_interruptCnt = (ls_interruptCnt + 1) % 100;
+	ls_interruptCnt = (ls_interruptCnt + 1) % 10;
 	printDebug(vecNum, ls_interruptCnt, 1);
 
 	// EOI 전송
@@ -68,7 +63,7 @@ void keyboardHandler(int vecNum) {
 	static int ls_keyboardCnt = 0;
 	BYTE tmp;
 
-	ls_keyboardCnt = (ls_keyboardCnt + 1) % 100;
+	ls_keyboardCnt = (ls_keyboardCnt + 1) % 10;
 	printDebug(vecNum, ls_keyboardCnt, 2);
 
 	// 키보드 컨트롤러에서 데이터 읽고 ASCII로 변환해 큐에 삽입
@@ -85,7 +80,7 @@ void keyboardHandler(int vecNum) {
 void timerHandler(int vecNum) {
 	static int ls_timerCnt = 0;
 
-	ls_timerCnt = (ls_timerCnt + 1) % 100;
+	ls_timerCnt = (ls_timerCnt + 1) % 10;
 	printDebug(vecNum, ls_timerCnt, 3);
 
 	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
@@ -102,7 +97,7 @@ void devFPUHandler(int vecNum) {
 	QWORD lastID;
 	static int ls_devCnt = 0;
 	// FPU 예외가 발생했음을 알리려고 메시지 출력
-	ls_devCnt = (ls_devCnt + 1) % 100;
+	ls_devCnt = (ls_devCnt + 1) % 10;
 	printDebug(vecNum, ls_devCnt, 4);
 
 	// CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
@@ -134,7 +129,7 @@ void hardDiskHandler(int vecNum) {
 	static int ls_hddCnt = 0;
 	BYTE tmp;
 
-	ls_hddCnt = (ls_hddCnt + 1) % 100;
+	ls_hddCnt = (ls_hddCnt + 1) % 10;
 	printDebug(vecNum, ls_hddCnt, 5);
 
 	// 첫 번째 PATA 포트의 인터럽트 벡터(IRQ 14) 처리

@@ -50,14 +50,14 @@ void getCursor(int *x, int *y) {
 }
 
 // printf 함수 내부 구현
-void printF(const char *format, ...) {
+int printF(const char *format, ...) {
 	va_list v;
 	char buf[1024];
-	int nextPrintOffset;
+	int nextPrintOffset, tmp = 0;
 
 	// 가변 인자 리스트를 사용해 vsprintf()로 처리
 	va_start(v, format);
-	vsprintF(buf, format, v);
+	tmp = vsprintF(buf, format, v);
 	va_end(v);
 
 	// 포맷 문자열을 화면에 출력
@@ -65,6 +65,8 @@ void printF(const char *format, ...) {
 
 	// 커서 위치 업데이트
 	setCursor(nextPrintOffset % CONSOLE_WIDTH, nextPrintOffset / CONSOLE_WIDTH);
+
+	return tmp;
 }
 
 // 개행문자가 포함된 문자열 출력 후 화면상 다음 출력 위치 반환

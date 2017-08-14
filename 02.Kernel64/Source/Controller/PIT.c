@@ -13,7 +13,7 @@ void initPIT(WORD cnt, BOOL term) {
 	outByte(PIT_PORT_CONTROL, PIT_COUNTER_ZERO_ONCE);
 
 	// 만약 일정 주기로 반복하는 타이머라면 모드 2로 설정
-	if(term == TRUE) outByte(PIT_PORT_CONTROL, PIT_COUNTER_ZERO_PERIODIC); // PIT 컨트롤 레지스터(포트 0x43)에 모드 2에 바이너리 카운터 설정
+	if(term == TRUE) outByte(PIT_PORT_CONTROL, PIT_COUNTER_ZERO_TERM); // PIT 컨트롤 레지스터(포트 0x43)에 모드 2에 바이너리 카운터 설정
 
 	// 카운터 0(포트 0x40)에 LSB->MSB 순서로 카운터 초기 값 설정
 	outByte(PIT_PORT_COUNTER_ZERO, cnt);

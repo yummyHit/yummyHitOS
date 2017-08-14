@@ -66,7 +66,7 @@ typedef struct csManager {
 void initConsole(int x, int y);
 void setCursor(int x, int y);
 void getCursor(int *x, int *y);
-void printF(const char *format, ...);
+int printF(const char *format, ...);
 int csPrint(const char *buf);
 void clearMonitor(void);
 void clearMatrix(void);

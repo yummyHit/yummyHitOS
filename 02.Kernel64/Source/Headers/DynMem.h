@@ -13,7 +13,7 @@
 #pragma once
 
 // 매크로. 동적 메모리 영역의 시작 어드레스, 1MB 단위로 정렬
-#define DYNMEM_START_ADDR	((TASK_STACKPOOLADDR + (TASK_STACKSIZE * TASK_MAXCNT) + 0xfffff) & 0xfffffffffff00000)
+#define DYNMEM_START_ADDR	((TASK_STACKPOOLADDR + 0xfffff) & 0xffffffffff00000)
 // 버디 블록 최소 크기, 1KB
 #define DYNMEM_MIN_SIZE		(1 * 1024)
 
