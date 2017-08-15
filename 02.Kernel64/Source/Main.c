@@ -71,10 +71,6 @@ void Main(void) {
 	onInterrupt();
 	printXY(57, 7, 0x1A, "[  Hit  ]");
 
-	printXY(7, 7, 0x1F, "Hard Disk Drive Initialize .......................");
-	if(initHDD() == TRUE) printXY(57, 7, 0x1A, "[  Hit  ]");
-	else printXY(57, 7, 0x1C, "[  Err  ]");
-
 	printXY(7, 7, 0x1F, "File System Initialize ...........................");
 	if(initFileSystem() == TRUE) printXY(57, 7, 0x1A, "[  Hit  ]");
 	else printXY(57, 7, 0x1C, "[  Err  ]");

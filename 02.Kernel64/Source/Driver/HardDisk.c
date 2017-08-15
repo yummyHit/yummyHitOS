@@ -151,7 +151,7 @@ BOOL readHDDInfo(BOOL pri, BOOL master, HDDINFO *hddInfo) {
 	waitRes = waitHDDInterrupt(pri);
 	// 에러가 발생하거나 인터럽트가 발생하지 않으면 문제가 발생한 것이니 종료
 	stat = readHDDStat(pri);
-	if((waitRes == FALSE) || (stat & HDD_STAT_ERR)) {
+	if((waitRes == FALSE) || ((stat & HDD_STAT_ERR) == HDD_STAT_ERR)) {
 		// 동기화 처리
 		_unlock(&(gs_hddManager.mut));
 		return FALSE;

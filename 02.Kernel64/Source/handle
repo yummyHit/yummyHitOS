@@ -1,0 +1,550 @@
+	// 카운터 0(포트 0x40)에 LSB->MSB 순서로 카운터 초기 값 설정
+	// 카운터 0(포트 0x40)에서 LSB->MSB 순서로 카운터 값 읽음
+		if(((last - now) & 0xFFFF) >= cnt) break;
+	while((getTickCnt() - startTickCnt) <= HDD_WAIT_TIME) {
+	while((getTickCnt() - startTickCnt) <= HDD_WAIT_TIME) {
+	while(getTickCnt() - tickCnt <= HDD_WAIT_TIME) {
+	swapByte(hddInfo->modelNum, sizeof(hddInfo->modelNum) / 2);
+	swapByte(hddInfo->serialNum, sizeof(hddInfo->serialNum) / 2);
+		gs_keyManager.skipForPause--;
+	queue->maxCnt = maxCnt;
+	queue->size = size;
+	queue->arr = buf;
+	queue->putIdx = 0;
+	queue->getIdx = 0;
+	queue->lastPut = FALSE;
+	if((queue->getIdx == queue->putIdx) && (queue->lastPut == TRUE)) return TRUE;
+	if((queue->getIdx == queue->putIdx) && (queue->lastPut == FALSE)) return TRUE;
+	memCpy((char*)queue->arr + (queue->size * queue->putIdx), data, queue->size);
+	queue->putIdx = (queue->putIdx + 1) % queue->maxCnt;
+	queue->lastPut = TRUE;
+	memCpy(data, (char*)queue->arr + (queue->size * queue->getIdx), queue->size);
+	queue->getIdx = (queue->getIdx + 1) % queue->maxCnt;
+	queue->lastPut = FALSE;
+	gdtr->limit = GDT_TABLESIZE - 1;
+	gdtr->baseAddr = (QWORD)entry;
+	setGDTEntry16((GDTENTRY16*)&(entry[3]), (QWORD)tss, sizeof(TSS) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
+	entry->lowLimit = limit & 0xFFFF;
+	entry->lowBaseAddr = baseAddr & 0xFFFF;
+	entry->highBaseAddr_A = (baseAddr >> 16) & 0xFF;
+	entry->typeNLowFlag = lowFlag | type;
+	entry->highLimitNFlag = ((limit >> 16) & 0x0F) | highFlag;
+	entry->highBaseAddr_B = (baseAddr >> 24) & 0xFF;
+	entry->lowLimit = limit & 0xFFFF;
+	entry->lowBaseAddr = baseAddr & 0xFFFF;
+	entry->midBaseAddr_A = (baseAddr >> 16) & 0xFF;
+	entry->typeNLowFlag = lowFlag | type;
+	entry->highLimitNFlag = ((limit >> 16) & 0x0F) | highFlag;
+	entry->midBaseAddr_B = (baseAddr >> 24) & 0xFF;
+	entry->highBaseAddr = baseAddr >> 32;
+	entry->reserved = 0;
+	tss->ist[0] = IST_STARTADDR + IST_SIZE;
+	tss->ioMapBaseAddr = 0xFFFF;
+	idtr->baseAddr = (QWORD)entry;
+	idtr->limit = IDT_TABLESIZE - 1;
+	entry->lowBaseAddr = (QWORD)handle & 0xFFFF;
+	entry->selector = selector;
+	entry->ist = ist & 0x3;
+	entry->typeNFlag = type | flag;
+	entry->midBaseAddr = ((QWORD)handle >> 16) & 0xFFFF;
+	entry->highBaseAddr = (QWORD)handle >> 32;
+	entry->reserved = 0;
+	sprintF(buf, "Vector:%d, ErrorCode:0x%X, Task ID:0x%Q                       ", vecNum, errCode, task->link.id);
+	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
+	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
+	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
+	if(lastID == nowTask->link.id) return;
+		if((fpu != NULL) && (fpu->link.id == lastID)) saveFPU(fpu->contextFPU);
+	if(nowTask->fpuUsed == FALSE) {
+		nowTask->fpuUsed = TRUE;
+	} else loadFPU(nowTask->contextFPU);
+	setLastFPU(nowTask->link.id);
+	if(vecNum - PIC_IRQSTARTVECTOR == 14) setHDDInterruptFlag(TRUE, TRUE);	// 첫 번째 PATA 포트 인터럽트 발생 여부 TRUE
+	sendEOI(vecNum - PIC_IRQSTARTVECTOR);
+		tmp = ((char*)dest)[i] - ((char*)src)[i];
+		_value = ((QWORD*)dest)[i] - ((QWORD*)src)[i];
+		value = ((char*)dest)[remainOffset] - ((char*)src)[remainOffset];
+		if(('A' <= buf[i]) && (buf[i] <= 'Z')) v += (buf[i] - 'A') + 10;
+		else if(('a' <= buf[i]) && (buf[i] <= 'z')) v += (buf[i] - 'a') + 10;
+		else v += buf[i] - '0';
+	// 음수면 -를 제외하고 나머지를 먼저 Long으로 변환
+	if(buf[0] == '-') i = 1;
+		v += buf[i] - '0';
+	// 음수면 - 추가
+	if(buf[0] == '-') v = -v;
+		if(nowValue >= 10) buf[i] = 'A' + (nowValue - 10);
+	// 만약 음수면 출력 버퍼에 '-' 추가 후 양수로 변환
+		buf[0] = '-';
+		v = -v;
+	if(buf[0] == '-') revStr(&(buf[1]));
+		buf[i] = buf[len - 1 - i];
+		buf[len - 1 - i] = tmp;
+	while((g_tickCnt - lastTickCnt) <= ms) schedule();
+	{ '-'			,	'_'		}, //    12
+	{ '-'			,	'-'		}, //    74
+#define SHELL_PROMPTMSG		"sh-yummyHit \$ "
+#define GETTCBTHREAD(x)		(TCB*)((QWORD)(x) - offsetof(TCB, threadLink))
+		if(buf[i] == '\n') printOffset += (CONSOLE_WIDTH - (printOffset % CONSOLE_WIDTH));
+		else if(buf[i] == '\t') printOffset += (8 - (printOffset % 8));
+			memCpy(CONSOLE_VIDEOMEMADDR, CONSOLE_VIDEOMEMADDR + CONSOLE_WIDTH * sizeof(CHARACTER), (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH * sizeof(CHARACTER));
+			for(j = (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH; j < (CONSOLE_HEIGHT * CONSOLE_WIDTH); j++) {
+			printOffset = (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH;
+				printXY(x - 1, y, CONSOLE_DEFAULTTEXTCOLOR, " ");
+				setCursor(x - 1, y);
+				bufIdx--;
+	list->buf = param;
+	list->len = strLen(param);
+	list->nowPosition = 0;
+	if(list->len <= list->nowPosition) return 0;
+	for(i = list->nowPosition; i < list->len; i++) if(list->buf[i] == ' ') break;
+	memCpy(param, list->buf + list->nowPosition, i);
+	len = i - list->nowPosition;
+	list->nowPosition += len + 1;
+		printF("  - %s\n", gs_cmdTable[i].help);
+		total += readTSC() - last;
+	margin = (runningTask->link.id & 0xFFFFFFFF) % 10;
+			if(x >= (CONSOLE_WIDTH - margin)) i = 1;
+			if(y >= (CONSOLE_HEIGHT - margin)) i = 2;
+			x--;
+			y--;
+	char data[4] = {'-', '\\', '|', '/'};
+	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
+	offset = CONSOLE_WIDTH * CONSOLE_HEIGHT - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+		if((tcb->link.id >> 32) != 0) {
+			printF("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + cnt++, tcb->link.id, GETPRIORITY(tcb->flag), tcb->flag, getListCnt(&(tcb->childThreadList)));
+			printF("     Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n", tcb->parentProcID, tcb->memAddr, tcb->memSize);
+		_id = tcb->link.id;
+		if(((_id >> 32) != 0) && ((tcb->flag & TASK_FLAGS_SYSTEM) == 0x00)) {
+			_id = tcb->link.id;
+			if(((_id >> 32) != 0) && ((tcb->flag & TASK_FLAGS_SYSTEM) == 0x00)) {
+	while((getTickCnt() - tickCnt) < 50) schedule();
+		printF("Task ID [0x%Q] Value[%d]\n", getRunningTask()->link.id, gs_add);
+	while((getTickCnt() - tickCnt) < 1000) schedule();
+	if(proc != NULL) printF("Process [0x%Q] Create Success !\n", proc->link.id);
+			for(i = 0; i < CONSOLE_HEIGHT - 1; i++) {
+			for(i = 0; i < CONSOLE_HEIGHT - 1; i++) {
+		while((proc->link.id >> 32) != 0) _sleep(100);
+	char data[4] = { '-', '\\', '|', '/' };
+	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
+	offset = (CONSOLE_WIDTH * CONSOLE_HEIGHT) - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+	for(i = 0; i < mem->maxLvCnt; i++) {
+		for(j = 0; j < (mem->smallBlockCnt >> i); j++) {
+		for(j = 0; j < (mem->smallBlockCnt >> i); j++) {
+			if(freeMem((void*)(mem->startAddr + (DYNMEM_MIN_SIZE << i) * j)) == FALSE) {
+	char _buf[CONSOLE_WIDTH - 13];	// 가로길이 총 80에서(CONSOLE_WIDTH == 80) print할 x좌표만큼 빼준다!
+	y = (task->link.id) % 15 + 9;
+			printF("Task ID[0x%Q] Verify Fail...\n", task->link.id);
+	_buf[sizeof(hdd.modelNum) - 1] = '\0';
+	_buf[sizeof(hdd.serialNum) - 1] = '\0';
+	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+	if((len > (FILESYSTEM_MAXFILENAMELEN -1)) || (len == 0)) {
+	char *_buf[CONSOLE_WIDTH - 5], tmp[50];	// _buf의 크기가 CONSOLE_WIDTH - 5인 이유는 현재 우리의 OS는 총 80만큼의 가로길이이고
+		totalByte += entry->size;
+		if(entry->size == 0) usedClusterCnt++;	// 크기가 0이라도 클러스터 1개는 할당되어 있음
+		else usedClusterCnt += (entry->size + (FILESYSTEM_CLUSTER_SIZE - 1)) / FILESYSTEM_CLUSTER_SIZE;
+		memSet(_buf, ' ', CONSOLE_WIDTH - 5);
+		_buf[CONSOLE_WIDTH - 6] = '\0';
+		memCpy(_buf, entry->d_name, strLen(entry->d_name));
+		sprintF(tmp, "%d Byte", entry->size);
+		sprintF(tmp, "0x%X Cluster", entry->startClusterIdx);
+	printF("\t\tFree Space: %d KByte (%d Cluster)\n", (manager.totalClusterCnt - usedClusterCnt) * FILESYSTEM_CLUSTER_SIZE / 1024, manager.totalClusterCnt - usedClusterCnt);
+	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_END);
+	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_CUR);
+		byteCnt = (_rand() % sizeof(_tmpBuf) - 1) + 1;
+		randOffset = _rand() % (maxSize - byteCnt);
+	fseek(file, maxSize - 1, SEEK_SET);
+	_buf[maxSize - 1] = (BYTE)i;
+		byteCnt = (_rand() % (sizeof(_tmpBuf) -  1)) + 1;
+		randOffset = _rand() % ((maxSize) - byteCnt);
+	fseek(file, -maxSize, SEEK_CUR);
+	gs_dynmem.smallBlockCnt = (memSize / DYNMEM_MIN_SIZE) - metaCnt;
+				*nowBitmap |= (DYNMEM_EXIST << (i - 1));
+	return memSize - DYNMEM_START_ADDR;
+	return (allocBlockIdxSize + bitmapSize + DYNMEM_MIN_SIZE - 1) / DYNMEM_MIN_SIZE;
+	if(offset == -1) return NULL;
+	if(blockIdx == -1) return -1;
+		if(freeOffset != -1) break;
+	if(freeOffset == -1) {
+		return -1;
+		for(i = i - 1; i >= blockIdx; i--) {
+	return -1;
+	if(gs_dynmem.bitmapLv[blockIdx].bitCnt == 0 ) return -1;
+		if(((maxCnt - i) / 64) > 0) {
+	return -1;
+		if((bitmap[offset / 8] & (0x01 << (offset % 8))) != 0) gs_dynmem.bitmapLv[blockIdx].bitCnt--;
+	relativeAddr = ((QWORD)addr) - gs_dynmem.startAddr;
+		gs_dynmem.usedSize -= blockSize;
+		else buddyOffset = offset -1;
+	list->itemCnt = 0;
+	list->head = NULL;
+	list->tail = NULL;
+	return list->itemCnt;
+	link->next = NULL;
+	if(list->head == NULL) {
+		list->head = item;
+		list->tail = item;
+		list->itemCnt = 1;
+	link = (LISTLINK*)list->tail;
+	link->next = item;
+	list->tail = item;
+	list->itemCnt++;
+	link->next = list->head;
+	if(list->head == NULL) {
+		list->head = item;
+		list->tail = item;
+		list->itemCnt = 1;
+	list->head = item;
+	list->itemCnt++;
+	preLink = (LISTLINK*)list->head;
+	for(link = preLink; link != NULL; link = link->next) {
+		if(link->id == id) {
+			if((link == list->head) && (link == list->tail)) {
+				list->head = NULL;
+				list->tail = NULL;
+			} else if(link == list->head) list->head = link->next;
+			else if(link == list->tail) list->tail = preLink;
+			else preLink->next = link->next;
+			list->itemCnt--;
+	if(list->itemCnt == 0) return NULL;
+	link = (LISTLINK*)list->head;
+	return delList(list, link->id);
+	if(list->itemCnt == 0) return NULL;
+	link = (LISTLINK*)list->tail;
+	return delList(list, link->id);
+	for(link = (LISTLINK*)list->head; link != NULL; link = link->next) if(link->id == id) return link;
+	return list->head;
+	return list->tail;
+	return link->next;
+	mut->flag = FALSE;
+	mut->cnt = 0;
+	mut->id = TASK_INVALID_ID;
+	if(testNSet(&(mut->flag), 0, 1) == FALSE) {
+		if(mut->id == getRunningTask()->link.id) {
+			mut->cnt++;
+		while(testNSet(&(mut->flag), 0, 1) == FALSE) schedule();
+	mut->cnt = 1;
+	mut->id = getRunningTask()->link.id;
+	if((mut->flag == FALSE) || (mut->id != getRunningTask()->link.id)) return;
+	if(mut->cnt > 1) {
+		mut->cnt--;
+	mut->id = TASK_INVALID_ID;
+	mut->cnt = 0;
+	mut->flag = FALSE;
+	empty->link.id = ((QWORD)gs_TCBPoolManager.allocCnt << 32) | i;
+	gs_TCBPoolManager.useCnt--;
+		freeTCB(task->link.id);
+		freeTCB(task->link.id);
+		task->parentProcID = proc->link.id;
+		task->memAddr = proc->memAddr;
+		task->memSize = proc->memSize;
+		addListTail(&(proc->childThreadList), &(task->threadLink));
+		task->parentProcID = proc->link.id;
+		task->memAddr = memAddr;
+		task->memSize = memSize;
+	task->threadLink.id = task->link.id;
+//	stackAddr = (void*)(TASK_STACKPOOLADDR + (TASK_STACKSIZE * (GETTCBOFFSET(task->link.id))));
+	initList(&(task->childThreadList));
+	task->fpuUsed = FALSE;
+	memSet(tcb->context.reg, 0, sizeof(tcb->context.reg));
+	tcb->context.reg[TASK_RSPOFFSET] = (QWORD)stackAddr + stackSize - 8;
+	tcb->context.reg[TASK_RBPOFFSET] = (QWORD)stackAddr + stackSize - 8;
+	*(QWORD*)((QWORD)stackAddr + stackSize - 8) = (QWORD)taskExit;
+	tcb->context.reg[TASK_CSOFFSET] = GDT_KERNELCODESEGMENT;
+	tcb->context.reg[TASK_DSOFFSET] = GDT_KERNELDATASEGMENT;
+	tcb->context.reg[TASK_ESOFFSET] = GDT_KERNELDATASEGMENT;
+	tcb->context.reg[TASK_FSOFFSET] = GDT_KERNELDATASEGMENT;
+	tcb->context.reg[TASK_GSOFFSET] = GDT_KERNELDATASEGMENT;
+	tcb->context.reg[TASK_SSOFFSET] = GDT_KERNELDATASEGMENT;
+	tcb->context.reg[TASK_RIPOFFSET] = epAddr;
+	tcb->context.reg[TASK_RFLAGSOFFSET] |= 0x0200;
+	tcb->stackAddr = stackAddr;
+	tcb->stackSize = stackSize;
+	tcb->flag = flag;
+	task->flag = TASK_FLAGS_HIGHEST | TASK_FLAGS_PROCESS | TASK_FLAGS_SYSTEM;
+	task->parentProcID = task->link.id;
+	task->memAddr = (void*)0x100000;
+	task->memSize = 0x500000;
+	task->stackAddr = (void*)0x600000;
+	task->stackSize = 0x100000;
+	priority = GETPRIORITY(task->flag);
+	if(target->link.id != id) return NULL;
+	priority = GETPRIORITY(target->flag);
+	if(target->link.id == id) SETPRIORITY(target->flag, priority);
+			if(target != NULL) SETPRIORITY(target->flag, priority);
+				SETPRIORITY(target->flag, priority);
+	if((runningTask->flag & TASK_FLAGS_IDLE) == TASK_FLAGS_IDLE) gs_scheduler.loopIdleTask += TASK_PROCESSORTIME - gs_scheduler.time;
+	if(gs_scheduler.lastFPU != nextTask->link.id) setTS();
+	if(runningTask->flag & TASK_FLAGS_FIN) {
+		switchContext(NULL, &(nextTask->context));
+		switchContext(&(runningTask->context), &(nextTask->context));
+	contextAddr = (char*)IST_STARTADDR + IST_SIZE - sizeof(CONTEXT);
+	if((runningTask->flag & TASK_FLAGS_IDLE) == TASK_FLAGS_IDLE) gs_scheduler.loopIdleTask += TASK_PROCESSORTIME;
+	if(runningTask->flag & TASK_FLAGS_FIN) addListTail(&(gs_scheduler.waitList), runningTask);
+		memCpy(&(runningTask->context), contextAddr, sizeof(CONTEXT));
+	if(gs_scheduler.lastFPU != nextTask->link.id) setTS();
+	memCpy(contextAddr, &(nextTask->context), sizeof(CONTEXT));
+	if(gs_scheduler.time > 0) gs_scheduler.time--;
+	if(target->link.id == id) {
+		target->flag |= TASK_FLAGS_FIN;
+		SETPRIORITY(target->flag, TASK_FLAGS_WAIT);
+				target->flag |= TASK_FLAGS_FIN;
+				SETPRIORITY(target->flag, TASK_FLAGS_WAIT);
+		target->flag |= TASK_FLAGS_FIN;
+		SETPRIORITY(target->flag, TASK_FLAGS_WAIT);
+	taskFin(gs_scheduler.runningTask->link.id);
+	if((offset < -1) && (offset > TASK_MAXCNT)) return NULL;
+	if((tcb == NULL) || (tcb->link.id != id)) return FALSE;
+	if(thread->flag & TASK_FLAGS_PROCESS) return thread;
+	proc = getTCB(GETTCBOFFSET(thread->parentProcID));
+	if((proc == NULL) || (proc->link.id != thread->parentProcID)) return NULL;
+		// 프로세서 사용량 계산(100 - 유휴 태스크가 사용한 프로세서 시간) * 100 / 시스템 전체에서 사용한 프로세서 시간)
+		if(nowTickCnt - lastTickCnt == 0) gs_scheduler.processorLoad = 0;
+		else gs_scheduler.processorLoad = 100 - (nowIdleTask - lastIdleTask) * 100 / (nowTickCnt - lastTickCnt);
+				if(task->flag & TASK_FLAGS_PROCESS) {
+					cnt = getListCnt(&(task->childThreadList));
+						threadLink = (TCB*)delListHead(&(task->childThreadList));
+						addListTail(&(task->childThreadList), &(childThread->threadLink));
+						taskFin(childThread->link.id);
+					if(getListCnt(&(task->childThreadList)) > 0) {
+						if(task->flag & TASK_FLAGS_USERLV) freeMem(task->memAddr);
+				} else if(task->flag & TASK_FLAGS_THREAD) {
+					if(proc != NULL) delList(&(proc->childThreadList), task->link.id);
+				taskID = task->link.id;
+				freeMem(task->stackAddr);
+				printF("### IDLE: Task ID[0x%q] is Completely Finished.\n", task->link.id);
+	if(mbr->sign != FILESYSTEM_SIGN) {
+	gs_fileSystemManager.reserved_sectorCnt = mbr->reserved_sectorCnt;
+	gs_fileSystemManager.linkStartAddr = mbr->reserved_sectorCnt + 1;
+	gs_fileSystemManager.linkAreaSize = mbr->linkSectorCnt;
+	gs_fileSystemManager.dataStartAddr = mbr->reserved_sectorCnt + mbr->linkSectorCnt + 1;
+	gs_fileSystemManager.totalClusterCnt = mbr->totalClusterCnt;
+	totalSectorCnt = hdd->totalSector;
+	remainSectorCnt = totalSectorCnt - linkSectorCnt - 1;
+	memSet(mbr->part, 0, sizeof(mbr->part));
+	mbr->sign = FILESYSTEM_SIGN;
+	mbr->reserved_sectorCnt = 0;
+	mbr->linkSectorCnt = linkSectorCnt;
+	mbr->totalClusterCnt = clusterCnt;
+		if((lastOffset + i) == (gs_fileSystemManager.linkAreaSize - 1)) linkCnt = gs_fileSystemManager.totalClusterCnt % 128;
+	if(gs_fileSystemManager.mnt == FALSE) return -1;
+	if(readCluster(0, gs_tmpBuf) == FALSE) return -1;
+	return -1;
+	if(gs_fileSystemManager.mnt == FALSE) return -1;
+	if(readCluster(0, gs_tmpBuf) == FALSE) return -1;
+	return -1;
+		if(file->type == FILESYSTEM_TYPE_FREE) {
+			file->type = FILESYSTEM_TYPE_FILE;
+	file->type = FILESYSTEM_TYPE_FREE;
+	if(*dirEntryIdx == -1) {
+	memCpy(entry->fileName, name, strLen(name) + 1);
+	entry->startClusterIdx = cluster;
+	entry->size = 0;
+	if((len > (sizeof(entry.fileName) - 1)) || (len == 0)) return NULL;
+	if(offset == -1) {
+	file->type = FILESYSTEM_TYPE_FILE;
+	file->fileHandle.dirEntryOffset = offset;
+	file->fileHandle.size = entry.size;
+	file->fileHandle.startClusterIdx = entry.startClusterIdx;
+	file->fileHandle.nowClusterIdx = entry.startClusterIdx;
+	file->fileHandle.preClusterIdx = entry.startClusterIdx;
+	file->fileHandle.nowOffset = 0;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+	if((handle->nowOffset == handle->size) || (handle->nowClusterIdx == FILESYSTEM_LAST_CLUSTER)) return 0;
+	totalCnt = _MIN(size * cnt, handle->size - handle->nowOffset);
+		if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		offset = handle->nowOffset % FILESYSTEM_CLUSTER_SIZE;
+		copySize = _MIN(FILESYSTEM_CLUSTER_SIZE - offset, totalCnt - readCnt);
+		handle->nowOffset += copySize;
+		if((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) == 0) {
+			if(getClusterLink(handle->nowClusterIdx, &nextClusterIdx) == FALSE) break;
+			handle->preClusterIdx = handle->nowClusterIdx;
+			handle->nowClusterIdx = nextClusterIdx;
+	if((handle == NULL) || (getDirEntry(handle->dirEntryOffset, &entry) == FALSE)) return FALSE;
+	entry.size = handle->size;
+	entry.startClusterIdx = handle->startClusterIdx;
+	if(setDirEntry(handle->dirEntryOffset, &entry) == FALSE) return FALSE;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+		if(handle->nowClusterIdx == FILESYSTEM_LAST_CLUSTER) {
+			if(setClusterLink(handle->preClusterIdx, allocIdx) == FALSE) {
+			handle->nowClusterIdx = allocIdx;
+		} else if(((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) != 0) || ((totalCnt - writeCnt) < FILESYSTEM_CLUSTER_SIZE)) {
+			if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		offset = handle->nowOffset % FILESYSTEM_CLUSTER_SIZE;
+		copySize = _MIN(FILESYSTEM_CLUSTER_SIZE - offset, totalCnt - writeCnt);
+		if(writeCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		handle->nowOffset += copySize;
+		if((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) == 0) {
+			if(getClusterLink(handle->nowClusterIdx, &nextIdx) == FALSE) break;
+			handle->preClusterIdx = handle->nowClusterIdx;
+			handle->nowClusterIdx = nextIdx;
+	if(handle->size < handle->nowOffset) {
+		handle->size = handle->nowOffset;
+		remainCnt -= writeCnt;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+		if((offset < 0) && (handle->nowOffset <= (DWORD)-offset)) realOffset = 0;
+		else realOffset = handle->nowOffset + offset;
+		if((offset < 0) && (handle->size <= (DWORD)-offset)) realOffset = 0;
+		else realOffset = handle->size + offset;
+	lastOffset = handle->size / FILESYSTEM_CLUSTER_SIZE;
+	nowOffset = handle->nowOffset / FILESYSTEM_CLUSTER_SIZE;
+		moveCnt = lastOffset - nowOffset;
+		startClusterIdx = handle->nowClusterIdx;
+		moveCnt = moveOffset - nowOffset;
+		startClusterIdx = handle->nowClusterIdx;
+		startClusterIdx = handle->startClusterIdx;
+			return -1;
+		handle->preClusterIdx = preClusterIdx;
+		handle->nowClusterIdx = nowClusterIdx;
+	} else if(startClusterIdx == handle->startClusterIdx) {	// 첫 번째 클러스터로 이동하는 경우 핸들의 클러스터 값을 시작 클러스터로 설정
+		handle->preClusterIdx = handle->startClusterIdx;
+		handle->nowClusterIdx = handle->startClusterIdx;
+		handle->nowOffset = handle->size;
+		if(filePadding(file, realOffset - handle->size) == FALSE) return 0;
+	handle->nowOffset = realOffset;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return -1;
+	for(i = 0; i < FILESYSTEM_HANDLE_MAXCNT; i++) if((file[i].type == FILESYSTEM_TYPE_FILE) && (file[i].fileHandle.startClusterIdx == entry->startClusterIdx)) return TRUE;
+	if((len > (sizeof(entry.fileName) - 1)) || (len == 0)) return NULL;
+	if(offset == -1) {
+		return -1;
+		return -1;
+		return -1;
+		return -1;
+	dir->type = FILESYSTEM_TYPE_DIR;
+	dir->dirHandle.nowOffset = 0;
+	dir->dirHandle.dirBuf = buf;
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return NULL;
+	handle = &(dir->dirHandle);
+	if((handle->nowOffset < 0) || (handle->nowOffset >= FILESYSTEM_MAXDIRENTRYCNT)) return NULL;
+	entry = handle->dirBuf;
+	while(handle->nowOffset < FILESYSTEM_MAXDIRENTRYCNT) {
+		if(entry[handle->nowOffset].startClusterIdx != 0) {
+			return &(entry[handle->nowOffset++]);
+		handle->nowOffset++;
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return;
+	handle  = &(dir->dirHandle);
+	handle->nowOffset = 0;
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return -1;
+	handle = &(dir->dirHandle);
+	freeMem(handle->dirBuf);
+	if(mbr->sign != FILESYSTEM_SIGN) {
+	gs_fileSystemManager.reserved_sectorCnt = mbr->reserved_sectorCnt;
+	gs_fileSystemManager.linkStartAddr = mbr->reserved_sectorCnt + 1;
+	gs_fileSystemManager.linkSectorCnt = mbr->linkSectorCnt;
+	gs_fileSystemManager.dataStartAddr = mbr->reserved_sectorCnt + mbr->linkSectorCnt + 1;
+	gs_fileSystemManager.totalClusterCnt = mbr->totalClusterCnt;
+	totalSectorCnt = hdd->totalSector;
+	remainSectorCnt = totalSectorCnt - linkSectorCnt - 1;
+	memSet(mbr->part, 0, sizeof(mbr->part));
+	mbr->sign = FILESYSTEM_SIGN;
+	mbr->reserved_sectorCnt = 0;
+	mbr->linkSectorCnt = linkSectorCnt;
+	mbr->totalClusterCnt = clusterCnt;
+		if((lastOffset + i) == (gs_fileSystemManager.linkSectorCnt - 1)) linkCnt = gs_fileSystemManager.totalClusterCnt % 128;
+	if(gs_fileSystemManager.mnt == FALSE) return -1;
+	if(readCluster(0, gs_tmpBuf) == FALSE) return -1;
+	return -1;
+	if(gs_fileSystemManager.mnt == FALSE) return -1;
+	if(readCluster(0, gs_tmpBuf) == FALSE) return -1;
+	return -1;
+		if(file->type == FILESYSTEM_TYPE_FREE) {
+			file->type = FILESYSTEM_TYPE_FILE;
+	file->type = FILESYSTEM_TYPE_FREE;
+	if(*dirEntryIdx == -1) {
+	memCpy(entry->name, name, strLen(name) + 1);
+	entry->startClusterIdx = cluster;
+	entry->size = 0;
+	if((len > (sizeof(entry.name) - 1)) || (len == 0)) return NULL;
+	if(offset == -1) {
+	file->type = FILESYSTEM_TYPE_FILE;
+	file->fileHandle.dirEntryOffset = offset;
+	file->fileHandle.size = entry.size;
+	file->fileHandle.startClusterIdx = entry.startClusterIdx;
+	file->fileHandle.nowClusterIdx = entry.startClusterIdx;
+	file->fileHandle.preClusterIdx = entry.startClusterIdx;
+	file->fileHandle.nowOffset = 0;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+	if((handle->nowOffset == handle->size) || (handle->nowClusterIdx == FILESYSTEM_LAST_CLUSTER)) return 0;
+	totalCnt = _MIN(size * cnt, handle->size - handle->nowOffset);
+		if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		offset = handle->nowOffset % FILESYSTEM_CLUSTER_SIZE;
+		copySize = _MIN(FILESYSTEM_CLUSTER_SIZE - offset, totalCnt - readCnt);
+		handle->nowOffset += copySize;
+		if((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) == 0) {
+			if(getClusterLink(handle->nowClusterIdx, &nextClusterIdx) == FALSE) break;
+			handle->preClusterIdx = handle->nowClusterIdx;
+			handle->nowClusterIdx = nextClusterIdx;
+	if((handle == NULL) || (getDirEntry(handle->dirEntryOffset, &entry) == FALSE)) return FALSE;
+	entry.size = handle->size;
+	entry.startClusterIdx = handle->startClusterIdx;
+	if(setDirEntry(handle->dirEntryOffset, &entry) == FALSE) return FALSE;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+		if(handle->nowClusterIdx == FILESYSTEM_LAST_CLUSTER) {
+			if(setClusterLink(handle->preClusterIdx, allocIdx) == FALSE) {
+			handle->nowClusterIdx = allocIdx;
+		} else if(((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) != 0) || ((totalCnt - writeCnt) < FILESYSTEM_CLUSTER_SIZE)) {
+			if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		offset = handle->nowOffset % FILESYSTEM_CLUSTER_SIZE;
+		copySize = _MIN(FILESYSTEM_CLUSTER_SIZE - offset, totalCnt - writeCnt);
+		if(writeCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		handle->nowOffset += copySize;
+		if((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) == 0) {
+			if(getClusterLink(handle->nowClusterIdx, &nextIdx) == FALSE) break;
+			handle->preClusterIdx = handle->nowClusterIdx;
+			handle->nowClusterIdx = nextIdx;
+	if(handle->size < handle->nowOffset) {
+		handle->size = handle->nowOffset;
+		remainCnt -= writeCnt;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return 0;
+	handle = &(file->fileHandle);
+		if((offset < 0) && (handle->nowOffset <= (DWORD)-offset)) realOffset = 0;
+		else realOffset = handle->nowOffset + offset;
+		if((offset < 0) && (handle->size <= (DWORD)-offset)) realOffset = 0;
+		else realOffset = handle->size + offset;
+	lastOffset = handle->size / FILESYSTEM_CLUSTER_SIZE;
+	nowOffset = handle->nowOffset / FILESYSTEM_CLUSTER_SIZE;
+		moveCnt = lastOffset - nowOffset;
+		startClusterIdx = handle->nowClusterIdx;
+		moveCnt = moveOffset - nowOffset;
+		startClusterIdx = handle->nowClusterIdx;
+		startClusterIdx = handle->startClusterIdx;
+			return -1;
+		handle->preClusterIdx = preClusterIdx;
+		handle->nowClusterIdx = nowClusterIdx;
+	} else if(startClusterIdx == handle->startClusterIdx) {	// 첫 번째 클러스터로 이동하는 경우 핸들의 클러스터 값을 시작 클러스터로 설정
+		handle->preClusterIdx = handle->startClusterIdx;
+		handle->nowClusterIdx = handle->startClusterIdx;
+		handle->nowOffset = handle->size;
+		if(filePadding(file, realOffset - handle->size) == FALSE) return 0;
+	handle->nowOffset = realOffset;
+	if((file == NULL) || (file->type != FILESYSTEM_TYPE_FILE)) return -1;
+	for(i = 0; i < FILESYSTEM_HANDLE_MAXCNT; i++) if((file[i].type == FILESYSTEM_TYPE_FILE) && (file[i].fileHandle.startClusterIdx == entry->startClusterIdx)) return TRUE;
+	if((len > (sizeof(entry.name) - 1)) || (len == 0)) return NULL;
+	if(offset == -1) {
+		return -1;
+		return -1;
+		return -1;
+		return -1;
+	dir->type = FILESYSTEM_TYPE_DIR;
+	dir->dirHandle.nowOffset = 0;
+	dir->dirHandle.dirBuf = buf;
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return NULL;
+	handle = &(dir->dirHandle);
+	if((handle->nowOffset < 0) || (handle->nowOffset >= FILESYSTEM_MAXDIRENTRYCNT)) return NULL;
+	entry = handle->dirBuf;
+	while(handle->nowOffset < FILESYSTEM_MAXDIRENTRYCNT) {
+		if(entry[handle->nowOffset].startClusterIdx != 0) {
+			return &(entry[handle->nowOffset++]);
+		handle->nowOffset++;
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return;
+	handle  = &(dir->dirHandle);
+	handle->nowOffset = 0;
+	if((dir == NULL) || (dir->type != FILESYSTEM_TYPE_DIR)) return -1;
+	handle = &(dir->dirHandle);
+	freeMem(handle->dirBuf);

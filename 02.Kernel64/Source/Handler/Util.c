@@ -11,39 +11,14 @@
 
 volatile QWORD g_tickCnt = 0;
 
-// 메모리를 특정 값으로 채움
-/*
-void memSet(void *dest, BYTE data, int size) {
-	int i;
-	for(i = 0; i < size; i++) ((char*)dest)[i] = data;
-}
-
-// 메모리 복사
-int memCpy(void *dest, const void *src, int size) {
-	int i;
-	for(i = 0; i < size; i++) ((char*)dest)[i] = ((char*)src)[i];
-	return size;
-}
-
-// 메모리 비교
-int memCmp(const void *dest, const void *src, int size) {
-	int i;
-	char tmp;
-	for(i = 0; i < size; i++) {
-		tmp = ((char*)dest)[i] - ((char*)src)[i];
-		if(tmp != 0) return (int)tmp;
-	}
-	return 0;
-}
-*/
-
 void memSet(void *dest, BYTE data, int size) {
 	int i, remainOffset;
 	QWORD _data = 0;
-
+	// 8바이트 데이터 채움
 	for(i = 0; i < 8; i++) _data = (_data << 8) | data;
+	// 8바이트씩 먼저 채움
 	for(i = 0; i < (size / 8); i++) ((QWORD*)dest)[i] = _data;
-
+	// 8바이트씩 채우고 남은 부분 마무리
 	remainOffset = i * 8;
 	for(i = 0; i < (size % 8); i++) ((char*)dest)[remainOffset++] = data;
 }
@@ -61,9 +36,9 @@ inline void memSetWord(void *dest, WORD data, int size) {
 
 int memCpy(void *dest, const void *src, int size) {
 	int i, remainOffset;
-
+	// 8바이트씩 먼저 복사
 	for(i = 0; i < (size / 8); i++) ((QWORD*)dest)[i] = ((QWORD*)src)[i];
-
+	// 8바이트씩 채우고 남은 부분 마무리
 	remainOffset = i * 8;
 	for(i = 0; i < (size % 8); i++) {
 		((char*)dest)[remainOffset] = ((char*)src)[remainOffset];
@@ -76,13 +51,12 @@ int memCmp(const void *dest, const void *src, int size) {
 	int i, j, remainOffset;
 	char value;
 	QWORD _value;
-
+	// 8바이트씩 먼저 비교
 	for(i = 0; i < (size / 8); i++) {
 		_value = ((QWORD*)dest)[i] - ((QWORD*)src)[i];
-
 		if(_value != 0) for(i = 0; i < 8; i++) if(((_value >> (i * 8)) & 0xFF) != 0) return (_value >> (i * 8)) & 0xFF;
 	}
-
+	// 8바이트씩 채우고 남은 부분 마무리
 	remainOffset = i * 8;
 	for(i = 0; i < (size % 8); i++) {
 		value = ((char*)dest)[remainOffset] - ((char*)src)[remainOffset];

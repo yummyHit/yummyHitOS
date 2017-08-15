@@ -54,6 +54,8 @@ SHELLENTRY gs_cmdTable[] = {
 	{"fwrite", "### Write Data to File. ex)fwrite a.txt", csFileWrite},
 	{"fread", "### Read Data to File. ex)fread a.txt", csFileRead},
 	{"fileIOTest", "### File I/O Test Function ###", csFileIOTest},
+	{"cacheTest", "### Cache's Read & Write Party ###", csCacheTest},
+	{"cacheFlush", "### Flush File System Cache", csCacheFlush},
 };
 
 // 셸 메인 루프
@@ -235,6 +237,9 @@ static void csStrConvert(const char *buf) {
 
 // PC 재부팅
 static void csHalt(const char *buf) {
+	printF("Cache Flushing ...");
+	if(flushFileSystemCache() == TRUE) printF("[  Hit  ]\n");
+	else printF("[  Err  ]\n");
 	printF("Press any key on your keyboard for reboot PC !\n");
 	getCh();
 	reBoot();
@@ -766,7 +771,7 @@ static void csSeqAllocTest(const char *buf) {
 static void randAllocTask(void) {
 	TCB *task;
 	QWORD memSize;
-	char buf[200];
+	char _buf[CONSOLE_WIDTH - 13];	// 가로길이 총 80에서(CONSOLE_WIDTH == 80) print할 x좌표만큼 빼준다!
 	BYTE *allocBuf;
 	int i, j, y;
 
@@ -782,14 +787,14 @@ static void randAllocTask(void) {
 			if(allocBuf == 0) _sleep(1);
 		} while(allocBuf == 0);
 
-		sprintF(buf, "|Address: [0x%Q] Size: [0x%Q] Allocation Success", allocBuf, memSize);
+		sprintF(_buf, "|Address: [0x%Q] Size: [0x%Q] Allocation Success", allocBuf, memSize);
 		// 자신의 ID를 Y좌표로 하여 데이터 출력
-		printXY(20, y, CONSOLE_DEFAULTTEXTCOLOR, buf);
+		printXY(12, y, CONSOLE_DEFAULTTEXTCOLOR, _buf);
 		_sleep(200);
 
 		// 버퍼를 반으로 나눠 랜덤한 데이터를 똑같이 채움
-		sprintF(buf, "|Address: [0x%Q] Size: [0x%Q] Data Write...     ", allocBuf, memSize);
-		printXY(20, y, CONSOLE_DEFAULTTEXTCOLOR, buf);
+		sprintF(_buf, "|Address: [0x%Q] Size: [0x%Q] Data Write...     ", allocBuf, memSize);
+		printXY(12, y, CONSOLE_DEFAULTTEXTCOLOR, _buf);
 		for(i = 0; i < memSize / 2; i++) {
 			allocBuf[i] = _rand() & 0xFF;
 			allocBuf[i + (memSize / 2)] = allocBuf[i];
@@ -797,8 +802,8 @@ static void randAllocTask(void) {
 		_sleep(200);
 
 		// 채운 데이터가 정상적인지 다시 확인
-		sprintF(buf, "|Address: [0x%Q] Size: [0x%Q] Data Verify...    ", allocBuf, memSize);
-		printXY(20, y, CONSOLE_DEFAULTTEXTCOLOR, buf);
+		sprintF(_buf, "|Address: [0x%Q] Size: [0x%Q] Data Verify...    ", allocBuf, memSize);
+		printXY(12, y, CONSOLE_DEFAULTTEXTCOLOR, _buf);
 		for(i = 0; i < memSize / 2; i++) if(allocBuf[i] != allocBuf[i + (memSize / 2)]) {
 			printF("Task ID[0x%Q] Verify Fail...\n", task->link.id);
 			taskExit();
@@ -819,7 +824,7 @@ static void csRandAllocTest(const char *buf) {
 // 하드 디스크 정보 표시
 static void csHDDInfo(const char *buf) {
 	HDDINFO hdd;
-	char _buf[100];
+	char _buf[80];
 
 	// 하드 디스크 정보 읽음
 	if(getHDDInfo(&hdd) == FALSE) {
@@ -856,7 +861,7 @@ static void csReadSector(const char *buf) {
 	int _sectorCnt, i, j;
 	char *_buf;
 	BYTE data;
-	BOOL exit = FALSE;
+	BOOL _exit = FALSE;
 
 	// 파라미터 리스트 초기화 후 LBA 어드레스와 섹터 수 추출
 	initParam(&list, buf);
@@ -877,7 +882,7 @@ static void csReadSector(const char *buf) {
 				if(!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
 					printF("\nPress any key to continue... ('q' is exit) : ");
 					if(getCh() == 'q') {
-						exit = TRUE;
+						_exit = TRUE;
 						break;
 					}
 				}
@@ -888,7 +893,7 @@ static void csReadSector(const char *buf) {
 				if(data < 16) printF("0");
 				printF("%X ", data);
 			}
-			if(exit == TRUE) break;
+			if(_exit == TRUE) break;
 		}
 		printF("\n");
 	} else printF("Read Fail...\n");
@@ -903,7 +908,7 @@ static void csWriteSector(const char *buf) {
 	DWORD _lba;
 	int _sectorCnt, i, j;
 	char *_buf;
-	BOOL exit = FALSE;
+	BOOL _exit = FALSE;
 	BYTE data;
 	static DWORD ls_writeCnt = 0;
 
@@ -937,7 +942,7 @@ static void csWriteSector(const char *buf) {
 			if(!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
 				printF("\nPress any key to continue... ('q' is exit) : ");
 				if(getCh() == 'q') {
-					exit = TRUE;
+					_exit = TRUE;
 					break;
 				}
 			}
@@ -948,7 +953,7 @@ static void csWriteSector(const char *buf) {
 			if(data < 16) printF("0");
 			printF("%X ", data);
 		}
-		if(exit == TRUE) break;
+		if(_exit == TRUE) break;
 	}
 	printF("\n");
 	freeMem(_buf);
@@ -982,7 +987,7 @@ static void csFileSystemInfo(const char *buf) {
 	printF("Mounted:\t\t\t\t %d\n", manager.mnt);
 	printF("Reserved Sector Count:\t\t\t %d Sector\n", manager.reserved_sectorCnt);
 	printF("Cluster Link Table Start Address:\t %d Sector\n", manager.linkStartAddr);
-	printF("Cluster Link Table Size:\t\t %d Sector\n", manager.linkSectorCnt);
+	printF("Cluster Link Table Size:\t\t %d Sector\n", manager.linkAreaSize);
 	printF("Data Area Start Address:\t\t %d Sector\n", manager.dataStartAddr);
 	printF("Total Cluster Count:\t\t\t %d Cluster\n", manager.totalClusterCnt);
 }
@@ -993,14 +998,13 @@ static void csMakeFile(const char *buf) {
 	char name[50];
 	int len, i;
 	DWORD cluster;
-	DIRENTRY entry;
 	FILE *file;
 
 	// 파라미터 리스트 초기화해 파일 이름 추출
 	initParam(&list, buf);
 	len = getNextParam(&list, name);
 	name[len] = '\0';
-	if((len > (sizeof(entry.name) - 1)) || (len == 0)) {
+	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
 		printF("Too Long or Too Short File Name\n");
 		return;
 	}
@@ -1044,7 +1048,7 @@ static void csRootDir(const char *buf) {
 	int cnt = 0, totalCnt = 0;
 	struct dirent *entry;
 	char *_buf[CONSOLE_WIDTH - 5], tmp[50];	// _buf의 크기가 CONSOLE_WIDTH - 5인 이유는 현재 우리의 OS는 총 80만큼의 가로길이이고
-						// 아래에서 미관을 위해 4칸을 띄어준 후 %s를 통해 출력하므로 5만큼 빼준다!
+						// 아래 코드를 보면 미관을 위해 4칸을 띄어준 후 %s를 통해 출력하므로 5만큼 빼준다!
 	DWORD totalByte = 0, usedClusterCnt = 0;
 	FILESYSTEMMANAGER manager;
 
@@ -1081,7 +1085,7 @@ static void csRootDir(const char *buf) {
 		if(entry == NULL) break;
 
 		// 전부 공백으로 초기화한 후 각 위치에 값을 대입
-		memSet(_buf, ' ', CONSOLE_WIDTH - 5);
+		memSet(_buf, ' ', CONSOLE_WIDTH - 6);
 		_buf[CONSOLE_WIDTH - 6] = '\0';
 
 		// 파일 이름 삽입
@@ -1184,7 +1188,7 @@ static void csFileRead(const char *buf) {
 
 	// 파일 끝까지 출력하는 것 반복
 	while(1) {
-		if(fread(key, 1, 1, fp) != 1) break;
+		if(fread(&key, 1, 1, fp) != 1) break;
 		printF("%c", key);
 
 		// 만약 엔터 키면 엔터 키 횟수를 증가시키고 20라인까지 출력했으면 더 출력할지 여부 물어봄
@@ -1207,10 +1211,9 @@ static void csFileRead(const char *buf) {
 // 파일 I/O 관련된 기능을 테스트
 static void csFileIOTest(const char *buf) {
 	FILE *file;
-	BYTE *_buf;
+	BYTE *_buf, _tmpBuf[1024];
 	int i, j;
 	DWORD randOffset, byteCnt, maxSize;
-	BYTE _tmpBuf[1024];
 
 	printF("   ================== File I/O Function Test ==================\n");
 
@@ -1246,7 +1249,7 @@ static void csFileIOTest(const char *buf) {
 	// 순차적 영역 쓰기 테스트
 	printF("3. Sequential Write Test(Cluster Size) .............");
 	// 열린 핸들로 쓰기 수행
-	for(i = 0; i < 100; i++) {
+	for(i = 0; i < 10; i++) {
 		memSet(_buf, i, FILESYSTEM_CLUSTER_SIZE);
 		if(fwrite(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
 			printF("[  Err  ]\n");
@@ -1254,15 +1257,15 @@ static void csFileIOTest(const char *buf) {
 			break;
 		}
 	}
-	if(i >= 100) printF("[  Hit  ]\n");
+	if(i >= 10) printF("[  Hit  ]\n");
 
 	// 순차적인 영역 읽기 테스트
 	printF("4. Sequential Read and Verify Test(Cluster Size) ...");
 	// 파일 처음으로 이동
-	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_END);
+	fseek(file, -10 * FILESYSTEM_CLUSTER_SIZE, SEEK_END);
 
 	// 열린 핸들로 읽기 수행 후 데이터 검증
-	for(i = 0; i < 100; i++) {
+	for(i = 0; i < 10; i++) {
 		// 파일 읽음
 		if(fread(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
 			printF("[  Err  ]\n");
@@ -1276,7 +1279,7 @@ static void csFileIOTest(const char *buf) {
 			break;
 		}
 	}
-	if(i >= 100) printF("[  Hit  ]\n");
+	if(i >= 10) printF("[  Hit  ]\n");
 
 	// 임의의 영역 쓰기 테스트
 	printF("5. Random Write Test ...............\n");
@@ -1285,12 +1288,12 @@ static void csFileIOTest(const char *buf) {
 	memSet(_buf, 0, maxSize);
 	// 여기 저기에 옮겨다니면서 데이터를 쓰고 검증
 	// 파일의 내용을 읽어 버퍼로 복사
-	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_CUR);
+	fseek(file, -10 * FILESYSTEM_CLUSTER_SIZE, SEEK_CUR);
 	fread(_buf, 1, maxSize, file);
 
 	// 임의의 위치로 옮기며 데이터를 파일과 버퍼에 씀
-	for(i = 0; i < 100; i ++) {
-		byteCnt = (_rand() % sizeof(_tmpBuf) - 1) + 1;
+	for(i = 0; i < 10; i ++) {
+		byteCnt = (_rand() % (sizeof(_tmpBuf) - 1)) + 1;
 		randOffset = _rand() % (maxSize - byteCnt);
 		printF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
 
@@ -1315,7 +1318,7 @@ static void csFileIOTest(const char *buf) {
 	// 임의의 영역 읽기 테스트
 	printF("6. Random Read And Verify Test .....\n");
 	// 임의의 위치로 옮기며 파일에서 데이터를 읽어 버퍼 내용과 비교
-	for(i = 0; i < 100; i++) {
+	for(i = 0; i < 10; i++) {
 		byteCnt = (_rand() % (sizeof(_tmpBuf) -  1)) + 1;
 		randOffset = _rand() % ((maxSize) - byteCnt);
 		printF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
@@ -1342,7 +1345,7 @@ static void csFileIOTest(const char *buf) {
 	// 다시 순차적 영역 읽기 테스
 	printF("7. Sequential Write, Read and Verify Test(1024 Byte)\n");
 	// 파일의 처음으로 이동
-	fseek(file, -maxSize, SEEK_CUR);
+	fseek(file, -10 * maxSize, SEEK_CUR);
 
 	// 열린 핸들로 쓰기 수행. 앞부분 2MB만 씀
 	for(i = 0; i < (2 * 1024 * 1024 / 1024) ; i++) {
@@ -1379,4 +1382,122 @@ static void csFileIOTest(const char *buf) {
 	else printF("[  Err  ]\n");
 
 	freeMem(_buf);
+}
+
+// 파일 읽고 쓰는 속도 측정
+static void csCacheTest(const char *buf) {
+	FILE *file;
+	DWORD clusterSize, oneByteSize, i;
+	QWORD lastTickCnt;
+	BYTE *_buf;
+
+	// 클러스터는 1MB까지 파일 테스트
+	clusterSize = 1024 * 1024;
+	// 1바이트씩 읽고 쓰는 테스트는 시간이 많이 걸리므로 16KB만 테스트
+	oneByteSize = 16 * 1024;
+
+	// 테스트용 버퍼 메모리 할당
+	_buf = allocMem(clusterSize);
+	if(buf == NULL) {
+		printF("Memory Allocation Fail...\n");
+		return;
+	}
+
+	// 버퍼 초기화
+	memSet(_buf, 0, FILESYSTEM_CLUSTER_SIZE);
+
+	printF("   ==================== File I/O Cache Test ===================\n");
+
+	// 클러스터 단위 파일을 순차적으로 쓰는 테스트
+	printF("1. Sequential Read/Write Test(Cluster Size)\n");
+
+	// 기존 테스트 파일 제거 후 새로 만듬
+	fremove("performance.txt");
+	file = fopen("performance.txt", "w");
+	if(file == NULL) {
+		printF("File Open Fail...\n");
+		freeMem(_buf);
+		return;
+	}
+
+	lastTickCnt = getTickCnt();
+	// 클러스터 단위로 쓰는 테스트
+	for(i = 0; i < (clusterSize / FILESYSTEM_CLUSTER_SIZE); i++) if(fwrite(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
+		printF("Write Fail...\n");
+		// 파일 닫고 메모리 해제
+		fclose(file);
+		freeMem(_buf);
+		return;
+	}
+	// 시간 출력
+	printF("   Sequential Write(Cluster Size): %d ms\n", getTickCnt() - lastTickCnt);
+
+	// 클러스터 단위로 파일 순차적 읽기 테스트, 파일의 처음으로 이동
+	fseek(file, 0, SEEK_SET);
+
+	lastTickCnt = getTickCnt();
+	// 클러스터 단위로 읽는 테스트
+	for(i = 0; i < (clusterSize / FILESYSTEM_CLUSTER_SIZE); i++) if(fread(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
+		printF("Read Fail...\n");
+		// 파일 닫고 메모리 해제
+		fclose(file);
+		freeMem(_buf);
+		return;
+	}
+	// 시간 출력
+	printF("   Sequential Read(Cluster Size): %d ms\n", getTickCnt() - lastTickCnt);
+
+	// 1바이트 단위로 파일 순차적으로 쓰는 테스트
+	printF("2. Sequential Read/Write Test(1 Byte)\n");
+
+	// 기존 테스트 파일 제거 후 새로 만듬
+	fremove("performance.txt");
+	file = fopen("performance.txt", "w");
+	if(file == NULL) {
+		printF("File Open Fail...\n");
+		freeMem(_buf);
+		return;
+	}
+
+	lastTickCnt = getTickCnt();
+	// 1 바이트 단위로 쓰는 테스트
+	for(i = 0; i < oneByteSize; i++) if(fwrite(_buf, 1, 1, file) != 1) {
+		printF("Write Fail...\n");
+		// 파일 닫고 메모리 해제
+		fclose(file);
+		freeMem(_buf);
+		return;
+	}
+	// 시간 출력
+	printF("   Sequential Write(1 Byte): %d ms\n", getTickCnt() - lastTickCnt);
+
+	// 1 바이트 단위로 파일을 순차적이게 읽는 테스트, 파일의 처음으로 이동
+	fseek(file, 0, SEEK_SET);
+
+	lastTickCnt = getTickCnt();
+	// 1 바이트 단위로 읽는 테스트
+	for(i = 0; i < oneByteSize; i++) if(fread(_buf, 1, 1, file) != 1) {
+		printF("Read Fail...\n");
+		// 파일 닫고 메모리 해제
+		fclose(file);
+		freeMem(_buf);
+		return;
+	}
+	// 시간 출력
+	printF("   Sequential Read(1 Byte): %d ms\n", getTickCnt() - lastTickCnt);
+
+	// 파일 닫고 메모리 해제
+	fclose(file);
+	freeMem(_buf);
+}
+
+// 파일 시스템 캐시 버퍼의 데이터 모두 하드 디스크에 씀
+static void csCacheFlush(const char *buf) {
+	QWORD tickCnt;
+
+	tickCnt = getTickCnt();
+	printF("Cache Flushing ...");
+	if(flushFileSystemCache() == TRUE) printF("[  Hit  ]\n");
+	else printF("[  Err  ]\n");
+	printF("Total Time = %d ms\n", getTickCnt() - tickCnt);
 }

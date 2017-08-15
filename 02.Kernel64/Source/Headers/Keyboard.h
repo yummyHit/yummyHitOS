@@ -214,7 +214,7 @@ void reBoot(void);
 BOOL isEngScanCode(BYTE scanCode);
 BOOL isNumScanCode(BYTE scanCode);
 BOOL isPadScanCode(BYTE scanCode);
-BOOL isCombineCode(BOOL scanCode);
+BOOL isCombineCode(BYTE scanCode);
 void updateKeyNLED(BYTE scanCode);
 BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag);
 BOOL initKeyboard(void);

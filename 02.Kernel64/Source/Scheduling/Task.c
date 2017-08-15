@@ -322,12 +322,12 @@ BOOL changePriority(QWORD id, BYTE priority) {
 }
 
 // 다른 태스크 찾아 전환. 인터럽트나 예외 발생시 호출하면 안됨
-void schedule(void) {
+BOOL schedule(void) {
 	TCB *runningTask, *nextTask;
 	BOOL preFlag;
 
 	// 전환할 태스크가 있어야 함
-	if(getReadyCnt() < 1) return;
+	if(getReadyCnt() < 1) return FALSE;
 
 	// 전환 도중 인터럽트가 발생해 태스크 전환이 또 일어나면 곤란하므로 전환하는 동안 인터럽트 발생 X
 	// 임계 영역 시작
@@ -338,7 +338,7 @@ void schedule(void) {
 	if(nextTask == NULL) {
 		// 임계 영역 끝
 		unlockData(preFlag);
-		return;
+		return FALSE;
 	}
 
 	// 현재 수행 중인 태스크 정보 수정한 뒤 콘텍스트 전환
@@ -358,13 +358,18 @@ void schedule(void) {
 	// 태스크 종료 플래그가 설정된 경우 콘텍스트를 저장할 필요가 없으니 대기 리스트에 삽입하고 콘텍스트 전환
 	if(runningTask->flag & TASK_FLAGS_FIN) {
 		addListTail(&(gs_scheduler.waitList), runningTask);
+		// 임계 영역 끝
+		unlockData(preFlag);
 		switchContext(NULL, &(nextTask->context));
 	} else {
 		addReadyList(runningTask);
+		// 임계 영역 끝
+		unlockData(preFlag);
 		switchContext(&(runningTask->context), &(nextTask->context));
 	}
 
 	unlockData(preFlag);
+	return FALSE;
 }
 
 // 인터럽트 발생 시 다른 태스크를 찾아 전환. 반드시 인터럽트나 예외 발생 시 호출해야함
@@ -441,7 +446,6 @@ BOOL taskFin(QWORD id) {
 	if(target->link.id == id) {
 		target->flag |= TASK_FLAGS_FIN;
 		SETPRIORITY(target->flag, TASK_FLAGS_WAIT);
-
 		// 임계 영역 끝
 		unlockData(preFlag);
 
@@ -454,6 +458,7 @@ BOOL taskFin(QWORD id) {
 				target->flag |= TASK_FLAGS_FIN;
 				SETPRIORITY(target->flag, TASK_FLAGS_WAIT);
 			}
+			// 임계 영역 끝
 			unlockData(preFlag);
 			return TRUE;
 		}
@@ -571,16 +576,14 @@ void idleTask(void) {
 		haltProcessor();
 
 		// 대기 큐에 대기 중인 태스크가 있으면 태스크 종료
-		if(getListCnt(&(gs_scheduler.waitList)) >= 0) {
+		if(getListCnt(&(gs_scheduler.waitList)) > 0) {
 			while(1) {
 				// 임계 영역 시작
 				preFlag = lockData();
 				task = delListHead(&(gs_scheduler.waitList));
 				// 임계 영역 끝
 				unlockData(preFlag);
-				if(task == NULL) {
-					break;
-				}
+				if(task == NULL) break;
 
 				if(task->flag & TASK_FLAGS_PROCESS) {
 					// 임계 영역 시작
@@ -630,6 +633,7 @@ void idleTask(void) {
 				}
 
 				taskID = task->link.id;
+				freeMem(task->stackAddr);
 				freeTCB(taskID);
 
 				printF("### IDLE: Task ID[0x%q] is Completely Finished.\n", task->link.id);

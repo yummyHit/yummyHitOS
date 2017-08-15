@@ -21,9 +21,9 @@
 #define NULL	0
 
 // stddef.h 헤더에 포함된 offsetof() 매크로 내용
-#define offsetof(TYPE, MEMBER) __builtin_offsetof (TYPE, MEMBER)
+#define offsetof(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)
 
-#pragma pack( push, 1 )
+#pragma pack(push, 1)
 
 // 비디오 모드 중 텍스트 모드 화면을 구성하는 자료구조
 typedef struct character {
@@ -31,5 +31,5 @@ typedef struct character {
 	BYTE color;
 } CHARACTER;
 
-#pragma pack( pop )
+#pragma pack(pop)
 #endif /*__TYPES_H__*/

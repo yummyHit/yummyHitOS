@@ -11,6 +11,7 @@
 #include <Types.h>
 #include <Synchronize.h>
 #include <HardDisk.h>
+#include <CacheMem.h>
 
 #pragma once
 
@@ -68,7 +69,7 @@ typedef int (*_writeHDDSector)(BOOL pri, BOOL master, DWORD lba, int sectorCnt, 
 // 파일 시스템 타입과 필드를 표준 입출력 타입으로 재정의
 #define size_t		DWORD
 #define dirent		directoryEntry
-#define d_name		name
+#define d_name		fileName
 
 // 구조체. 1바이트로 정렬
 #pragma pack(push, 1)
@@ -113,7 +114,7 @@ typedef struct mbr {
 // 디렉터리 엔트리 자료구조
 typedef struct directoryEntry {
 	// 파일 이름
-	char name[FILESYSTEM_MAXFILENAMELEN];
+	char fileName[FILESYSTEM_MAXFILENAMELEN];
 	// 파일 실제 크기
 	DWORD size;
 	// 파일이 시작하는 클러스터 인덱스
@@ -165,7 +166,7 @@ typedef struct fileSystemManager {
 	// 각 영역 섹터 수 및 시작 LBA 주소
 	DWORD reserved_sectorCnt;
 	DWORD linkStartAddr;
-	DWORD linkSectorCnt;
+	DWORD linkAreaSize;
 	DWORD dataStartAddr;
 	// 데이터 영역 클러스터 총 개수
 	DWORD totalClusterCnt;
@@ -177,7 +178,10 @@ typedef struct fileSystemManager {
 	MUTEX mut;
 
 	// 핸들 풀 어드레스
-	FILE *handle;
+	FILE *sysHandle;
+
+	// 캐시 사용 여부
+	BOOL onCache;
 } FILESYSTEMMANAGER;
 
 #pragma pack(pop)
@@ -219,5 +223,16 @@ static void freeFileDirHandle(FILE *file);
 static BOOL makeFile(const char *name, DIRENTRY *entry, int *dirEntryIdx);
 static BOOL freeClusterAll(DWORD idx);
 static BOOL updateDirEntry(FILEHANDLE *handle);
+
+static BOOL inReadClusterLinkNonCache(DWORD offset, BYTE *buf);
+static BOOL inReadClusterLinkOnCache(DWORD offset, BYTE *buf);
+static BOOL inWriteClusterLinkNonCache(DWORD offset, BYTE *buf);
+static BOOL inWriteClusterLinkOnCache(DWORD offset, BYTE *buf);
+static BOOL inReadClusterNonCache(DWORD offset, BYTE *buf);
+static BOOL inReadClusterOnCache(DWORD offset, BYTE *buf);
+static BOOL inWriteClusterNonCache(DWORD offset, BYTE *buf);
+static BOOL inWriteClusterOnCache(DWORD offset, BYTE *buf);
+static CACHEBUF *allocCacheBufOnFlush(int idx);
+BOOL flushFileSystemCache(void);
 
 #endif /*__FILESYSTEM_H__*/

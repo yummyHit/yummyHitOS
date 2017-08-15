@@ -84,5 +84,7 @@ static void csRootDir(const char *buf);
 static void csFileWrite(const char *buf);
 static void csFileRead(const char *buf);
 static void csFileIOTest(const char *buf);
+static void csCacheTest(const char *buf);
+static void csCacheFlush(const char *buf);
 
 #endif /*__SHELL_H__*/

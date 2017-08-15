@@ -178,7 +178,7 @@ void setRunningTask(TCB *task);
 TCB *getRunningTask(void);
 static TCB *getNextTask(void);
 static BOOL addReadyList(TCB *task);
-void schedule(void);
+BOOL schedule(void);
 BOOL scheduleInterrupt(void);
 void reduceProcessorTime(void);
 BOOL isProcessorTime(void);
