@@ -86,5 +86,6 @@ static void csFileRead(const char *buf);
 static void csFileIOTest(const char *buf);
 static void csCacheTest(const char *buf);
 static void csCacheFlush(const char *buf);
+static void csDownload(const char *buf);
 
 #endif /*__SHELL_H__*/

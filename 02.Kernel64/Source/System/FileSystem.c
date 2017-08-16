@@ -179,7 +179,7 @@ BOOL _format(void) {
 
 	// 캐시 버퍼를 모두 비움
 	if(gs_fileSystemManager.onCache == TRUE) {
-		clearCacheBuf(CACHE_CLUSTER_TBLAREA);
+		clearCacheBuf(CACHE_CLUSTER_AREA);
 		clearCacheBuf(CACHE_DATA_AREA);
 	}
 
@@ -206,22 +206,22 @@ BOOL getHDDInfo(HDDINFO *info) {
 // 클러스터 링크 테이블 내 오프셋에서 한 섹터 읽음
 static BOOL readClusterLink(DWORD offset, BYTE *buf) {
 	// 캐시 여부에 따라 다른 읽기 함수 호출
-	if(gs_fileSystemManager.onCache == FALSE) inReadClusterLinkNonCache(offset, buf);
-	else inReadClusterLinkOnCache(offset, buf);
+	if(gs_fileSystemManager.onCache == FALSE) inReadClusterNonCache(offset, buf);
+	else inReadClusterOnCache(offset, buf);
 }
 
 // 클러스터 링크 테이블 내 오프셋에서 한 섹터 읽음. 내부적으로 사용하며 캐시 미사용
-static BOOL inReadClusterLinkNonCache(DWORD offset, BYTE *buf) {
+static BOOL inReadClusterNonCache(DWORD offset, BYTE *buf) {
 	// 클러스터 링크 테이블 영역 시작 어드레스를 더함
 	return gs_readHDDSector(TRUE, TRUE, offset + gs_fileSystemManager.linkStartAddr, 1, buf);
 }
 
 // 클러스터 링크 테이블 내 오프셋에서 한 섹터 읽음. 내부적으로 사용하며 캐시 사용
-static BOOL inReadClusterLinkOnCache(DWORD offset, BYTE *buf) {
+static BOOL inReadClusterOnCache(DWORD offset, BYTE *buf) {
 	CACHEBUF *cacheBuf;
 
 	// 먼저 캐시에 해당 클러스터 링크 테이블 있는지 확인
-	cacheBuf = findCacheBuf(CACHE_CLUSTER_TBLAREA, offset);
+	cacheBuf = findCacheBuf(CACHE_CLUSTER_AREA, offset);
 
 	// 캐시 버퍼에 있다면 캐시 내용 복사
 	if(cacheBuf != NULL) {
@@ -230,10 +230,10 @@ static BOOL inReadClusterLinkOnCache(DWORD offset, BYTE *buf) {
 	}
 
 	// 캐시 버퍼에 없다면 하드 디스크에서 직접 읽음
-	if(inReadClusterLinkNonCache(offset, buf) == FALSE) return FALSE;
+	if(inReadClusterNonCache(offset, buf) == FALSE) return FALSE;
 
 	// 캐시 할당 후 캐시 내용 갱신
-	cacheBuf = allocCacheBufOnFlush(CACHE_CLUSTER_TBLAREA);
+	cacheBuf = allocCacheBufOnFlush(CACHE_CLUSTER_AREA);
 	if(cacheBuf == NULL) return FALSE;
 
 	// 캐시 버퍼에 읽은 내용 복사 후 태그 정보 갱신
@@ -263,9 +263,9 @@ static CACHEBUF *allocCacheBufOnFlush(int idx) {
 		// 캐시 버퍼 데이터가 수정되면 하드 디스크로 이동
 		if(cacheBuf->modified == TRUE) switch(idx) {
 			// 클러스터 링크 테이블 영역의 캐시인 경우
-			case CACHE_CLUSTER_TBLAREA:
+			case CACHE_CLUSTER_AREA:
 				// 쓰기 실패시 오류
-				if(inWriteClusterLinkNonCache(cacheBuf->tag, cacheBuf->buf) == FALSE) {
+				if(inWriteClusterNonCache(cacheBuf->tag, cacheBuf->buf) == FALSE) {
 					printF("Write to Cache Buffer Fail(Cluster)...\n");
 					return NULL;
 				}
@@ -274,7 +274,7 @@ static CACHEBUF *allocCacheBufOnFlush(int idx) {
 			// 데이터 영역의 캐시인 경우
 			case CACHE_DATA_AREA:
 				// 쓰기 실패시 오류
-				if(inWriteClusterNonCache(cacheBuf->tag, cacheBuf->buf) == FALSE) {
+				if(inWriteDataNonCache(cacheBuf->tag, cacheBuf->buf) == FALSE) {
 					printF("Write to Cache Buffer Fail(Data)...\n");
 					return NULL;
 				}
@@ -293,22 +293,22 @@ static CACHEBUF *allocCacheBufOnFlush(int idx) {
 // 클러스터 링크 테이블 내 오프셋에 한 섹터 씀
 static BOOL writeClusterLink(DWORD offset, BYTE *buf) {
 	// 캐시 여부에 따라 다른 쓰기 함수 호출
-	if(gs_fileSystemManager.onCache == FALSE) return inWriteClusterLinkNonCache(offset, buf);
-	else return inWriteClusterLinkOnCache(offset, buf);
+	if(gs_fileSystemManager.onCache == FALSE) return inWriteClusterNonCache(offset, buf);
+	else return inWriteClusterOnCache(offset, buf);
 }
 
 // 클러스터 링크 테이블 내 오프셋에 한 섹터 씀, 내부적으로 사용하며 캐시 미사용
-static BOOL inWriteClusterLinkNonCache(DWORD offset, BYTE *buf) {
+static BOOL inWriteClusterNonCache(DWORD offset, BYTE *buf) {
 	// 클러스터 링크 테이블 영역의 시작 어드레스 더함
 	return gs_writeHDDSector(TRUE, TRUE, offset + gs_fileSystemManager.linkStartAddr, 1, buf);
 }
 
 // 클러스터 링크 테이블 내 오프셋에 한 섹터 씀, 내부적으로 사용하며 캐시 사용
-static BOOL inWriteClusterLinkOnCache(DWORD offset, BYTE *buf) {
+static BOOL inWriteClusterOnCache(DWORD offset, BYTE *buf) {
 	CACHEBUF *cacheBuf;
 
 	// 캐시에 해당 클러스터 링크 테이블 있는지 확인
-	cacheBuf = findCacheBuf(CACHE_CLUSTER_TBLAREA, offset);
+	cacheBuf = findCacheBuf(CACHE_CLUSTER_AREA, offset);
 
 	// 캐시 버퍼에 있다면 캐시에 씀
 	if(cacheBuf != NULL) {
@@ -320,7 +320,7 @@ static BOOL inWriteClusterLinkOnCache(DWORD offset, BYTE *buf) {
 	}
 
 	// 캐시 버퍼에 없다면 캐시 버퍼를 할당받아 캐시 내용 갱신
-	cacheBuf = allocCacheBufOnFlush(CACHE_CLUSTER_TBLAREA);
+	cacheBuf = allocCacheBufOnFlush(CACHE_CLUSTER_AREA);
 	if(cacheBuf == NULL) return FALSE;
 
 	// 캐시 버퍼에 쓰고 태그 정보 갱신
@@ -334,20 +334,20 @@ static BOOL inWriteClusterLinkOnCache(DWORD offset, BYTE *buf) {
 }
 
 // 데이터 영역 오프셋에서 한 클러스터 읽음
-static BOOL readCluster(DWORD offset, BYTE *buf) {
+static BOOL readDataArea(DWORD offset, BYTE *buf) {
 	// 캐시 여부에 따라 다른 읽기 함수 호출
-	if(gs_fileSystemManager.onCache == FALSE) inReadClusterNonCache(offset, buf);
-	else inReadClusterOnCache(offset, buf);
+	if(gs_fileSystemManager.onCache == FALSE) inReadDataNonCache(offset, buf);
+	else inReadDataOnCache(offset, buf);
 }
 
 // 데이터 영역 오프셋에서 한 클러스터 읽음, 내부적으로 사용하며 캐시 미사용
-static BOOL inReadClusterNonCache(DWORD offset, BYTE *buf) {
+static BOOL inReadDataNonCache(DWORD offset, BYTE *buf) {
 	// 데이터 영역 시작 어드레스 더함
 	return gs_readHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PERSECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PERSECTOR, buf);
 }
 
 // 데이터 영역 오프셋세엇 한 클러스터 읽음, 내부적으로 사용하며 캐시 사용
-static BOOL inReadClusterOnCache(DWORD offset, BYTE *buf) {
+static BOOL inReadDataOnCache(DWORD offset, BYTE *buf) {
 	CACHEBUF *cacheBuf;
 
 	// 캐시에 해당 데이터 클러스터 있는지 확인
@@ -360,7 +360,7 @@ static BOOL inReadClusterOnCache(DWORD offset, BYTE *buf) {
 	}
 
 	// 캐시 버퍼에 없다면 하드 디스크에서 직접 읽음
-	if(inReadClusterNonCache(offset, buf) == FALSE) return FALSE;
+	if(inReadDataNonCache(offset, buf) == FALSE) return FALSE;
 
 	// 캐시 버퍼를 할당받아 캐시 내용 갱신
 	cacheBuf = allocCacheBufOnFlush(CACHE_DATA_AREA);
@@ -376,20 +376,20 @@ static BOOL inReadClusterOnCache(DWORD offset, BYTE *buf) {
 }
 
 // 데이터 영역 오프셋에 한 클러스터 씀
-static BOOL writeCluster(DWORD offset, BYTE *buf) {
+static BOOL writeDataArea(DWORD offset, BYTE *buf) {
 	// 캐시 여부에 따라 다른 쓰기 함수 호출
-	if(gs_fileSystemManager.onCache == FALSE) inWriteClusterNonCache(offset, buf);
-	else inWriteClusterOnCache(offset, buf);
+	if(gs_fileSystemManager.onCache == FALSE) inWriteDataNonCache(offset, buf);
+	else inWriteDataOnCache(offset, buf);
 }
 
 // 데이터 영역 오프셋에 한 클러스터 씀, 내부적으로 사용하며 캐시 미사용
-static BOOL inWriteClusterNonCache(DWORD offset, BYTE *buf) {
+static BOOL inWriteDataNonCache(DWORD offset, BYTE *buf) {
 	// 데이터 영역 시작 어드레스 더함
 	return gs_writeHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PERSECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PERSECTOR, buf);
 }
 
 // 데이터 영역 오프셋에 한 클러스터 씀, 내부적으로 사용하며 캐시 사용
-static BOOL inWriteClusterOnCache(DWORD offset, BYTE *buf) {
+static BOOL inWriteDataOnCache(DWORD offset, BYTE *buf) {
 	CACHEBUF *cacheBuf;
 
 	// 캐시 버퍼에 해당 데이터 클러스터 있는지 확인
@@ -502,7 +502,7 @@ static int findFreeDirEntry(void) {
 	if(gs_fileSystemManager.mnt == FALSE) return -1;
 
 	// 루트 디렉터리 읽음
-	if(readCluster(0, gs_tmpBuf) == FALSE) return -1;
+	if(readDataArea(0, gs_tmpBuf) == FALSE) return -1;
 
 	// 루트 디렉터리 내 루프를 돌며 빈 엔트리, 즉 시작 클러스터 번호가 0인 엔트리 검색
 	entry = (DIRENTRY*)gs_tmpBuf;
@@ -519,14 +519,14 @@ static BOOL setDirEntry(int idx, DIRENTRY *entry) {
 	if((gs_fileSystemManager.mnt == FALSE) || (idx < 0) || (idx >= FILESYSTEM_MAXDIRENTRYCNT)) return FALSE;
 
 	// 루트 디렉터리 읽음
-	if(readCluster(0, gs_tmpBuf) == FALSE) return FALSE;
+	if(readDataArea(0, gs_tmpBuf) == FALSE) return FALSE;
 
 	// 루트 디렉터리에 있는 해당 데이터 갱신
 	root = (DIRENTRY*)gs_tmpBuf;
 	memCpy(root + idx, entry, sizeof(DIRENTRY));
 
 	// 루트 디렉터리에 씀
-	if(writeCluster(0, gs_tmpBuf) == FALSE) return FALSE;
+	if(writeDataArea(0, gs_tmpBuf) == FALSE) return FALSE;
 	return TRUE;
 }
 
@@ -538,7 +538,7 @@ static BOOL getDirEntry(int idx, DIRENTRY *entry) {
 	if((gs_fileSystemManager.mnt == FALSE) || (idx < 0) || (idx >= FILESYSTEM_MAXDIRENTRYCNT)) return FALSE;
 
 	// 루트 디렉터리 읽음
-	if(readCluster(0, gs_tmpBuf) == FALSE) return FALSE;
+	if(readDataArea(0, gs_tmpBuf) == FALSE) return FALSE;
 
 	// 루트 디렉터리에 있는 해당 데이터 갱신
 	root = (DIRENTRY*)gs_tmpBuf;
@@ -555,7 +555,7 @@ static int findDirEntry(const char *name, DIRENTRY *entry) {
 	if(gs_fileSystemManager.mnt == FALSE) return -1;
 
 	// 루트 디렉터리 읽음
-	if(readCluster(0, gs_tmpBuf) == FALSE) return -1;
+	if(readDataArea(0, gs_tmpBuf) == FALSE) return -1;
 
 	len = strLen(name);
 	// 루트 디렉터리 안에서 루프 돌며 파일 이름이 일치하는 엔트리 반환
@@ -758,7 +758,7 @@ DWORD fileRead(void *buf, DWORD size, DWORD cnt, FILE *file) {
 	// 계산된 값만큼 다 읽을때까지 반복
 	while(readCnt != totalCnt) {
 		// 현재 클러스터를 읽음
-		if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		if(readDataArea(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
 
 		// 클러스터 내 파일 포인터가 존재하는 오프셋 계산
 		offset = handle->nowOffset % FILESYSTEM_CLUSTER_SIZE;
@@ -844,7 +844,7 @@ DWORD fileWrite(const void *buf, DWORD size, DWORD cnt, FILE *file) {
 		} else if(((handle->nowOffset % FILESYSTEM_CLUSTER_SIZE) != 0) || ((totalCnt - writeCnt) < FILESYSTEM_CLUSTER_SIZE)) {
 			// 한 클러스터를 채우지 못하면 클러스터를 읽어 임시 클러스터로 복사
 			// 전체 클러스터를 덮어쓰는 경우가 아니면 부분만 덮어써야 하니 현재 클러스터를 읽음
-			if(readCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+			if(readDataArea(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
 		}
 
 		// 클러스터 내 파일 포인터가 존재하는 오프셋 계산
@@ -855,7 +855,7 @@ DWORD fileWrite(const void *buf, DWORD size, DWORD cnt, FILE *file) {
 		memCpy(gs_tmpBuf + offset, (char*)buf + writeCnt, copySize);
 
 		// 임시 버퍼에 삽입된 값을 디스크에 씀
-		if(writeCluster(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
+		if(writeDataArea(handle->nowClusterIdx, gs_tmpBuf) == FALSE) break;
 
 		// 쓴 바이트 수와 파일 포인터 위치 갱신
 		writeCnt += copySize;
@@ -1101,7 +1101,7 @@ DIR *dirOpen(const char *name) {
 	}
 
 	// 루트 디렉터리 읽음
-	if(readCluster(0, (BYTE*)buf) == FALSE) {
+	if(readDataArea(0, (BYTE*)buf) == FALSE) {
 		// 실패하면 핸들과 메모리 모두 반환
 		freeFileDirHandle(dir);
 		freeMem(buf);
@@ -1203,9 +1203,9 @@ BOOL flushFileSystemCache(void) {
 	_lock(&(gs_fileSystemManager.mut));
 
 	// 클러스터 링크 테이블 영역 캐시 정보를 얻어 내용이 변한 캐시 버퍼를 모두 디스크에 씀
-	getCacheBufCnt(CACHE_CLUSTER_TBLAREA, &cacheBuf, &cnt);
+	getCacheBufCnt(CACHE_CLUSTER_AREA, &cacheBuf, &cnt);
 	for(i = 0; i < cnt; i++) if(cacheBuf[i].modified == TRUE) {
-		if(inWriteClusterLinkNonCache(cacheBuf[i].tag, cacheBuf[i].buf) == FALSE) return FALSE;
+		if(inWriteClusterNonCache(cacheBuf[i].tag, cacheBuf[i].buf) == FALSE) return FALSE;
 		// 버퍼 내용을 하드 디스크에 썼으니 변경되지 않은것으로 설정
 		cacheBuf[i].modified = FALSE;
 	}
@@ -1213,7 +1213,7 @@ BOOL flushFileSystemCache(void) {
 	// 데이터 영역 캐시 정보를 얻어 내용이 변한 캐시 버퍼를 모두 디스크에 씀
 	getCacheBufCnt(CACHE_DATA_AREA, &cacheBuf, cnt);
 	for(i = 0; i < cnt; i++) if(cacheBuf[i].modified == TRUE) {
-		if(inWriteClusterNonCache(cacheBuf[i].tag, cacheBuf[i].buf) == FALSE) return FALSE;
+		if(inWriteDataNonCache(cacheBuf[i].tag, cacheBuf[i].buf) == FALSE) return FALSE;
 		// 버퍼 내용을 하드 디스크에 썼으니 변경되지 않은 것
 		cacheBuf[i].modified = FALSE;
 	}

@@ -20,31 +20,31 @@ BOOL initCacheMem(void) {
 	memSet(&gs_cacheMem, 0, sizeof(gs_cacheMem));
 
 	// 접근 시간 초기화
-	gs_cacheMem.accessTime[CACHE_CLUSTER_TBLAREA] = 0;
+	gs_cacheMem.accessTime[CACHE_CLUSTER_AREA] = 0;
 	gs_cacheMem.accessTime[CACHE_DATA_AREA] = 0;
 
 	// 캐시 버퍼의 최댓값 설정
-	gs_cacheMem.maxCnt[CACHE_CLUSTER_TBLAREA] = CACHE_MAXCLUSTER_AREACNT;
+	gs_cacheMem.maxCnt[CACHE_CLUSTER_AREA] = CACHE_MAXCLUSTER_AREACNT;
 	gs_cacheMem.maxCnt[CACHE_DATA_AREA] = CACHE_MAXDATA_AREACNT;
 
 	// 클러스터 링크 테이블 영역용 메모리 할당, 클러스터 링크 테이블은 512바이트로 관리
-	gs_cacheMem.buf[CACHE_CLUSTER_TBLAREA] = (BYTE*)allocMem(CACHE_MAXCLUSTER_AREACNT * 512);
-	if(gs_cacheMem.buf[CACHE_CLUSTER_TBLAREA] == NULL) return FALSE;
+	gs_cacheMem.buf[CACHE_CLUSTER_AREA] = (BYTE*)allocMem(CACHE_MAXCLUSTER_AREACNT * 512);
+	if(gs_cacheMem.buf[CACHE_CLUSTER_AREA] == NULL) return FALSE;
 
 	// 할당받은 메모리 영역을 나누어 캐시 버퍼에 등록
 	for(i = 0; i < CACHE_MAXCLUSTER_AREACNT; i++) {
 		// 캐시 버퍼에 메모리 공간 할당
-		gs_cacheMem.cacheBuf[CACHE_CLUSTER_TBLAREA][i].buf = gs_cacheMem.buf[CACHE_CLUSTER_TBLAREA] + (i * 512);
+		gs_cacheMem.cacheBuf[CACHE_CLUSTER_AREA][i].buf = gs_cacheMem.buf[CACHE_CLUSTER_AREA] + (i * 512);
 
 		// 태그를 유효하지 않은 것으로 설정해 빈 것으로 만듬
-		gs_cacheMem.cacheBuf[CACHE_CLUSTER_TBLAREA][i].tag = CACHE_INVALID_TAG;
+		gs_cacheMem.cacheBuf[CACHE_CLUSTER_AREA][i].tag = CACHE_INVALID_TAG;
 	}
 
 	// 데이터 영역용 메모리 할당, 데이터 영역은 클러스터 단위(4KB)로 관리
 	gs_cacheMem.buf[CACHE_DATA_AREA] = (BYTE*)allocMem(CACHE_MAXDATA_AREACNT * FILESYSTEM_CLUSTER_SIZE);
 	if(gs_cacheMem.buf[CACHE_DATA_AREA] == NULL) {
 		// 실패하면 이전 할당 메모리 해제
-		freeMem(gs_cacheMem.buf[CACHE_CLUSTER_TBLAREA]);
+		freeMem(gs_cacheMem.buf[CACHE_CLUSTER_AREA]);
 		return FALSE;
 	}
 
@@ -66,7 +66,7 @@ CACHEBUF *allocCacheBuf(int idx) {
 	int i;
 
 	// 캐시 테이블 최대 개수 넘으면 실패
-	if(idx > CACHE_MAXCACHE_TBLIDX) return FALSE;
+	if(idx > CACHE_MAXCACHE_IDX) return FALSE;
 
 	// 접근 시간 필드가 최댓값까지 가면 전체 접근 시간 낮춤
 	downAccessTime(idx);
@@ -91,7 +91,7 @@ CACHEBUF *findCacheBuf(int idx, DWORD tag) {
 	int i;
 
 	// 캐시 테이블 최대 개수 넘으면 실패
-	if(idx > CACHE_MAXCACHE_TBLIDX) return FALSE;
+	if(idx > CACHE_MAXCACHE_IDX) return FALSE;
 
 	// 접근 시간 필드가 최댓값까지 증가하면 전체 접근 시간 낮춤
 	downAccessTime(idx);
@@ -114,7 +114,7 @@ static void downAccessTime(int idx) {
 	int i, j;
 
 	// 캐시 테이블 최대 개수 넘으면 실패
-	if(idx > CACHE_MAXCACHE_TBLIDX) return;
+	if(idx > CACHE_MAXCACHE_IDX) return;
 
 	// 접근 시간이 아직 최대치를 넘지 않았으면 접근 시간 그대로
 	if(gs_cacheMem.accessTime[idx] < 0xfffffffe) return;
@@ -151,7 +151,7 @@ CACHEBUF *getTargetCacheBuf(int idx) {
 	int oldIdx, i;
 
 	// 캐시 테이블 최대 개수 넘으면 실패
-	if(idx > CACHE_MAXCACHE_TBLIDX) return FALSE;
+	if(idx > CACHE_MAXCACHE_IDX) return FALSE;
 
 	// 접근 시간을 최대로 해 접근 시간이 가장 오래된 캐시 버퍼 검색
 	oldIdx = -1;
@@ -200,7 +200,7 @@ void clearCacheBuf(int idx) {
 // 캐시 버퍼 포인터와 최대 개수 반환
 BOOL getCacheBufCnt(int idx, CACHEBUF **buf, int *maxCnt) {
 	// 캐시 테이블 최대 개수 넘으면 실패
-	if(idx > CACHE_MAXCACHE_TBLIDX) return FALSE;
+	if(idx > CACHE_MAXCACHE_IDX) return FALSE;
 
 	// 캐시 버퍼 포인터와 최댓값 반환
 	*buf = gs_cacheMem.cacheBuf[idx];

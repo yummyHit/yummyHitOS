@@ -20,9 +20,9 @@
 #define CACHE_INVALID_TAG		0xFFFFFFFF
 
 // 캐시 테이블 최대 개수, 클러스터 링크 테이블과 데이터 영역만 있으니 2로 설정
-#define CACHE_MAXCACHE_TBLIDX		2
+#define CACHE_MAXCACHE_IDX		2
 // 클러스터 링크 테이블 영역 인덱스
-#define CACHE_CLUSTER_TBLAREA		0
+#define CACHE_CLUSTER_AREA		0
 // 데이터 영역 인덱스
 #define CACHE_DATA_AREA			1
 
@@ -44,16 +44,16 @@ typedef struct cacheBuf {
 // 파일 시스템 캐시 관리하는 캐시 매니저 구조체
 typedef struct cacheManager {
 	// 클러스터 링크 테이블 영역과 데이터 영역 접근 시간 필드
-	DWORD accessTime[CACHE_MAXCACHE_TBLIDX];
+	DWORD accessTime[CACHE_MAXCACHE_IDX];
 
 	// 클러스터 링크 테이블 영역과 데이터 영역 데이터 버퍼
-	BYTE *buf[CACHE_MAXCACHE_TBLIDX];
+	BYTE *buf[CACHE_MAXCACHE_IDX];
 
 	// 클러스터 링크 테이블 영역과 데이터 영역 캐시 버퍼. 두 값 중 큰 값만큼 생성
-	CACHEBUF cacheBuf[CACHE_MAXCACHE_TBLIDX][CACHE_MAXDATA_AREACNT];
+	CACHEBUF cacheBuf[CACHE_MAXCACHE_IDX][CACHE_MAXDATA_AREACNT];
 
 	// 캐시 버퍼 최대값 저장
-	DWORD maxCnt[CACHE_MAXCACHE_TBLIDX];
+	DWORD maxCnt[CACHE_MAXCACHE_IDX];
 } CACHEMEM;
 
 BOOL initCacheMem(void);

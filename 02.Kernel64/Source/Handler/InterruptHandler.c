@@ -15,7 +15,7 @@
 #include <AsmUtil.h>
 #include <HardDisk.h>
 
-void printDebug(int vec, int cnt, int handler) {
+static void printDebug(int vec, int cnt, int handler) {
 	char int_buf[] = "[INT:  , ]", exc_buf[] = "[EXC:  , ]";
 
 	// 인터럽트가 발생했음을 알리기 위해 메시지 출력하는 부분. 화면 오른쪽 위 2자리 정수로 출력

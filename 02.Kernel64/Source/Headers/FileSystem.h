@@ -193,8 +193,8 @@ BOOL getHDDInfo(HDDINFO *info);
 // Low Level Function
 static BOOL readClusterLink(DWORD offset, BYTE *buf);
 static BOOL writeClusterLink(DWORD offset, BYTE *buf);
-static BOOL readCluster(DWORD offset, BYTE *buf);
-static BOOL writeCluster(DWORD offset, BYTE *buf);
+static BOOL readDataArea(DWORD offset, BYTE *buf);
+static BOOL writeDataArea(DWORD offset, BYTE *buf);
 static DWORD findFreeCluster(void);
 static BOOL setClusterLink(DWORD idx, DWORD data);
 static BOOL getClusterLink(DWORD idx, DWORD *data);
@@ -224,14 +224,14 @@ static BOOL makeFile(const char *name, DIRENTRY *entry, int *dirEntryIdx);
 static BOOL freeClusterAll(DWORD idx);
 static BOOL updateDirEntry(FILEHANDLE *handle);
 
-static BOOL inReadClusterLinkNonCache(DWORD offset, BYTE *buf);
-static BOOL inReadClusterLinkOnCache(DWORD offset, BYTE *buf);
-static BOOL inWriteClusterLinkNonCache(DWORD offset, BYTE *buf);
-static BOOL inWriteClusterLinkOnCache(DWORD offset, BYTE *buf);
 static BOOL inReadClusterNonCache(DWORD offset, BYTE *buf);
 static BOOL inReadClusterOnCache(DWORD offset, BYTE *buf);
 static BOOL inWriteClusterNonCache(DWORD offset, BYTE *buf);
 static BOOL inWriteClusterOnCache(DWORD offset, BYTE *buf);
+static BOOL inReadDataNonCache(DWORD offset, BYTE *buf);
+static BOOL inReadDataOnCache(DWORD offset, BYTE *buf);
+static BOOL inWriteDataNonCache(DWORD offset, BYTE *buf);
+static BOOL inWriteDataOnCache(DWORD offset, BYTE *buf);
 static CACHEBUF *allocCacheBufOnFlush(int idx);
 BOOL flushFileSystemCache(void);
 

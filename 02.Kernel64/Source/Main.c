@@ -16,6 +16,7 @@
 #include <DynMem.h>
 #include <HardDisk.h>
 #include <FileSystem.h>
+#include <SerialPort.h>
 
 // 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
@@ -26,7 +27,7 @@ void Main(void) {
 
 	printXY(57, 5, 0x1A, "[  Hit  ]");
 
-	getCursor(&x, &y);	y++;
+	getCursor(&x, &y);
 	printXY(7, 6, 0x1F, "GDT Initialize And Switch For IA-32e Mode ........");
 	initGDTNTSS();
 	loadGDTR(GDTR_STARTADDR);
@@ -43,7 +44,7 @@ void Main(void) {
 
 	printXY(7, 6, 0x1F, "Memory Size Check ................................[     MB]");
 	chkTotalMemSize();
-	setCursor(58, y++);
+	setCursor(58, ++y);
 	printF("%d", getTotalMemSize());
 
 	printXY(7, 7, 0x1F, "TCB Pool And Scheduler Initialize ................");
@@ -63,7 +64,7 @@ void Main(void) {
 		printXY(57, 7, 0x1C, "[  Err  ]");
 		printXY(7, 8, 0x1C, "Keyboard is Not active ! Check your keyboard port ...");
 		while(1);
-	}	y++;
+	}
 
 	printXY(7, 7, 0x1F, "PIC Controller And Interrupt Initialize ..........");
 	initPIC();
@@ -75,8 +76,13 @@ void Main(void) {
 	if(initFileSystem() == TRUE) printXY(57, 7, 0x1A, "[  Hit  ]");
 	else printXY(57, 7, 0x1C, "[  Err  ]");
 
-	printXY(12, 8, 0x1B, "### Welcome to YummyHitOS !! Please enjoy this !! ###");
-	setCursor(0, ++y);
+	printXY(7, 8, 0x1F, "Serial Port Initialize ...........................");
+	initSerial();
+	printXY(57, 8, 0x1A, "[  Hit  ]");
+
+	printXY(12, 9, 0x1B, "### Welcome to YummyHitOS !! Please enjoy this !! ###");
+	y += 4;
+	setCursor(0, y);
 
 	createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (QWORD)idleTask);
 	startShell();

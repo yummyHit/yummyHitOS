@@ -17,6 +17,7 @@
 #include <DynMem.h>
 #include <HardDisk.h>
 #include <FileSystem.h>
+#include <SerialPort.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -55,7 +56,8 @@ SHELLENTRY gs_cmdTable[] = {
 	{"fread", "### Read Data to File. ex)fread a.txt", csFileRead},
 	{"fileIOTest", "### File I/O Test Function ###", csFileIOTest},
 	{"cacheTest", "### Cache's Read & Write Party ###", csCacheTest},
-	{"cacheFlush", "### Flush File System Cache", csCacheFlush},
+	{"flush", "### Flush File System Cache", csCacheFlush},
+	{"download", "### Download Data Using Serial. ex)download a.txt", csDownload},
 };
 
 // 셸 메인 루프
@@ -663,12 +665,12 @@ static void fpuTest(void) {
 	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
 	offset = (CONSOLE_WIDTH * CONSOLE_HEIGHT) - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
 
-	// 루프를 무한히 반복해 동일 계산 수행 :: 13번 General Protection Exception 뜨는데 무슨문제일까?
+	// 루프를 무한히 반복해 동일 계산 수행
 	while(1) {
-		dV1 = 1;		// 메모리 Leak이 뜨는 것 같긴 한데...
+		dV1 = 1;
 		dV2 = 1;
 		// 테스트를 위해 동일 계산 2번 반복 실행
-		for(i = 0; i < 10; i++) {
+		for(i = 0; i < 100; i++) {
 			randValue = _rand();
 			dV1 *= (double)randValue;
 			dV2 *= (double)randValue;
@@ -703,7 +705,7 @@ static void csGetPIE(const char *buf) {
 
 	printF("%d.%d%d\n", (QWORD)res, ((QWORD)(res * 10) % 10), ((QWORD)(res * 100) % 10));
 
-	// 실수를 계산하는 태스크 생성 :: 이게 문제인데...
+	// 실수를 계산하는 태스크 생성
 	for(i = 0; i < 100; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest);
 }
 
@@ -817,7 +819,7 @@ static void randAllocTask(void) {
 // 태스크를 여러 개 생성해 임의의 메모리 할당 후 해제하는 것 반복하는 테스트
 static void csRandAllocTest(const char *buf) {
 	int i;
-		// 3.14 원주율 구하는 FPU 예제에 이어서 이것까지 13번 에러.. 이 쯤 되면 createTask쪽 엉킨게 있는건데...
+		// Ram Disk를 이용해도 에러나는 부분. 동적 메모리가 0 Byte여야하는데, 비어있지 않아 오류나는 것 같음.
 	for(i = 0; i < 1000; i++) createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (QWORD)randAllocTask);
 }
 
@@ -1249,7 +1251,7 @@ static void csFileIOTest(const char *buf) {
 	// 순차적 영역 쓰기 테스트
 	printF("3. Sequential Write Test(Cluster Size) .............");
 	// 열린 핸들로 쓰기 수행
-	for(i = 0; i < 10; i++) {
+	for(i = 0; i < 100; i++) {
 		memSet(_buf, i, FILESYSTEM_CLUSTER_SIZE);
 		if(fwrite(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
 			printF("[  Err  ]\n");
@@ -1257,15 +1259,15 @@ static void csFileIOTest(const char *buf) {
 			break;
 		}
 	}
-	if(i >= 10) printF("[  Hit  ]\n");
+	if(i >= 100) printF("[  Hit  ]\n");
 
 	// 순차적인 영역 읽기 테스트
 	printF("4. Sequential Read and Verify Test(Cluster Size) ...");
 	// 파일 처음으로 이동
-	fseek(file, -10 * FILESYSTEM_CLUSTER_SIZE, SEEK_END);
+	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_END);
 
 	// 열린 핸들로 읽기 수행 후 데이터 검증
-	for(i = 0; i < 10; i++) {
+	for(i = 0; i < 100; i++) {
 		// 파일 읽음
 		if(fread(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
 			printF("[  Err  ]\n");
@@ -1279,7 +1281,7 @@ static void csFileIOTest(const char *buf) {
 			break;
 		}
 	}
-	if(i >= 10) printF("[  Hit  ]\n");
+	if(i >= 100) printF("[  Hit  ]\n");
 
 	// 임의의 영역 쓰기 테스트
 	printF("5. Random Write Test ...............\n");
@@ -1288,11 +1290,11 @@ static void csFileIOTest(const char *buf) {
 	memSet(_buf, 0, maxSize);
 	// 여기 저기에 옮겨다니면서 데이터를 쓰고 검증
 	// 파일의 내용을 읽어 버퍼로 복사
-	fseek(file, -10 * FILESYSTEM_CLUSTER_SIZE, SEEK_CUR);
+	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_CUR);
 	fread(_buf, 1, maxSize, file);
 
 	// 임의의 위치로 옮기며 데이터를 파일과 버퍼에 씀
-	for(i = 0; i < 10; i ++) {
+	for(i = 0; i < 100; i ++) {
 		byteCnt = (_rand() % (sizeof(_tmpBuf) - 1)) + 1;
 		randOffset = _rand() % (maxSize - byteCnt);
 		printF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
@@ -1318,7 +1320,7 @@ static void csFileIOTest(const char *buf) {
 	// 임의의 영역 읽기 테스트
 	printF("6. Random Read And Verify Test .....\n");
 	// 임의의 위치로 옮기며 파일에서 데이터를 읽어 버퍼 내용과 비교
-	for(i = 0; i < 10; i++) {
+	for(i = 0; i < 100; i++) {
 		byteCnt = (_rand() % (sizeof(_tmpBuf) -  1)) + 1;
 		randOffset = _rand() % ((maxSize) - byteCnt);
 		printF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
@@ -1345,7 +1347,7 @@ static void csFileIOTest(const char *buf) {
 	// 다시 순차적 영역 읽기 테스
 	printF("7. Sequential Write, Read and Verify Test(1024 Byte)\n");
 	// 파일의 처음으로 이동
-	fseek(file, -10 * maxSize, SEEK_CUR);
+	fseek(file, -100 * maxSize, SEEK_CUR);
 
 	// 열린 핸들로 쓰기 수행. 앞부분 2MB만 씀
 	for(i = 0; i < (2 * 1024 * 1024 / 1024) ; i++) {
@@ -1398,10 +1400,10 @@ static void csCacheTest(const char *buf) {
 
 	// 테스트용 버퍼 메모리 할당
 	_buf = allocMem(clusterSize);
-	if(buf == NULL) {
+	if(_buf == NULL) {
 		printF("Memory Allocation Fail...\n");
 		return;
-	}
+	} else printF("Allocation Memory : 0x%Q\n", _buf);
 
 	// 버퍼 초기화
 	memSet(_buf, 0, FILESYSTEM_CLUSTER_SIZE);
@@ -1500,4 +1502,103 @@ static void csCacheFlush(const char *buf) {
 	if(flushFileSystemCache() == TRUE) printF("[  Hit  ]\n");
 	else printF("[  Err  ]\n");
 	printF("Total Time = %d ms\n", getTickCnt() - tickCnt);
+}
+
+// 시리얼 포트로부터 데이터 수신해 파일로 저장
+static void csDownload(const char *buf) {
+	PARAMLIST list;
+	char name[50];
+	int nameLen;
+	DWORD dataLen, recvSize = 0, tmpSize;
+	FILE *fp;
+	BYTE _buf[SERIAL_FIFO_MAXSIZE];
+	QWORD lastTickCnt;
+
+	// 파라미터 리스트 초기화해 파일 이름 추출
+	initParam(&list, buf);
+	nameLen = getNextParam(&list, name);
+	name[nameLen] = '\0';
+	if((nameLen > (FILESYSTEM_MAXFILENAMELEN - 1)) || (nameLen == 0)) {
+		printF("Too Long or Too Short File Name\n");
+		printF("ex)download a.txt\n");
+		return;
+	}
+
+	// 시리얼 포트의 FIFO 클리어
+	clearSerialFIFO();
+
+	// 데이터 길이 수신될 때까지 기다린 후 4바이트 수신하면 ACK 전송
+	printF("Waiting For Data Length ...");
+	lastTickCnt = getTickCnt();
+	while(recvSize < 4) {
+		// 남은 수만큼 데이터 수신
+		tmpSize = recvSerialData(((BYTE*)&dataLen) + recvSize, 4 - recvSize);
+		recvSize += tmpSize;
+
+		// 수신된 데이터가 없다면 잠시 대기
+		if(tmpSize == 0) {
+			_sleep(0);
+
+			// 대기한 시간이 30초 이상이면 Time Out
+			if((getTickCnt() - lastTickCnt) > 30000) {
+				printF("Time Out Occur(30s) !!\n");
+				return;
+			}
+		} else lastTickCnt = getTickCnt();	// 마지막으로 데이터 수신한 시간 갱신
+	}
+	printF("[%d] Byte\n", dataLen);
+
+	// 정상적으로 데이터 길이 수신했으니 ACK 송신
+	sendSerialData("A", 1);
+
+	// 파일 생성 후 시리얼로부터 데이터 수신해 파일로 저장
+	fp = fopen(name, "w");
+	if(fp == NULL) {
+		printF("%s File Open Fail...\n", name);
+		return;
+	}
+
+	// 데이터 수신
+	printF("Data Receive Start: ");
+	recvSize = 0;
+	lastTickCnt = getTickCnt();
+	while(recvSize < dataLen) {
+		// 버퍼에 담아 데이터 씀
+		tmpSize = recvSerialData(_buf, SERIAL_FIFO_MAXSIZE);
+		recvSize += tmpSize;
+
+		// 이번에 데이터 수신된 것이 있다면 ACK 또는 파일 쓰기 수행
+		if(tmpSize != 0) {
+			// 수신하는 쪽은 데이터 마지막까지 수신했거나 FIFO 크기인 16바이트마다 한 번씩 ACK 전송
+			if(((recvSize % SERIAL_FIFO_MAXSIZE) == 0) || (recvSize == dataLen)) {
+				sendSerialData("A", 1);
+				printF("#");
+			}
+
+			// 쓰기 중에 문제가 생기면 바로 종료
+			if(fwrite(_buf, 1, tmpSize, fp) != tmpSize) {
+				printF("File Write Error Occur !!\n");
+				break;
+			}
+
+			// 마지막으로 데이터 수신한 시간 갱신
+			lastTickCnt = getTickCnt();
+		} else {	// 수신된 데이터가 없다면 잠시 대기
+			_sleep(0);
+
+			// 대기한 시간이 10초 이상이면 Time Out
+			if((getTickCnt() - lastTickCnt) > 10000) {
+				printF("Time Out Occur(10s) !!\n");
+				break;
+			}
+		}
+	}
+
+	// 전체 데이터 크기와 실제 수신된 데이터 크기를 비교해 성공 여부 출력 후 파일을 닫고 캐시 비우기, 수신된 길이 비교 후 문제 발생 여부 표시
+	if(recvSize != dataLen) printF("\nError Occur. Total Size [%d] Received Size [%d]\n", recvSize, dataLen);
+	else printF("\nReceive Complete. Total Size [%d] Byte\n", recvSize);
+
+	// 파일 닫고 캐시 비움
+	fclose(fp);
+	flushFileSystemCache();
 }

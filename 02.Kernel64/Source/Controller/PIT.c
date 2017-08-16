@@ -10,10 +10,10 @@
 // PIT 초기화
 void initPIT(WORD cnt, BOOL term) {
 	// PIT 컨트롤 레지스터(포트 0x43)에 값 초기화로 카운트를 멈추고 모드 0에 바이너리 카운터 설정
-	outByte(PIT_PORT_CONTROL, PIT_COUNTER_ZERO_ONCE);
+	outByte(PIT_PORT_CTRL, PIT_COUNTER_ZERO_ONCE);
 
 	// 만약 일정 주기로 반복하는 타이머라면 모드 2로 설정
-	if(term == TRUE) outByte(PIT_PORT_CONTROL, PIT_COUNTER_ZERO_TERM); // PIT 컨트롤 레지스터(포트 0x43)에 모드 2에 바이너리 카운터 설정
+	if(term == TRUE) outByte(PIT_PORT_CTRL, PIT_COUNTER_ZERO_TERM); // PIT 컨트롤 레지스터(포트 0x43)에 모드 2에 바이너리 카운터 설정
 
 	// 카운터 0(포트 0x40)에 LSB->MSB 순서로 카운터 초기 값 설정
 	outByte(PIT_PORT_COUNTER_ZERO, cnt);
@@ -26,7 +26,7 @@ WORD readCntZero(void) {
 	WORD tmp = 0;
 
 	// PIT 컨트롤 레지스터(포트 0x43)에 래치 커맨드 전송해 카운터 0에 있는 현재 값 읽음
-	outByte(PIT_PORT_CONTROL, PIT_COUNTER_ZERO_LATCH);
+	outByte(PIT_PORT_CTRL, PIT_COUNTER_ZERO_LATCH);
 
 	// 카운터 0(포트 0x40)에서 LSB->MSB 순서로 카운터 값 읽음
 	low = inByte(PIT_PORT_COUNTER_ZERO);

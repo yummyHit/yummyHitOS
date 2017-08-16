@@ -97,7 +97,7 @@ static BOOL waitHDDInterrupt(BOOL pri) {
 	tickCnt = getTickCnt();
 
 	// 일정 시간 동안 하드 디스크의 인터럽트가 발생할 때까지 대기
-	while(getTickCnt() - tickCnt <= HDD_WAIT_TIME) {
+	while((getTickCnt() - tickCnt) <= HDD_WAIT_TIME) {
 		// 하드 디스크 자료구조에 인터럽트 발생 플래그 확인
 		if((pri == TRUE) && (gs_hddManager.priInterruptOccur == TRUE)) return TRUE;
 		else if((pri == FALSE) && (gs_hddManager.secInterruptOccur == TRUE)) return TRUE;
