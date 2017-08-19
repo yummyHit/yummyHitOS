@@ -33,5 +33,6 @@ void loadFPU(void *contextFPU);
 void setTS(void);
 void clearTS(void);
 
+void onLocalAPIC(void);
 
 #endif /*__ASMUTIL_H__*/

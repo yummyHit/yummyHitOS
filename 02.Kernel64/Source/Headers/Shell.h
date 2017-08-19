@@ -87,5 +87,7 @@ static void csFileIOTest(const char *buf);
 static void csCacheTest(const char *buf);
 static void csCacheFlush(const char *buf);
 static void csDownload(const char *buf);
+static void csMPConfigInfo(const char *buf);
+static void csStartAP(const char *buf);
 
 #endif /*__SHELL_H__*/

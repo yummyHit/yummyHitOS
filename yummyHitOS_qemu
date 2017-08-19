@@ -5,4 +5,4 @@
 #qemu-system-x86_64 -L . -m 64 -fda ~/Disk.img -boot a -localtime -M pc -gdb tcp::7777
 
 #With Hard Disk Image, And Use Serial Port. It doesn't use gdb option.
-qemu-system-x86_64 -L . -m 64 -fda ~/Disk.img -hda ~/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait
+qemu-system-x86_64 -L . -m 64 -fda ~/Disk.img -hda ~/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 16

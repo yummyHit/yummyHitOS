@@ -8,6 +8,7 @@
 #include <Descriptor.h>
 #include <Util.h>
 #include <ISR.h>
+#include <MP.h>
 
 // GDT 테이블 초기화
 void initGDTNTSS(void) {
@@ -21,14 +22,17 @@ void initGDTNTSS(void) {
 	entry = (GDTENTRY8*)(GDTR_STARTADDR + sizeof(GDTR));
 	gdtr->limit = GDT_TABLESIZE - 1;
 	gdtr->baseAddr = (QWORD)entry;
-	// TSS 영역 설정
+	// TSS 영역 설정, GDT 테이블 뒤쪽에 위치
 	tss = (TSS*)((QWORD)entry + GDT_TABLESIZE);
 
-	// NULL, 64bit Code|Data, TSS를 위한 4개의 세그먼트 생성
+	// NULL, 64bit Code & Data, TSS를 위해 총 3 + 16개의 세그먼트 생성
 	setGDTEntry8(&(entry[0]), 0, 0, 0, 0, 0);
 	setGDTEntry8(&(entry[1]), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE);
 	setGDTEntry8(&(entry[2]), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA);
-	setGDTEntry16((GDTENTRY16*)&(entry[3]), (QWORD)tss, sizeof(TSS) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
+
+	// 16개 코어 지원을 위해 16개 TSS 디스크립터 생성
+	// TSS는 16바이트이므로 setGDTEntry16() 함수 사용, entry는 8바이트이므로 2개를 합쳐 하나로 사용
+	for(i = 0; i < MAXPROCESSORCNT; i++) setGDTEntry16((GDTENTRY16*)&(entry[GDT_MAXENTRY8CNT + (i * 2)]), (QWORD)tss + (i * sizeof(TSS)), sizeof(TSS) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
 
 	// TSS 초기화 GDT 이하 영역 사용
 	initTSS(tss);
@@ -58,10 +62,22 @@ void setGDTEntry16(GDTENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag
 
 // TSS 세그먼트 정보 초기화
 void initTSS(TSS *tss) {
-	memSet(tss, 0, sizeof(TSS));
-	tss->ist[0] = IST_STARTADDR + IST_SIZE;
-	// IO를 TSS의 limit 값보다 크게 설정함으로써 IO Map을 사용하지 않도록 함
-	tss->ioMapBaseAddr = 0xFFFF;
+	int i;
+
+	// 최대 프로세서 또는 코어 수만큼 루프를 돌며 생성
+	for(i = 0; i < MAXPROCESSORCNT; i++) {
+		// 0으로 초기화
+		memSet(tss, 0, sizeof(TSS));
+
+		// IST의 뒤에서부터 잘라서 할당(주의 : IST는 16바이트 단위로 정렬해야 함)
+		tss->ist[0] = IST_STARTADDR + IST_SIZE - (IST_SIZE / MAXPROCESSORCNT * i);
+
+		// IO를 TSS의 limit 값보다 크게 설정함으로써 IO Map을 사용하지 않도록 함
+		tss->ioMapBaseAddr = 0xFFFF;
+
+		// 다음 엔트리로 이동
+		tss++;
+	}
 }
 
 // IDT 테이블 초기화

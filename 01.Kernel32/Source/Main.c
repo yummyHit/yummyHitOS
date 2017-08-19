@@ -14,10 +14,15 @@ BOOL initArea(void);
 BOOL isMemEnough(void);
 void copyImage(void);
 
+#define BSP_FLAGADDR	0x7C09
+
 // Main 함수
 void Main(void) {
 	DWORD i, eax, ebx, ecx, edx;
 	char cpuMaker[13] = {0,};
+
+	// Application Processor이면 아래 코드 생략하고 64비트 모드로 전환
+	if(*((BYTE*)BSP_FLAGADDR) == 0) SwitchNExecKernel();
 
 	// 최소 메모리 크기를 만족하는 지 검사
 	setPrint(7, 3, 0x1F, "Minimum Memory Size Check ........................");

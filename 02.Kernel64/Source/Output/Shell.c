@@ -18,6 +18,9 @@
 #include <HardDisk.h>
 #include <FileSystem.h>
 #include <SerialPort.h>
+#include <MPConfig.h>
+#include <LocalAPIC.h>
+#include <MP.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -58,6 +61,8 @@ SHELLENTRY gs_cmdTable[] = {
 	{"cacheTest", "### Cache's Read & Write Party ###", csCacheTest},
 	{"flush", "### Flush File System Cache", csCacheFlush},
 	{"download", "### Download Data Using Serial. ex)download a.txt", csDownload},
+	{"mpInfo", "### Show MP Configuration Table Information", csMPConfigInfo},
+	{"startAP", "### Start Application Processor ###", csStartAP},
 };
 
 // 셸 메인 루프
@@ -1601,4 +1606,22 @@ static void csDownload(const char *buf) {
 	// 파일 닫고 캐시 비움
 	fclose(fp);
 	flushFileSystemCache();
+}
+
+// MP 설정 테이블 정보 출력
+static void csMPConfigInfo(const char *buf) {
+	printMPConfig();
+}
+
+// AP(Application Processor) 시작
+static void csStartAP(const char *buf) {
+	// AP(Application Processor) 깨움
+	if(startUpAP() == FALSE) {
+		printF("Application Processor Start Fail...\n");
+		return;
+	}
+	printF("Application Processor Start Success !!\n");
+
+	// BSP(Bootstrap Processor)의 APIC ID 출력
+	printF("Bootstrap Processor[APIC ID: %d] Start Application Processor\n", getAPICID());
 }

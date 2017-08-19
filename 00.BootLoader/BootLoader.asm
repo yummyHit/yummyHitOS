@@ -13,7 +13,8 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 jmp 0x07C0:START		; CS 세그먼트 레지스터에 0x07C0 복사, START 레이블로 이동
 
 TOTALSECTORCOUNT:	dw 0x02	; 부트 로더를 제외한 OS 이미지의 크기. 최대 1152 섹터(0x90000byte)까지 가능
-KERNEL32SECTORCOUNT: dw 0x02	; 보호 모드 커널의 총 섹터 수
+KERNEL32SECTORCOUNT:	dw 0x02	; 보호 모드 커널의 총 섹터 수
+BOOTSTRAPPROCESSOR:	db 0x01	; Bootstrap Processor인지 여부
 
 ; 코드 영역
 START:

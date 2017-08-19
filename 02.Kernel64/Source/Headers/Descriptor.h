@@ -51,11 +51,11 @@
 #define GDTR_STARTADDR		0x142000
 // 8바이트 엔트리 개수, 널 디스크립터|커널코드|커널데이터
 #define GDT_MAXENTRY8CNT	3
-// 16바이트 엔트리 개수, TSS
-#define GDT_MAXENTRY16CNT	1
-// GDT 테이블 크기
+// 16바이트 엔트리 개수, TSS는 프로세서 또는 코어의 최대 개수만큼 생성
+#define GDT_MAXENTRY16CNT	(MAXPROCESSORCNT)
+// GDT 테이블 크기, TSS 세그먼트 전체 크기
 #define GDT_TABLESIZE		((sizeof(GDTENTRY8) * GDT_MAXENTRY8CNT) + (sizeof(GDTENTRY16) * GDT_MAXENTRY16CNT))
-#define TSS_SEGMENTSIZE		(sizeof(TSS))
+#define TSS_SEGMENTSIZE		(sizeof(TSS) * MAXPROCESSORCNT)
 
 /* IDT */
 // 조합에 사용할 기본 매크로

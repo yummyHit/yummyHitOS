@@ -15,6 +15,7 @@ global loadGDTR, loadTSS, loadIDTR
 global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
 global readTSC, switchContext, _hlt, testNSet
 global initFPU, saveFPU, loadFPU, setTS, clearTS
+global onLocalAPIC
 
 ; 포트로부터 1바이트 읽음(PARAM: 포트 번호)
 inByte:
@@ -258,4 +259,21 @@ setTS:
 ; CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
 clearTS:
 	clts
+	ret
+
+; IA32_APIC_BASE_MSR의 APIC 전역 활성화 필드(비트 11)를 1로 설정해 APIC 활성화
+onLocalAPIC:
+	push rax	; RDMSR과 WRMSR에서 사용하는 레지스터 모두 스택에 저장
+	push rcx
+	push rdx
+
+	; IA32_APIC_BASE_MSR에 설정된 기존 값 읽어 전역 APIC 비트 활성화
+	mov rcx, 27	; IA32_APIC_BASE_MSR은 레지스터 어드레스 27에 위치하며 MSR 상위 32비트와 하위 32비트는 각 EDX:EAX 사용
+	rdmsr
+	or eax, 0x0800	; APIC 전역 활성화 필드는 비트 11에 위치하므로 하위 32비트를 담당하는 EAX 레지스터 비트 11을 1로 설정한 뒤 MSR에 씀
+	wrmsr
+
+	pop rdx
+	pop rcx
+	pop rax
 	ret

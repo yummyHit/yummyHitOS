@@ -16,6 +16,13 @@ START:
 	mov ds, ax		; DS 세그먼트 레지스터에 설정
 	mov es, ax		; ES 세그먼트 레지스터에 설정
 
+	; Application Processor면 아래의 과정을 모두 뛰어넘어 보호 모드 커널로 이동
+	mov ax, 0x0000		; Application Processor 플래그를 확인하려고 ES 세그먼트 레지스터의 시작 어드레스를 0으로 설정
+	mov es, ax
+
+	cmp byte [ es: 0x7C09 ], 0x00	; 플래그가 0이면 AP 코드로 이동
+	je .APSTARTPOINT
+
 	; Bootstrap Processor만 실행하는 부분. BIOS 서비스를 사용해 A20 게이트 활성화
 	mov ax, 0x2401		; A20 게이트 활성화 서비스 설정
 	int 0x15		; BIOS 인터럽트 서비스 호출
@@ -31,6 +38,7 @@ START:
 	out 0x92, al		; 시스템 컨트롤 포트(0x92)에 변경된 값을 1바이트 설정
 
 .A20GATESUCCESS:
+.APSTARTPOINT:
 	cli			; 인터럽트가 발생하지 못하게 설정
 	lgdt [ GDTR ] 		; GDTR 자료구조를 프로세서에 설정해 GDT 테이블 로드
 
@@ -56,6 +64,10 @@ PROTECTEDMODE:
 	mov esp, 0xFFFE		; ESP 레지스터의 어드레스를 0xFFFE로 설정
 	mov ebp, 0xFFFE		; EBP 레지스터의 어드레스를 0xFFFE로 설정
 
+	; AP면 아래 과정 모두 뛰어넘어 C언어 커널 엔트리 포인트로 이동
+	cmp byte [ 0x7C09 ], 0x00
+	je .APSTARTPOINT
+
 	; 화면에 보호 모드로 전환되었다는 메시지 표시
 	push ( SWITCHMSG - $$ + 0x10000 )	; 출력할 메시지의 어드레스를 스택에 삽입
 	push 0x1F				; 출력 메시지의 색깔
@@ -74,8 +86,8 @@ PROTECTEDMODE:
 	; 수정 : 170706 / CS세그먼트 셀렉터를 커널 코드 디스크립터(0x08)로 변경하며 0x10200 어드레스(C언어 커널 주소)로 이동
 	; 수정 : 170718 / IA-32e 보호모드로 진입하기 위해 0x08에서 0x18로 위치 수정
 
+.APSTARTPOINT:
 	jmp dword 0x18: 0x10200 ; C언어 커널이 존재하는 주소로 이동해 C언어 커널 수행
-
 
 ; 메시지 출력 함수
 PRINTMSG:
