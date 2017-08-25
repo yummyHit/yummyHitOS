@@ -89,5 +89,9 @@ static void csCacheFlush(const char *buf);
 static void csDownload(const char *buf);
 static void csMPConfigInfo(const char *buf);
 static void csStartAP(const char *buf);
+static void csSymmetricIOMode(const char *buf);
+static void csIRQMapTbl(const char *buf);
+static void csInterruptProcCnt(const char *buf);
+static void csInterruptLoadBalancing(const char *buf);
 
 #endif /*__SHELL_H__*/

@@ -9,6 +9,7 @@
 #define __DYNMEM_H__
 
 #include <Types.h>
+#include <Synchronize.h>
 
 #pragma once
 
@@ -29,6 +30,9 @@ typedef struct bitmap {
 
 // 버디 블록 관리 자료구조
 typedef struct dynmemManager {
+	// 자료구조 동기화를 위한 스핀락
+	SPINLOCK spinLock;
+
 	// 블록 리스트의 총 개수와 가장 크기가 가장 작은 블록 개수, 할당된 메모리 크기
 	int maxLvCnt;
 	int smallBlockCnt;

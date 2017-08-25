@@ -8,6 +8,10 @@
 #include <Synchronize.h>
 #include <Util.h>
 #include <Task.h>
+#include <AsmUtil.h>
+
+// 스핀락 도입 이전에 사용하던 함수들
+#if 0
 
 // 시스템 전역에서 사용하는 데이터를 위한 잠금 함수
 BOOL lockData(void) {
@@ -15,9 +19,11 @@ BOOL lockData(void) {
 }
 
 // 시스템 전역에서 사용하는 데이터를 위한 잠금 해제 함수
-void unlockData(BOOL flag) {
-	setInterruptFlag(flag);
+void unlockData(BOOL interruptFlag) {
+	setInterruptFlag(interruptFlag);
 }
+
+#endif
 
 // 뮤텍스 초기화
 void initMutex(MUTEX *mut) {
@@ -60,4 +66,70 @@ void _unlock(MUTEX *mut) {
 	mut->id = TASK_INVALID_ID;
 	mut->cnt = 0;
 	mut->flag = FALSE;
+}
+
+// 스핀락 초기화
+void initSpinLock(SPINLOCK *spinLock) {
+	// 잠김 플래그와 횟수, APIC ID, 인터럽트 플래그 초기화
+	spinLock->lockFlag = FALSE;
+	spinLock->lockCnt = 0;
+	spinLock->id = 0xFF;
+	spinLock->interruptFlag = FALSE;
+}
+
+// 시스템 전역에서 사용하는 데이터를 위한 잠금 함수
+void lock_spinLock(SPINLOCK *spinLock) {
+	BOOL interruptFlag;
+
+	// 우선 인터럽트 비활성화
+	interruptFlag = setInterruptFlag(FALSE);
+
+	// 이미 잠겨 있다면 내가 잠갔는지 확인 후 잠근 횟수 증가시킨 뒤 종료
+	if(testNSet(&(spinLock->lockFlag), 0, 1) == FALSE) {
+		// 자신이 잠갔다면 횟수만 증가
+		if(spinLock->id == getAPICID()) {
+			spinLock->lockCnt++;
+			return;
+		}
+
+		// 자신이 아니라면 잠금 해제까지 대기
+		while(testNSet(&(spinLock->lockFlag), 0, 1) == FALSE) while(spinLock->lockFlag == TRUE) _pause();
+	}
+
+	// 잠김 설정, 잠김 플래그는 위 testNSet() 함수가 처리
+	spinLock->lockCnt = 1;
+	spinLock->id = getAPICID();
+
+	// 인터럽트 플래그를 저장해 unlock 수행 시 복원
+	spinLock->interruptFlag = interruptFlag;
+}
+
+// 시스템 전역에서 사용하는 데이터를 위한 잠금 해제 함수
+void unlock_spinLock(SPINLOCK *spinLock) {
+	BOOL interruptFlag;
+
+	// 우선 인터럽트 비활성화
+	interruptFlag = setInterruptFlag(FALSE);
+
+	// 스핀락을 잠근 태스크가 아니면 실패
+	if((spinLock->lockFlag == FALSE) || (spinLock->id != getAPICID())) {
+		setInterruptFlag(interruptFlag);
+		return;
+	}
+
+	// 스핀락을 중복으로 잠갔으면 잠긴 횟수만 감소
+	if(spinLock->lockCnt > 1) {
+		spinLock->lockCnt--;
+		return;
+	}
+
+	// 스핀락을 해제된 것으로 설정 후 인터럽트 플래그 복원. 인터럽트 플래그는 미리 저장해두고 사용
+	interruptFlag = spinLock->interruptFlag;
+
+	spinLock->id = 0xFF;
+	spinLock->lockCnt = 0;
+	spinLock->interruptFlag = FALSE;
+	spinLock->lockFlag = FALSE;
+
+	setInterruptFlag(interruptFlag);
 }

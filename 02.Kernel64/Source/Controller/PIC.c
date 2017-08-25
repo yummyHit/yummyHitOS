@@ -13,7 +13,7 @@ void initPIC(void) {
 	outByte(PIC_MASTER_PORT_A, 0x11);
 
 	// ICW2(포트 0x21), 인터럽트 벡터(0x20)
-	outByte(PIC_MASTER_PORT_B, PIC_IRQSTARTVECTOR);
+	outByte(PIC_MASTER_PORT_B, PIC_IRQ_STARTVEC);
 
 	// ICW3(포트 0x21), 슬레이브 PIC 컨트롤러가 연결 위치(비트로 표현)
 	// 마스터 PIC 컨트롤러의 2번 핀에 연결되어 있으므로 0x04(비트 2)로 설정
@@ -27,7 +27,7 @@ void initPIC(void) {
 	outByte(PIC_SLAVE_PORT_A, 0x11);
 
 	// ICW2(포트 0xA1), 인터럽트 벡터(0x20 + 8)
-	outByte(PIC_SLAVE_PORT_B, PIC_IRQSTARTVECTOR + 8);
+	outByte(PIC_SLAVE_PORT_B, PIC_IRQ_STARTVEC + 8);
 
 	// ICW3(포트 0xA1), 마스터 PIC 컨트롤러에 연결된 위치(정수로 표현)
 	// 마스터 PIC 컨트롤러의 2번 핀에 연결되어 있으므로 0x02로 설정
@@ -47,7 +47,7 @@ void maskPIC(WORD mask) {
 }
 
 // 인터럽트 처리가 완료되었음을 전송(EOI). 마스터 PIC 컨트롤러는 마스터 PIC 컨트롤러에, 슬레이브 PIC 컨트롤러는 두 PIC 컨트롤러에 모두 전송
-void sendEOI(int num) {
+void sendEOI_PIC(int num) {
 	// 마스터 PIC 컨트롤러에 EOI 전송. OCW2(포트 0x20), EOI 비트(비트 5) = 1
 	outByte(PIC_MASTER_PORT_A, 0x20);
 

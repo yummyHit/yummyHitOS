@@ -12,8 +12,8 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 ; C언어에서 호출할 수 있도록 이름 노출
 global inByte, outByte, inWord, outWord
 global loadGDTR, loadTSS, loadIDTR
-global onInterrupt, offInterrupt, readRFLAGS		; 인터럽트 추가
-global readTSC, switchContext, _hlt, testNSet
+global onInterrupt, offInterrupt, readRFLAGS, readTSC
+global switchContext, _hlt, testNSet, _pause
 global initFPU, saveFPU, loadFPU, setTS, clearTS
 global onLocalAPIC
 
@@ -226,6 +226,11 @@ testNSet:
 
 .EQUAL			; dest와 cmp가 같은 경우
 	mov rax, 0x01
+	ret
+
+; 프로세서를 쉬게 함
+_pause:
+	pause		; 프로세서를 일시 중지 상태로 진입
 	ret
 
 ; FPU 초기화

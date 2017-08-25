@@ -289,6 +289,9 @@ BOOL initKeyboard(void) {
 	// 큐 초기화
 	initQueue(&gs_keyQ, gs_keyQBuf, KEY_MAXQUEUECNT, sizeof(KEYDATA));
 
+	// 스핀락 초기화
+	initSpinLock(&(gs_keyManager.spinLock));
+
 	// 키보드 활성화
 	return activeKeyboard();
 }
@@ -304,13 +307,13 @@ BOOL convertNPutCode(BYTE scanCode) {
 	// 스캔 코드를 ASCII 코드와 키 상태로 변환해 키 데이터에 삽입
 	if(convertCode(scanCode, &data.ascii, &data.flag) == TRUE) {
 		// 임계 영역 시작
-		preInterrupt = lockData();
+		lock_spinLock(&(gs_keyManager.spinLock));
 
 		// 키 큐에 삽입
 		res = addData(&gs_keyQ, &data);
 
 		// 임계 영역 끝
-		unlockData(preInterrupt);
+		unlock_spinLock(&(gs_keyManager.spinLock));
 	}
 	return res;
 }
@@ -320,12 +323,12 @@ BOOL rmKeyData(KEYDATA *data) {
 	BOOL res, preInterrupt;
 
 	// 임계 영역 시작
-	preInterrupt = lockData();
+	lock_spinLock(&(gs_keyManager.spinLock));
 
 	// 키 큐에서 키 데이터 제거
 	res = rmData(&gs_keyQ, data);
 
 	// 임계 영역 끝
-	unlockData(preInterrupt);
+	unlock_spinLock(&(gs_keyManager.spinLock));
 	return res;
 }

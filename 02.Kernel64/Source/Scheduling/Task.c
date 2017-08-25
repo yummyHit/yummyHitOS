@@ -11,24 +11,24 @@
 
 // 스케쥴러 관련 자료구조
 static SCHEDULER gs_scheduler;
-static TCBPOOLMANAGER gs_TCBPoolManager;
+static TCBPOOLMANAGER gs_tcbPoolManager;
 
 // 태스크 풀 초기화
 static void initTCBPool(void) {
 	int i;
 
-	memSet(&(gs_TCBPoolManager), 0, sizeof(gs_TCBPoolManager));
+	memSet(&(gs_tcbPoolManager), 0, sizeof(gs_tcbPoolManager));
 
 	// 태스크 풀 어드레스 지정 후 초기화
-	gs_TCBPoolManager.startAddr = (TCB*)TASK_TCBPOOLADDR;
+	gs_tcbPoolManager.startAddr = (TCB*)TASK_TCBPOOLADDR;
 	memSet(TASK_TCBPOOLADDR, 0, sizeof(TCB) * TASK_MAXCNT);
 
 	// TCB에 ID 할당
-	for(i = 0; i < TASK_MAXCNT; i++) gs_TCBPoolManager.startAddr[i].link.id = i;
+	for(i = 0; i < TASK_MAXCNT; i++) gs_tcbPoolManager.startAddr[i].link.id = i;
 
 	// TCB의 최대 개수와 할당된 횟수 초기화
-	gs_TCBPoolManager.maxCnt = TASK_MAXCNT;
-	gs_TCBPoolManager.allocCnt = 1;
+	gs_tcbPoolManager.maxCnt = TASK_MAXCNT;
+	gs_tcbPoolManager.allocCnt = 1;
 }
 
 // TCB 할당받음
@@ -36,18 +36,18 @@ static TCB *allocTCB(void) {
 	TCB *empty;
 	int i;
 
-	if(gs_TCBPoolManager.useCnt == gs_TCBPoolManager.maxCnt) return NULL;
+	if(gs_tcbPoolManager.useCnt == gs_tcbPoolManager.maxCnt) return NULL;
 
-	for(i = 0; i < gs_TCBPoolManager.maxCnt; i++) if((gs_TCBPoolManager.startAddr[i].link.id >> 32) == 0) {
-		empty = &(gs_TCBPoolManager.startAddr[i]);
+	for(i = 0; i < gs_tcbPoolManager.maxCnt; i++) if((gs_tcbPoolManager.startAddr[i].link.id >> 32) == 0) {
+		empty = &(gs_tcbPoolManager.startAddr[i]);
 		break;
 	}
 
 	// 상위 32비트를 0이 아닌 값으로 설정해 할당된 TCB로 설정
-	empty->link.id = ((QWORD)gs_TCBPoolManager.allocCnt << 32) | i;
-	gs_TCBPoolManager.useCnt++;
-	gs_TCBPoolManager.allocCnt++;
-	if(gs_TCBPoolManager.allocCnt == 0) gs_TCBPoolManager.allocCnt = 1;
+	empty->link.id = ((QWORD)gs_tcbPoolManager.allocCnt << 32) | i;
+	gs_tcbPoolManager.useCnt++;
+	gs_tcbPoolManager.allocCnt++;
+	if(gs_tcbPoolManager.allocCnt == 0) gs_tcbPoolManager.allocCnt = 1;
 	return empty;
 }
 
@@ -59,30 +59,33 @@ static void freeTCB(QWORD id) {
 	i = GETTCBOFFSET(id);
 
 	// TCB 초기화 후 ID 설정
-	memSet(&(gs_TCBPoolManager.startAddr[i].context), 0, sizeof(CONTEXT));
-	gs_TCBPoolManager.startAddr[i].link.id = i;
+	memSet(&(gs_tcbPoolManager.startAddr[i].context), 0, sizeof(CONTEXT));
+	gs_tcbPoolManager.startAddr[i].link.id = i;
 
-	gs_TCBPoolManager.useCnt--;
+	gs_tcbPoolManager.useCnt--;
 }
 
 // 태스크 생성. 태스크 ID에 따라 스택 풀에서 스택 자동 할당
 TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr) {
 	TCB *task, *proc;
 	void *stackAddr;
-	BOOL preFlag;
+
+	// 임계 영역 시작
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	task = allocTCB();
-	if(task == NULL) return NULL;
-
+	if(task == NULL) {
+		// 임계 영역 끝
+		unlock_spinLock(&(gs_scheduler.spinLock));
+		return NULL;
+	}
+/*
 	stackAddr = allocMem(TASK_STACKSIZE);
 	if(stackAddr == NULL) {
 		freeTCB(task->link.id);
 		return NULL;
 	}
-
-	// 임계 영역 시작
-	preFlag = lockData();
-
+*/
 	// 현재 프로세스 또는 쓰레드가 속한 프로세스 검색
 	proc = getProcThread(getRunningTask());
 	// 만약 프로세스가 없다면 아무 작업도 안함
@@ -90,7 +93,7 @@ TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr) {
 		freeTCB(task->link.id);
 		freeMem(stackAddr);
 		// 임계 영역 끝
-		unlockData(preFlag);
+		unlock_spinLock(&(gs_scheduler.spinLock));
 		return NULL;
 	}
 
@@ -113,10 +116,10 @@ TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr) {
 	task->threadLink.id = task->link.id;
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 
 	// 태스크 ID로 스택 어드레스 계산, 하위 32비트가 스택 풀의 오프셋 역할 수행
-//	stackAddr = (void*)(TASK_STACKPOOLADDR + (TASK_STACKSIZE * (GETTCBOFFSET(task->link.id))));
+	stackAddr = (void*)(TASK_STACKPOOLADDR + (TASK_STACKSIZE * (GETTCBOFFSET(task->link.id))));
 
 	// TCB를 설정한 후 준비 리스트에 삽입해 스케줄링 될 수 있도록 함
 	setTask(task, flag, epAddr, stackAddr, TASK_STACKSIZE);
@@ -128,13 +131,13 @@ TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr) {
 	task->fpuUsed = FALSE;
 
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	// 태스크를 준비 리스트에 삽입
 	addReadyList(task);
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 
 	return task;
 }
@@ -202,33 +205,33 @@ void initScheduler(void) {
 
 	// FPU를 사용한 태스크 ID를 유효하지 않은 값으로 초기화
 	gs_scheduler.lastFPU = TASK_INVALID_ID;
+
+	// 스핀락 초기화
+	initSpinLock(&(gs_scheduler.spinLock));
 }
 
 // 현재 수행 중 태스크 설정
 void setRunningTask(TCB *task) {
-	BOOL preFlag;
-
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	gs_scheduler.runningTask = task;
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 }
 
 // 현재 수행 중 태스크 반환
 TCB *getRunningTask(void) {
-	BOOL preFlag;
 	TCB *runningTask;
 
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	runningTask = gs_scheduler.runningTask;
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 
 	return runningTask;
 }
@@ -280,7 +283,7 @@ static TCB *delReadyList(QWORD id) {
 	if(GETTCBOFFSET(id) >= TASK_MAXCNT) return NULL;
 
 	// TCB 풀에서 해당 태스크의 TCB를 찾아 실제로 ID가 일치하는지 확인
-	target = &(gs_TCBPoolManager.startAddr[GETTCBOFFSET(id)]);
+	target = &(gs_tcbPoolManager.startAddr[GETTCBOFFSET(id)]);
 	if(target->link.id != id) return NULL;
 
 	// 태스크가 존재하는 준비 리스트에서 태스크 제거
@@ -293,12 +296,11 @@ static TCB *delReadyList(QWORD id) {
 // 태스크 우선순위 변경
 BOOL changePriority(QWORD id, BYTE priority) {
 	TCB *target;
-	BOOL preFlag;
 
 	if(priority > TASK_MAXREADYCNT) return FALSE;
 
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	// 현재 실행 중인 태스크면 우선순위만 변경, PIT 컨트롤러 인터럽트(IRQ 0)가 발생해 태스크 전환 수행시 변경된 우선순위 리스트로 이동
 	target = gs_scheduler.runningTask;
@@ -317,7 +319,7 @@ BOOL changePriority(QWORD id, BYTE priority) {
 	}
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 	return TRUE;
 }
 
@@ -330,14 +332,16 @@ BOOL schedule(void) {
 	if(getReadyCnt() < 1) return FALSE;
 
 	// 전환 도중 인터럽트가 발생해 태스크 전환이 또 일어나면 곤란하므로 전환하는 동안 인터럽트 발생 X
+	preFlag = setInterruptFlag(FALSE);
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	// 실행할 다음 태스크 얻음
 	nextTask = getNextTask();
 	if(nextTask == NULL) {
 		// 임계 영역 끝
-		unlockData(preFlag);
+		unlock_spinLock(&(gs_scheduler.spinLock));
+		setInterruptFlag(preFlag);
 		return FALSE;
 	}
 
@@ -359,16 +363,16 @@ BOOL schedule(void) {
 	if(runningTask->flag & TASK_FLAGS_FIN) {
 		addListTail(&(gs_scheduler.waitList), runningTask);
 		// 임계 영역 끝
-		unlockData(preFlag);
+		unlock_spinLock(&(gs_scheduler.spinLock));
 		switchContext(NULL, &(nextTask->context));
 	} else {
 		addReadyList(runningTask);
 		// 임계 영역 끝
-		unlockData(preFlag);
+		unlock_spinLock(&(gs_scheduler.spinLock));
 		switchContext(&(runningTask->context), &(nextTask->context));
 	}
 
-	unlockData(preFlag);
+	setInterruptFlag(preFlag);
 	return FALSE;
 }
 
@@ -376,16 +380,15 @@ BOOL schedule(void) {
 BOOL scheduleInterrupt(void) {
 	TCB *runningTask, *nextTask;
 	char *contextAddr;
-	BOOL preFlag;
 
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	// 전환할 태스크 없으면 종료
 	nextTask = getNextTask();
 	if(nextTask == NULL) {
 		// 임계 영역 끝
-		unlockData(preFlag);
+		unlock_spinLock(&(gs_scheduler.spinLock));
 		return FALSE;
 	}
 
@@ -411,7 +414,7 @@ BOOL scheduleInterrupt(void) {
 	else clearTS();
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 
 	// 전환해서 실행할 태스크를 Running Task로 설정하고, 콘텍스트를 IST에 복사해 자동으로 태스크 전환하게 함
 	memCpy(contextAddr, &(nextTask->context), sizeof(CONTEXT));
@@ -422,7 +425,7 @@ BOOL scheduleInterrupt(void) {
 }
 
 // 프로세서 사용할 수 있는 시간 하나 줄임
-void reduceProcessorTime(void) {
+void decProcessorTime(void) {
 	if(gs_scheduler.time > 0) gs_scheduler.time--;
 }
 
@@ -436,10 +439,9 @@ BOOL isProcessorTime(void) {
 BOOL taskFin(QWORD id) {
 	TCB *target;
 	BYTE priority;
-	BOOL preFlag;
 
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	// 현재 실행 중 태스크이면 Fin 비트 설정 후 태스크 전환
 	target = gs_scheduler.runningTask;
@@ -447,7 +449,7 @@ BOOL taskFin(QWORD id) {
 		target->flag |= TASK_FLAGS_FIN;
 		SETPRIORITY(target->flag, TASK_FLAGS_WAIT);
 		// 임계 영역 끝
-		unlockData(preFlag);
+		unlock_spinLock(&(gs_scheduler.spinLock));
 
 		schedule();
 	} else {	// 실행 중 태스크가 아니면 준비 큐에서 직접 찾아 대기 리스트에 연결
@@ -459,7 +461,7 @@ BOOL taskFin(QWORD id) {
 				SETPRIORITY(target->flag, TASK_FLAGS_WAIT);
 			}
 			// 임계 영역 끝
-			unlockData(preFlag);
+			unlock_spinLock(&(gs_scheduler.spinLock));
 			return TRUE;
 		}
 		target->flag |= TASK_FLAGS_FIN;
@@ -468,7 +470,7 @@ BOOL taskFin(QWORD id) {
 	}
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 	return TRUE;
 }
 
@@ -480,40 +482,38 @@ void taskExit(void) {
 // 준비 큐에 있는 모든 태스크 수 반환
 int getReadyCnt(void) {
 	int cnt = 0, i;
-	BOOL preFlag;
 
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 
 	// 모든 준비 큐를 확인해 태스크 개수 구함
 	for(i = 0; i < TASK_MAXREADYCNT; i++) cnt += getListCnt(&(gs_scheduler.readyList[i]));
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 	return cnt;
 }
 
 // 전체 태스크 수 반환
 int getTaskCnt(void) {
 	int cnt;
-	BOOL preFlag;
 
 	// 준비 큐 태스크 수 구한 후 대기 큐 태스크 수와 현재 수행 중 태스크 수 더함
 	cnt = getReadyCnt();
 
 	// 임계 영역 시작
-	preFlag = lockData();
+	lock_spinLock(&(gs_scheduler.spinLock));
 	cnt += getListCnt(&(gs_scheduler.waitList)) + 1;
 
 	// 임계 영역 끝
-	unlockData(preFlag);
+	unlock_spinLock(&(gs_scheduler.spinLock));
 	return cnt;
 }
 
 // TCB 풀에서 해당 오프셋 TCB 반환
 TCB *getTCB(int offset) {
 	if((offset < -1) && (offset > TASK_MAXCNT)) return NULL;
-	return &(gs_TCBPoolManager.startAddr[offset]);
+	return &(gs_tcbPoolManager.startAddr[offset]);
 }
 
 // 태스크가 존해자는지 여부 반환
@@ -551,7 +551,6 @@ static TCB *getProcThread(TCB *thread) {
 void idleTask(void) {
 	TCB *task, *childThread, *proc;
 	QWORD lastTickCnt, lastIdleTask, nowTickCnt, nowIdleTask, taskID;
-	BOOL preFlag;
 	int i, cnt;
 	void *threadLink;
 
@@ -579,23 +578,23 @@ void idleTask(void) {
 		if(getListCnt(&(gs_scheduler.waitList)) > 0) {
 			while(1) {
 				// 임계 영역 시작
-				preFlag = lockData();
+				lock_spinLock(&(gs_scheduler.spinLock));
 				task = delListHead(&(gs_scheduler.waitList));
 				// 임계 영역 끝
-				unlockData(preFlag);
+				unlock_spinLock(&(gs_scheduler.spinLock));
 				if(task == NULL) break;
 
 				if(task->flag & TASK_FLAGS_PROCESS) {
-					// 임계 영역 시작
-					preFlag = lockData();
 					// 프로세스 종료시 자식 쓰레드가 존재하면 쓰레드 모두 종료 후 다시 자식 쓰레드 리스트에 삽입
 					cnt = getListCnt(&(task->childThreadList));
 					for(i = 0; i < cnt; i++) {
+						// 임계 영역 시작
+						lock_spinLock(&(gs_scheduler.spinLock));
 						// 쓰레드 링크의 어드레스에서 꺼내 쓰레드 종료시킴
 						threadLink = (TCB*)delListHead(&(task->childThreadList));
 						if(threadLink == NULL) {
 							// 임계 영역 끝
-							unlockData(preFlag);
+							unlock_spinLock(&(gs_scheduler.spinLock));
 							break;
 						}
 						
@@ -608,7 +607,7 @@ void idleTask(void) {
 						addListTail(&(task->childThreadList), &(childThread->threadLink));
 
 						// 임계 영역 끝
-						unlockData(preFlag);
+						unlock_spinLock(&(gs_scheduler.spinLock));
 
 						// 자식 쓰레드 찾아서 종료
 						taskFin(childThread->link.id);
@@ -617,11 +616,11 @@ void idleTask(void) {
 					// 아직 자식 쓰레드가 남아있다면 자식 쓰레드가 다 종료될 때까지 기다려야 하므로 다시 대기 리스트에 삽입
 					if(getListCnt(&(task->childThreadList)) > 0) {
 						// 임계 영역 시작
-						preFlag = lockData();
+						lock_spinLock(&(gs_scheduler.spinLock));
 						addListTail(&(gs_scheduler.waitList), task);
 
 						// 임계 영역 끝
-						unlockData(preFlag);
+						unlock_spinLock(&(gs_scheduler.spinLock));
 						continue;
 					} else { // 프로세스를 종료해야 하므로 할당받은 메모리 영역 삭제
 						if(task->flag & TASK_FLAGS_USERLV) freeMem(task->memAddr);

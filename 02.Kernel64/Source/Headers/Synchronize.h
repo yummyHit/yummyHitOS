@@ -27,13 +27,34 @@ typedef struct mutex {
 	BYTE pad[3];
 } MUTEX;
 
+// 스핀락 자료구조
+typedef struct spinLock {
+	// 로컬 APIC ID와 잠금 수행 횟수
+	volatile DWORD lockCnt;
+	volatile BYTE id;
+
+	// 잠김 플래그
+	volatile BOOL lockFlag;
+
+	// 인터럽트 플래그
+	volatile BOOL interruptFlag;
+
+	// 자료구조 크기를 8바이트 단위로 맞추기 위한 필드
+	BYTE pad[1];
+} SPINLOCK;
+
 #pragma pack(pop)
 
-// 함수
+
+#if 0
 BOOL lockData(void);
-void unlockData(BOOL flag);
+void unlockData(BOOL interruptFlag);
+#endif
 void initMutex(MUTEX *mut);
 void _lock(MUTEX *mut);
 void _unlock(MUTEX *mut);
+void initSpinLock(SPINLOCK *spinLock);
+void lock_spinLock(SPINLOCK *spinLock);
+void unlock_spinLock(SPINLOCK *spinLock);
 
 #endif /*__SYNCHRONIZE_H__*/

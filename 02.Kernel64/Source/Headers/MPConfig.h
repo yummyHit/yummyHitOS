@@ -151,9 +151,9 @@ typedef struct ioInterruptEntry {
 	// 발생한 버스 IRQ
 	BYTE srcIRQ;
 	// 전달할 IO APIC ID
-	BYTE destIOID;
+	BYTE destID;
 	// 전달할 IO APIC INTIN
-	BYTE destIOINTIN;
+	BYTE destINTIN;
 } IOINTERRUPTENTRY;
 
 // 로컬 인터럽트 지정 엔트리 자료구조
@@ -169,9 +169,9 @@ typedef struct localInterruptEntry {
 	// 발생한 버스 IRQ
 	BYTE srcIRQ;
 	// 전달할 로컬 APIC ID
-	BYTE destLocalID;
+	BYTE destID;
 	// 전달할 로컬 APIC LINTIN
-	BYTE destLocalLINTIN;
+	BYTE destLINTIN;
 } LOCALINTERRUPTENTRY;
 
 #pragma pack(pop)
@@ -197,5 +197,6 @@ BOOL analysisMPConfig(void);
 MPCONFIGMANAGER *getMPConfigManager(void);
 void printMPConfig(void);
 int getProcessorCnt(void);
+IOAPICENTRY *findIO_APICEntry(void);
 
 #endif /*__MPCONFIG_H__*/

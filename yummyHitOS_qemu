@@ -1,8 +1,11 @@
 #With Hard Disk Image. It has many problem with error and interrupt.
-#qemu-system-x86_64 -L . -m 64 -fda ~/Disk.img -hda ~/HDD.img -boot a -localtime -M pc -gdb tcp::7777
+#qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -hda ~/yummyHitOS/HDD.img -boot a -localtime -M pc -gdb tcp::7777
 
 #With Ram Disk(Not Hard Disk). It has a problem that can't save data.
-#qemu-system-x86_64 -L . -m 64 -fda ~/Disk.img -boot a -localtime -M pc -gdb tcp::7777
+#qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -boot a -localtime -M pc -gdb tcp::7777
+
+#With Ram Disk(Not Hard Disk), And Use Serial Port. It doesn't use gdb option.
+#qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 16
 
 #With Hard Disk Image, And Use Serial Port. It doesn't use gdb option.
-qemu-system-x86_64 -L . -m 64 -fda ~/Disk.img -hda ~/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 16
+qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -hda ~/yummyHitOS/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 16

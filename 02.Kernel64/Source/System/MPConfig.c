@@ -17,8 +17,8 @@ BOOL findFloatingAddress(QWORD *addr) {
 	QWORD ebdaAddr, baseMem;	// EBDA : Extended BIOS Data Area
 
 	// 확장 BIOS 데이터 영역과 시스템 기본 메모리 출력
-	printF("Extended BIOS Data Area = [0x%X]\n", (DWORD)(*(WORD*)0x040E) * 16);
-	printF("System Bas Address = [0x%X]\n", (DWORD)(*(WORD*)0x0413) * 1024);
+//	printF("Extended BIOS Data Area = [0x%X]\n", (DWORD)(*(WORD*)0x040E) * 16);
+//	printF("System Bas Address = [0x%X]\n", (DWORD)(*(WORD*)0x0413) * 1024);
 
 	// 확장 BIOS 데이터 영역을 검색해 MP 플로팅 포인터를 찾고, 이 영역은 0x040E에서 세그먼트 시작 주소를 찾을 수 있음
 	ebdaAddr = *(WORD*)(0x040E);
@@ -26,7 +26,7 @@ BOOL findFloatingAddress(QWORD *addr) {
 	// 세그먼트 시작 주소이므로 16을 곱해 실제 물리 어드레스로 변환
 	ebdaAddr *= 16;
 	for(ptr = (char*)ebdaAddr; (QWORD)ptr <= (ebdaAddr + 1024); ptr++) if(memCmp(ptr, "_MP_", 4) == 0) {
-		printF("MP Floating Pointer is in EBDA, [0x%X] Address\n", (QWORD)ptr);
+//		printF("MP Floating Pointer is in EBDA, [0x%X] Address\n", (QWORD)ptr);
 		*addr = (QWORD)ptr;
 		return TRUE;
 	}
@@ -36,14 +36,14 @@ BOOL findFloatingAddress(QWORD *addr) {
 	// KB단위로 저장된 값이므로 1024를 곱해 실제 물리 어드레스로 변환
 	baseMem *= 1024;
 	for(ptr = (char*)(baseMem - 1024); (QWORD)ptr <= baseMem; ptr++) if(memCmp(ptr, "_MP_", 4) == 0) {
-		printF("MP Floating Pointer is in System Base Memory, [0x%X] Address\n", (QWORD)ptr);
+//		printF("MP Floating Pointer is in System Base Memory, [0x%X] Address\n", (QWORD)ptr);
 		*addr = (QWORD)ptr;
 		return TRUE;
 	}
 
 	// BIOS의 ROM영역을 검색해 MP 플로팅 포인터 찾음
 	for(ptr = (char*)0x0F0000; (QWORD)ptr < 0x0FFFFF; ptr++) if(memCmp(ptr, "_MP_", 4) == 0) {
-		printF("MP Floating Pointer is in ROM, [0x%X] Address\n", (QWORD)ptr);
+//		printF("MP Floating Pointer is in ROM, [0x%X] Address\n", (QWORD)ptr);
 		*addr = (QWORD)ptr;
 		return TRUE;
 	}
@@ -269,8 +269,8 @@ void printMPConfig(void) {
 			printF("(%s, %s)\n", interruptFlagPO[ioInterruptEntry->flag & 0x03], interruptFlagEL[(ioInterruptEntry->flag >> 2) & 0x03]);
 			printF("Source BUS ID : %d\n", ioInterruptEntry->srcID);
 			printF("Source BUS IRQ : %d\n", ioInterruptEntry->srcIRQ);
-			printF("Destination I/O APIC ID : %d\n", ioInterruptEntry->destIOID);
-			printF("Destination I/O APIC INTIN : %d\n\n", ioInterruptEntry->destIOINTIN);
+			printF("Destination I/O APIC ID : %d\n", ioInterruptEntry->destID);
+			printF("Destination I/O APIC INTIN : %d\n\n", ioInterruptEntry->destINTIN);
 
 			// IO 인터럽트 지정 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(IOINTERRUPTENTRY);
@@ -287,8 +287,8 @@ void printMPConfig(void) {
 			printF("(%s, %s)\n", interruptFlagPO[localInterruptEntry->flag & 0x03], interruptFlagEL[(localInterruptEntry->flag >> 2) & 0x03]);
 			printF("Source BUS ID : %d\n", localInterruptEntry->srcID);
 			printF("Source BUS IRQ : %d\n", localInterruptEntry->srcIRQ);
-			printF("Destination Local APIC ID : %d\n", localInterruptEntry->destLocalID);
-			printF("Destination Local APIC LINTIN : %d\n\n", localInterruptEntry->destLocalLINTIN);
+			printF("Destination Local APIC ID : %d\n", localInterruptEntry->destID);
+			printF("Destination Local APIC LINTIN : %d\n\n", localInterruptEntry->destLINTIN);
 
 			// 로컬 인터럽트 지정 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(LOCALINTERRUPTENTRY);
@@ -315,4 +315,74 @@ int getProcessorCnt(void) {
 	// MP 설정 테이블이 없을 수도 있으니 0으로 설정되면 1 반환
 	if(gs_mpConfigManager.processorCnt == 0) return 1;
 	return gs_mpConfigManager.processorCnt;
+}
+
+IOAPICENTRY *findIO_APICEntry(void) {
+	MPCONFIGMANAGER *manager;
+	MPCONFIGHEADER *head;
+	IOINTERRUPTENTRY *ioInterruptEntry;
+	IOAPICENTRY *ioAPICEntry;
+	QWORD addr;
+	BYTE type;
+	BOOL find = FALSE;
+	int i;
+
+	// MP 설정 테이블 헤더의 시작 어드레스와 엔트리 시작 어드레스 저장
+	head = gs_mpConfigManager.tblHeader;
+	addr = gs_mpConfigManager.startAddr;
+
+	// ISA 버스와 관련된 IO 인터럽트 지정 엔트리 검색
+	// 모든 엔트리를 돌며 ISA 버스와 관련된 IO 인터럽트 지정 엔트리만 검색
+	for(i = 0; (i < head->entryCnt) && (find == FALSE); i++) {
+		type = *(BYTE*)addr;
+		switch(type) {
+		// 프로세스 엔트리 무시
+		case MP_ENTRYTYPE_PROCESSOR:
+			addr += sizeof(PROCESSORENTRY);
+			break;
+		// 버스 엔트리, IO APIC 엔트리, 로컬 인터럽트 지정 엔트리 무시
+		case MP_ENTRYTYPE_BUS:
+		case MP_ENTRYTYPE_IOAPIC:
+		case MP_ENTRYTYPE_LOCALINTERRUPT:
+			addr += 8;
+			break;
+		// IO 인터럽트 지정 엔트리이면 ISA 버스에 관련된 엔트리인지 확인
+		case MP_ENTRYTYPE_IOINTERRUPT:
+			ioInterruptEntry = (IOINTERRUPTENTRY*)addr;
+			// MP Configuration Manager 자료구조에 저장된 ISA 버스 ID와 비교
+			if(ioInterruptEntry->srcID == gs_mpConfigManager.isaBusID) find = TRUE;
+			addr += sizeof(IOINTERRUPTENTRY);
+			break;
+		}
+	}
+
+	// 못찾았으면 NULL 반환
+	if(find == FALSE) return NULL;
+
+	// ISA 버스와 관련된 IO APIC를 검색해 IO APIC 엔트리 반환
+	// 다시 엔트리를 돌며 IO 인터럽트 지정 엔트리에 저장된 IO APIC ID와 일치하는 엔트리 검색
+	addr = gs_mpConfigManager.startAddr;
+	for(i = 0; i < head->entryCnt; i++) {
+		type = *(BYTE*)addr;
+		switch(type) {
+		// 프로세스 엔트리 무시
+		case MP_ENTRYTYPE_PROCESSOR:
+			addr += sizeof(PROCESSORENTRY);
+			break;
+		// 버스 엔트리, IO 인터럽트 지정 엔트리, 로컬 인터럽트 지정 엔트리 무시
+		case MP_ENTRYTYPE_BUS:
+		case MP_ENTRYTYPE_IOINTERRUPT:
+		case MP_ENTRYTYPE_LOCALINTERRUPT:
+			addr += 8;
+			break;
+		// IO APIC 엔트리이면 ISA 버스가 연결된 엔트리인지 확인해 반환
+		case MP_ENTRYTYPE_IOAPIC:
+			ioAPICEntry = (IOAPICENTRY*)addr;
+			if(ioAPICEntry->id == ioInterruptEntry->destID) return ioAPICEntry;
+			addr += sizeof(IOINTERRUPTENTRY);
+			break;
+		}
+	}
+
+	return NULL;
 }

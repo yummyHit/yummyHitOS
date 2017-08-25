@@ -10,6 +10,7 @@
 
 #include <Types.h>
 #include <Queue.h>
+#include <Synchronize.h>
 
 #pragma once
 // 매크로. Pause 키를 처리하기 위해 무시해야 하는 나머지 스캔 코드의 수
@@ -76,6 +77,9 @@ typedef struct keyMapEntry {
 
 // 키보드 상태 관리 자료구조
 typedef struct keyboardManager {
+	// 자료구조 동기화를 위한 스핀락
+	SPINLOCK spinLock;
+
 	// 조합 키 정보
 	BOOL shiftDown;
 	BOOL capsOn;

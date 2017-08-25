@@ -128,7 +128,7 @@ typedef struct taskControlBlock {
 } TCB;
 
 // TCB 풀 상태 관리 자료구조
-typedef struct TCBPoolManager {
+typedef struct tcbPoolManager {
 	// 태스크 풀에 대한 정보
 	TCB *startAddr;
 	int maxCnt;
@@ -140,6 +140,9 @@ typedef struct TCBPoolManager {
 
 // 스케줄러 상태 관리 자료구조
 typedef struct scheduler {
+	// 자료구조 동기화를 위한 스핀락
+	SPINLOCK spinLock;
+
 	// 현재 수행중인 태스크
 	TCB *runningTask;
 
@@ -180,7 +183,7 @@ static TCB *getNextTask(void);
 static BOOL addReadyList(TCB *task);
 BOOL schedule(void);
 BOOL scheduleInterrupt(void);
-void reduceProcessorTime(void);
+void decProcessorTime(void);
 BOOL isProcessorTime(void);
 static TCB *delReadyList(QWORD id);
 BOOL changePriority(QWORD id, BYTE priority);

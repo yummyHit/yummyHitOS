@@ -17,7 +17,10 @@
 #include <HardDisk.h>
 #include <FileSystem.h>
 #include <SerialPort.h>
+#include <MPConfig.h>
+#include <LocalAPIC.h>
 #include <MP.h>
+#include <IOAPIC.h>
 
 void forAP(void);
 void yummy_ascii_art(const char *buf);
@@ -115,12 +118,33 @@ void forAP(void) {
 	// IDT 테이블 설정
 	loadIDTR(IDTR_STARTADDR);
 
+	// 스케줄러 초기화
+	initScheduler();
+
+	// 현재 코어의 로컬 APIC 활성화
+	onSWLocalAPIC();
+
+	// 모든 인터럽트를 수신할 수 있도록 태스크 우선순위 레지스터 0으로 설정
+	setTaskPriority(0);
+
+	// 로컬 APIC 로컬 벡터 테이블 초기화
+	initLocalVecTbl();
+
+	// 인터럽트 활성화
+	onInterrupt();
+
+	// 대칭 IO 모드 테스트를 위해 AP가 시작된 후 한 번만 출력
+	printF("Application Processor[APIC ID: %d] is Activated\n", getAPICID());
+
+/*
 	// 1초마다 한 번씩 메시지 출력
 	tickCnt = getTickCnt();
 	while(1) if(getTickCnt() - tickCnt > 1000) {
 		tickCnt = getTickCnt();
 		printF("Application Processor[APIC ID: %d] is Activated\n", getAPICID());
 	}
+*/
+	idleTask();
 }
 
 void yummy_ascii_art(const char *buf) {

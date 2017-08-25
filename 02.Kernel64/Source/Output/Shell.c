@@ -21,6 +21,8 @@
 #include <MPConfig.h>
 #include <LocalAPIC.h>
 #include <MP.h>
+#include <IOAPIC.h>
+#include <InterruptHandler.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -63,6 +65,10 @@ SHELLENTRY gs_cmdTable[] = {
 	{"download", "### Download Data Using Serial. ex)download a.txt", csDownload},
 	{"mpInfo", "### Show MP Configuration Table Information", csMPConfigInfo},
 	{"startAP", "### Start Application Processor ###", csStartAP},
+	{"symmetricIO", "### Start Symmetric I/O Mode ###", csSymmetricIOMode},
+	{"irqINTINMapInfo", "### Show IRQ->INTIN Mapping Table ###", csIRQMapTbl},
+	{"intProcCnt", "### Show Interrupt Processing Count ###", csInterruptProcCnt},
+	{"intLoadBalancing", "### Start Interrupt Load Balancing ###", csInterruptLoadBalancing},
 };
 
 // 셸 메인 루프
@@ -1624,4 +1630,134 @@ static void csStartAP(const char *buf) {
 
 	// BSP(Bootstrap Processor)의 APIC ID 출력
 	printF("Bootstrap Processor[APIC ID: %d] Start Application Processor\n", getAPICID());
+}
+
+// 대칭 IO 모드로 전환
+static void csSymmetricIOMode(const char *buf) {
+	MPCONFIGMANAGER *manager;
+	BOOL interruptFlag;
+
+	// MP 설정 테이블 분석
+	if(analysisMPConfig() == FALSE) {
+		printF("Analyze MP Configuration Table Fail...\n");
+		return;
+	}
+
+	// MP 설정 매니저를 찾아 PIC 모드 여부 확인
+	manager = getMPConfigManager();
+	if(manager->usePICMode == TRUE) {
+		// PIC 모드이면 IO 포트 어드레스 0x22에 0x70을 먼저 전송, IO 포트 어드레스 0x23에 0x01을 전송하는 방법으로 IMCR 레지스터에 접근해 PIC 모드 비활성화
+		outByte(0x22, 0x70);
+		outByte(0x23, 0x01);
+	}
+
+	// PIC 컨트롤러의 인터럽트 모두 마스크해 인터럽트가 발생할 수 없도록 함
+	printF("Mask All PIC Controller Interrupt\n");
+	maskPIC(0xFFF);
+
+	// 프로세서 전체의 로컬 APIC 활성화
+	printF("Enable Global Local APIC\n");
+	onLocalAPIC();
+
+	// 현재 코어 로컬 APIC 활성화
+	printF("Enable Software Local APIC\n");
+	onSWLocalAPIC();
+
+	// 인터럽트 불가로 설정
+	printF("Disable CPU Interrupt Flag\n");
+	interruptFlag = setInterruptFlag(FALSE);
+
+	// 모든 인터럽트를 수신할 수 있도록 태스크 우선순위 레지스터를 0으로 설정
+	setTaskPriority(0);
+
+	// 로컬 APIC의 로컬 벡터 테이블 초기화
+	initLocalVecTbl();
+
+	// 대칭 IO 모드로 변경되었음을 설정
+	setSymmetricIOMode(TRUE);
+
+	// IO APIC 리다이렉트 테이블 초기화
+	printF("Initialize I/O Redirection Table\n");
+	initIORedirect();
+
+	// 이전 인터럽트 플래그 복원
+	printF("Restore CPU Interrupt Flag\n");
+	setInterruptFlag(interruptFlag);
+
+	printF("Change Symmetric I/O Mode Complete !!\n");
+}
+
+// IRQ와 IO APIC의 인터럽트 입력 핀(INTIN)의 관계를 저장한 테이블 표시
+static void csIRQMapTbl(const char *buf) {
+	// IO APIC 관리하는 자료구조의 출력 함수 호출
+	printIRQMap();
+}
+
+// 코어별 인터럽트 처리 횟수 출력
+static void csInterruptProcCnt(const char *buf) {
+	INTERRUPTMANAGER *manager;
+	int i, j, procCnt, len, lineCnt;
+	char _buf[20];
+
+	printF("   ====================== Interrupt Count =====================\n");
+
+	// MP 설정 테이블에 저장된 코어 개수 읽음
+	procCnt = getProcessorCnt();
+
+	// 프로세서 수만큼 Column 출력. 한 줄에 코어 4개씩 출력하고 한 Column당 15칸 할당
+	for(i = 0; i < procCnt; i++) {
+		if(i == 0) printF("IRQ Num\t\t");
+		else if((i % 4) == 0) printF("\n      \t\t");
+		sprintF(_buf, "Core %d", i);
+		printF(_buf);
+
+		// 출력하고 남은 공간을 모두 스페이스로 채움
+		len = 15 - strLen(_buf);
+		memSet(_buf, ' ', len);
+		_buf[len] = '\0';
+		printF(_buf);
+	}
+	printF("\n");
+
+	// Row와 인터럽트 처리 횟수 출력. 총 인터럽트 횟수와 코어별 인터럽트 처리 횟수 출력
+	lineCnt = 0;
+	manager = getInterruptManager();
+	for(i = 0; i < INTERRUPT_MAX_VECCNT; i++) {
+		for(j = 0; j < procCnt; j++) {
+			// ROW 출력. 한 줄에 코어 4개씩 출력하고 한 Column당 15칸 할당
+			if(j == 0) {
+				// 20 라인마다 화면 정지
+				if((lineCnt != 0) && (lineCnt > 10)) {
+					printF("\nPress any key to continue... ('q' is exit) : ");
+					if(getCh() == 'q') {
+						printF("\n");
+						return;
+					}
+					lineCnt = 0;
+					printF("\n");
+				}
+				printF("---------------------------------------------------------------\n");
+				printF("IRQ %d\t\t", i);
+				lineCnt += 2;
+			} else if((j % 4) == 0) {
+				printF("\n      \t\t");
+				lineCnt++;
+			}
+
+			sprintF(_buf, "0x%Q", manager->coreInterruptCnt[j][i]);
+			// 출력하고 남은 영역을 모두 스페이스로 채움
+			printF(_buf);
+			len = 15 - strLen(_buf);
+			memSet(_buf, ' ', len);
+			_buf[len] = '\0';
+			printF(_buf);
+		}
+		printF("\n");
+	}
+}
+
+// 인터럽트 부하 분산 기능 시작
+static void csInterruptLoadBalancing(const char *buf) {
+	printF("Start Interrupt Load Balancing...\n");
+	setInterruptLoadBalancing(TRUE);
 }

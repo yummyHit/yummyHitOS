@@ -18,11 +18,11 @@
 #define APIC_REG_APICID			0x000020
 #define APIC_REG_TASKPRIORITY		0x000080
 #define APIC_REG_TIMER			0x000320
-#define APIC_REG_THERMALSENSOR		0x000330
+#define APIC_REG_TEMPERATURESENSOR	0x000330
 #define APIC_REG_MONITORINGCOUNTER	0x000340
 #define APIC_REG_LINT0			0x000350
 #define APIC_REG_LINT1			0x000360
-#define APIC_REG_ERROR			0x000370
+#define APIC_REG_ERR			0x000370
 #define APIC_REG_LOWICR			0x000300
 #define APIC_REG_HIGHICR		0x000310
 
@@ -57,7 +57,21 @@
 #define APIC_DESTABBR_ALLINCLUDINGSELF	0x080000
 #define APIC_DESTABBR_ALLEXCLUDINGSELF	0x0C0000
 
+// 인터럽트 마스크(Interrupt Mask) 관련
+#define APIC_INTERRUPT_MASK		0x010000
+
+// 타이머 모드(Timer Mode) 관련
+#define APIC_TIMERMODE_TERM		0x020000
+#define APIC_TIMERMODE_ONESHOT		0x000000
+
+// 인터럽트 입력 핀 극성(Interrupt Input Pin Polarity) 관련
+#define APIC_POLARITY_ACTIVELOW		0x002000
+#define APIC_POLARITY_ACTIVEHIGH	0x000000
+
 QWORD getLocalAPICAddr(void);
 void onSWLocalAPIC(void);
+void sendEOI_LocalAPIC(void);
+void setTaskPriority(BYTE priority);
+void initLocalVecTbl(void);
 
 #endif /*__LOCALAPIC_H__*/
