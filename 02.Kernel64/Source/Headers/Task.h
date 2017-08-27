@@ -71,7 +71,7 @@
 // 태스크의 플래그
 #define TASK_FLAGS_FIN		0x8000000000000000
 #define TASK_FLAGS_SYSTEM	0x4000000000000000
-#define TASK_FLAGS_PROCESS	0x2000000000000000
+#define TASK_FLAGS_PROC		0x2000000000000000
 #define TASK_FLAGS_THREAD	0x1000000000000000
 #define TASK_FLAGS_IDLE		0x0800000000000000
 #define TASK_FLAGS_USERLV	0x0400000000000000
@@ -83,6 +83,9 @@
 
 // 자식 쓰레드 링크에 연결된 threadLink 정보에서 태스크 자료구조(TCB) 위치를 계산해 반환하는 매크로
 #define GETTCBTHREAD(x)		(TCB*)((QWORD)(x) - offsetof(TCB, threadLink))
+
+// 프로세서 친화도 필드에 라애 값이 설정되면 해당 태스크는 특별 요구사항이 없는 것으로 판단하여 태스크 부하 분산 사용
+#define TASK_LOADBALANCING_ID	0xFF
 
 // 구조체, 1바이트로 정렬
 #pragma pack(push, 1)
@@ -123,12 +126,21 @@ typedef struct taskControlBlock {
 	// FPU 사용 여부
 	BOOL fpuUsed;
 
+	// 프로세서 친화도
+	BYTE affinity;
+
+	// 현재 탯크를 수행하는 코어의 로컬 APIC ID
+	BYTE _id;
+
 	// 패딩 비트
-	char pad[11];
+	char pad[9];
 } TCB;
 
 // TCB 풀 상태 관리 자료구조
 typedef struct tcbPoolManager {
+	// 자료구조 동기화를 위한 스핀락
+	SPINLOCK *spinLock;
+
 	// 태스크 풀에 대한 정보
 	TCB *startAddr;
 	int maxCnt;
@@ -166,6 +178,9 @@ typedef struct scheduler {
 
 	// 마지막으로 FPU를 사용한 태스크의 ID
 	QWORD lastFPU;
+
+	// 부하 분산 기능 사용 여부
+	BOOL isLoadBalancing;
 } SCHEDULER;
 
 #pragma pack(pop)
@@ -173,33 +188,38 @@ typedef struct scheduler {
 static void initTBPool(void);
 static TCB *allocTCB(void);
 static void freeTCB(QWORD id);
-TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr);
+TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr, BYTE affinity);
 static void setTask(TCB *tcb, QWORD flag, QWORD epAddr, void *stackAddr, QWORD stackSize);
 
 void initScheduler(void);
-void setRunningTask(TCB *task);
-TCB *getRunningTask(void);
-static TCB *getNextTask(void);
-static BOOL addReadyList(TCB *task);
+void setRunningTask(BYTE _id, TCB *task);
+TCB *getRunningTask(BYTE _id);
+static TCB *getNextTask(BYTE _id);
+static BOOL addReadyList(BYTE _id, TCB *task);
 BOOL schedule(void);
 BOOL scheduleInterrupt(void);
-void decProcessorTime(void);
-BOOL isProcessorTime(void);
-static TCB *delReadyList(QWORD id);
-BOOL changePriority(QWORD id, BYTE priority);
+void decProcessorTime(BYTE _id);
+BOOL isProcessorTime(BYTE _id);
+static TCB *delReadyList(BYTE _id, QWORD id);
+static BOOL findSchedulerLock(QWORD id, BYTE *_id);
+BOOL alterPriority(QWORD id, BYTE priority);
 BOOL taskFin(QWORD id);
 void taskExit(void);
-int getReadyCnt(void);
-int getTaskCnt(void);
+int getReadyCnt(BYTE _id);
+int getTaskCnt(BYTE _id);
 TCB *getTCB(int offset);
 BOOL isTaskExist(QWORD id);
-QWORD getProcessorLoad(void);
+QWORD getProcessorLoad(BYTE _id);
 static TCB *getProcThread(TCB *thread);
+void addTaskLoadBalancing(TCB *task);
+static BYTE findSchedulerCnt(const TCB *task);
+BYTE setTaskLoadBalancing(BYTE _id, BOOL isLoadbalancing);
+BOOL alterAffinity(QWORD id, BYTE affinity);
 
 void idleTask(void);
-void haltProcessor(void);
+void haltProcessor(BYTE _id);
 
-QWORD getLastFPU(void);
-void setLastFPU(QWORD id);
+QWORD getLastFPU(BYTE _id);
+void setLastFPU(BYTE _id, QWORD id);
 
 #endif /*__TASK_H__*/

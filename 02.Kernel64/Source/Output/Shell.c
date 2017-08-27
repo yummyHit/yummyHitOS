@@ -69,6 +69,8 @@ SHELLENTRY gs_cmdTable[] = {
 	{"irqINTINMapInfo", "### Show IRQ->INTIN Mapping Table ###", csIRQMapTbl},
 	{"intProcCnt", "### Show Interrupt Processing Count ###", csInterruptProcCnt},
 	{"intLoadBalancing", "### Start Interrupt Load Balancing ###", csInterruptLoadBalancing},
+	{"taskLoadBalancing", "### Start Task Load Balancing ###", csTaskLoadBalancing},
+	{"changeAffinity", "### Change Task Affinity. ex)changeAffinity 1(ID) 0xFF(Affinity)", csChangeAffinity},
 };
 
 // 셸 메인 루프
@@ -367,7 +369,7 @@ static void taskTest1(void) {
 	TCB *runningTask;
 
 	// 자신의 ID 얻어서 화면 오프셋으로 사용
-	runningTask = getRunningTask();
+	runningTask = getRunningTask(getAPICID());
 	margin = (runningTask->link.id & 0xFFFFFFFF) % 10;
 
 	// 화면 네 귀퉁이를 돌며 문자 출력
@@ -408,7 +410,7 @@ static void taskTest2(void) {
 	char data[4] = {'-', '\\', '|', '/'};
 
 	// 자신의 ID를 얻어 화면 오프셋으로 사용
-	runningTask = getRunningTask();
+	runningTask = getRunningTask(getAPICID());
 	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
 	offset = CONSOLE_WIDTH * CONSOLE_HEIGHT - (offset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
 
@@ -418,6 +420,32 @@ static void taskTest2(void) {
 		i++;
 	}
 }
+
+// 자신이 수행되는 코어의 ID가 변경될 때마다 자신의 태스크 ID와 코어 ID 출력
+static void taskTest3(void) {
+	QWORD id, lastTick;
+	TCB *runningTask;
+	BYTE _id;
+
+	// 자신의 태스크 자료구조 저장
+	runningTask = getRunningTask(getAPICID());
+	id = runningTask->link.id;
+	printF("Test Task 3 Started. Task ID = 0x%q, Local APIC ID = 0x%x\n", id, getAPICID());
+
+	// 현재 수행 중 로컬 APIC ID 저장하고 태스크가 부하 분산되어 다른 코어로 옮겨갔을 때 메시지 출력
+	_id = getAPICID();
+	while(1) {
+		// 이전에 수행되었던 코어와 현재 수행하는 코어가 다르면 메시지 출력
+		if(_id != getAPICID()) {
+			printF("Core Changed! Task ID = 0x%q, Prev Local APIC ID = 0x%x, Current = 0x%x\n", id, _id, getAPICID());
+
+			// 현재 수행 중인 코어 ID 변경
+			_id = getAPICID();
+		}
+
+		schedule();
+	}
+}			
 
 // 태스크 생성하여 멀티태스킹
 static void csCreateTask(const char *buf) {
@@ -432,14 +460,22 @@ static void csCreateTask(const char *buf) {
 
 	switch(aToi(type, 10)) {
 	case 1:
-		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest1) == NULL) break;
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest1, TASK_LOADBALANCING_ID) == NULL) break;
 		printF("Task Test 1 %d Created.\n", i);
 		break;
 
 	case 2:
 	default:
-		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest2) == NULL) break;
+		for(i = 0; i < aToi(cnt, 10); i++) if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest2, TASK_LOADBALANCING_ID) == NULL) break;
 		printF("Task Test 2 %d Created.\n", i);
+		break;
+
+	case 3:
+		for(i = 0; i < aToi(cnt, 10); i++) {
+			if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest3, TASK_LOADBALANCING_ID) == NULL) break;
+			schedule();
+		}
+		printF("Task3 %d Created\n", i);
 		break;
 	}
 }
@@ -463,22 +499,51 @@ static void csChangePriority(const char *buf) {
 	_priority = aToi(priority, 10);
 
 	printF("### Change Task Priority ID [0x%q] Priority[%d] ", _id, _priority);
-	if(changePriority(_id, _priority) == TRUE) printF("Success !!\n");
+	if(alterPriority(_id, _priority) == TRUE) printF("Success !!\n");
 	else printF("Fail...\n");
 }
 
 // 현재 생성된 모든 태스크 정보 출력
 static void csTaskList(const char *buf) {
-	int i, cnt = 0;
+	int i, cnt = 0, totalCnt = 0, len, processorCnt;
+	char _buf[20];
 	TCB *tcb;
 
-	printF("   ===================Task Total Count [%d]====================\n", getTaskCnt());
+	// 코어 수만큼 루프를 돌며 각 스케줄러에 있는 태스크 수 더함
+	processorCnt = getProcessorCnt();
+
+	for(i = 0; i < processorCnt; i++) totalCnt += getTaskCnt(i);
+
+	printF("   ================== Task Total Count [%d] ===================\n", totalCnt);
+
+	// 코어가 두 개 이상이면 각 스케줄러별 개수 출력
+	if(processorCnt > 1) {
+		for(i = 0; i < processorCnt; i++) {
+			if((i != 0) && ((i % 4) == 0)) printF("\n");
+			sprintF(_buf, "Core %d : %d", i, getTaskCnt(i));
+			printF(_buf);
+
+			// 출력하고 남은 공간 모두 스페이스바로 채움
+			len = 19 - strLen(_buf);
+			memSet(_buf, ' ', len);
+			_buf[len] = '\0';
+			printF(_buf);
+		}
+
+		printF("\nPress any key to continue... ('q' is exit) : ");
+		if(getCh() == 'q') {
+			printF("\n");
+			return;
+		}
+		printF("\n\n");
+	}
+
 	for(i = 0; i < TASK_MAXCNT; i++) {
 		// TCB 구해서 TCB가 사용 중이면 ID 출력
 		tcb = getTCB(i);
 		if((tcb->link.id >> 32) != 0) {
-			// 태스크가 10개 출력될 때마다 태스크 정보 표시할지 여부 확인
-			if((cnt != 0) && ((cnt % 10) == 0)) {
+			// 태스크가 6개 출력될 때마다 태스크 정보 표시할지 여부 확인
+			if((cnt != 0) && ((cnt % 6) == 0)) {
 				printF("Press any key to continue... ('q' is exit) : ");
 				if(getCh() == 'q') {
 					printF("\n");
@@ -487,6 +552,7 @@ static void csTaskList(const char *buf) {
 				printF("\n");
 			}
 			printF("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + cnt++, tcb->link.id, GETPRIORITY(tcb->flag), tcb->flag, getListCnt(&(tcb->childThreadList)));
+			printF("     Core ID[0x%X] CPU Affinity[0x%x]\n", tcb->_id, tcb->affinity);
 			printF("     Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n", tcb->parentProcID, tcb->memAddr, tcb->memSize);
 		}
 	}
@@ -536,7 +602,24 @@ static void csTaskill(const char *buf) {
 
 // 프로세서 사용률 표시
 static void csCPULoad(const char *buf) {
-	printF("Processor Load : %d%%\n", getProcessorLoad());
+	int i, len;
+	char _buf[50];
+
+	printF("   ====================== Processor Load ======================\n");
+
+	// 각 코어별 부하 출력
+	for(i = 0; i < getProcessorCnt(); i++) {
+		if((i != 0) && ((i % 4) == 0)) printF("\n");
+		sprintF(_buf, "Core %d : %d%%", i, getProcessorLoad(i));
+		printF("%s", _buf);
+
+		// 출력하고 남은 공간 모두 스페이스바로 채움
+		len = 19 - strLen(_buf);
+		memSet(_buf, ' ', len);
+		_buf[len] = '\0';
+		printF(_buf);
+	}
+	printF("\n");
 }
 
 // 뮤텍스 테스트용 뮤텍스와 변수
@@ -555,7 +638,7 @@ static void printNumTask(void) {
 	// 루프 돌면서 숫자 출력
 	for(i = 0; i < 5; i++) {
 		_lock(&gs_mut);
-		printF("Task ID [0x%Q] Value[%d]\n", getRunningTask()->link.id, gs_add);
+		printF("Task ID [0x%Q] Value[%d]\n", getRunningTask(getAPICID())->link.id, gs_add);
 		gs_add += 1;
 		_unlock(&gs_mut);
 
@@ -579,7 +662,7 @@ static void csMutexTest(const char *buf) {
 	// 뮤텍스 초기화
 	initMutex(&gs_mut);
 
-	for(i = 0; i < 3; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)printNumTask);
+	for(i = 0; i < 3; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)printNumTask, getAPICID());
 	printF("Wait Util %d Task Finishing...\n", i);
 	getCh();
 }
@@ -588,7 +671,7 @@ static void csMutexTest(const char *buf) {
 static void createThreadTask(void) {
 	int i;
 
-	for(i = 0; i < 3; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest2);
+	for(i = 0; i < 3; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)taskTest2, TASK_LOADBALANCING_ID);
 	while(1) _sleep(1);
 }
 
@@ -596,7 +679,7 @@ static void createThreadTask(void) {
 static void csThreadTest(const char *buf) {
 	TCB *proc;
 
-	proc = createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xEEEEEEEE, 0x1000, (QWORD)createThreadTask);
+	proc = createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROC, (void*)0xEEEEEEEE, 0x1000, (QWORD)createThreadTask, TASK_LOADBALANCING_ID);
 
 	if(proc != NULL) printF("Process [0x%Q] Create Success !\n", proc->link.id);
 	else printF("Process Create Fail...\n");
@@ -641,7 +724,7 @@ static void matrixProc(void) {
 	int i;
 
 	for(i = 0; i < 300; i++) {
-		if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)dropMatrixChar) == NULL) break;
+		if(createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)dropMatrixChar, TASK_LOADBALANCING_ID) == NULL) break;
 		_sleep(_rand() % 5 + 5);
 	}
 	getCh();
@@ -651,7 +734,7 @@ static void matrixProc(void) {
 static void csMatrix(const char *buf) {
 	TCB *proc;
 
-	proc = createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void*)0xE00000, 0xE00000, (QWORD)matrixProc);
+	proc = createTask(TASK_FLAGS_LOW | TASK_FLAGS_PROC, (void*)0xE00000, 0xE00000, (QWORD)matrixProc, TASK_LOADBALANCING_ID);
 
 	if(proc != NULL) {
 		clearMatrix();
@@ -670,7 +753,7 @@ static void fpuTest(void) {
 	char data[4] = { '-', '\\', '|', '/' };
 	CHARACTER *mon = (CHARACTER*)CONSOLE_VIDEOMEMADDR;
 
-	runningTask = getRunningTask();
+	runningTask = getRunningTask(getAPICID());
 
 	// 자신의 ID를 얻어 화면 오프셋으로 사용
 	offset = (runningTask->link.id & 0xFFFFFFFF) * 2;
@@ -717,7 +800,7 @@ static void csGetPIE(const char *buf) {
 	printF("%d.%d%d\n", (QWORD)res, ((QWORD)(res * 10) % 10), ((QWORD)(res * 100) % 10));
 
 	// 실수를 계산하는 태스크 생성
-	for(i = 0; i < 100; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest);
+	for(i = 0; i < 100; i++) createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest, TASK_LOADBALANCING_ID);
 }
 
 // 동적 메모리 정보 표시
@@ -788,7 +871,7 @@ static void randAllocTask(void) {
 	BYTE *allocBuf;
 	int i, j, y;
 
-	task = getRunningTask();
+	task = getRunningTask(getAPICID());
 	y = (task->link.id) % 15 + 9;
 
 	for(j = 0; j < 10; j++) { // 1KB ~ 32M까지 할당
@@ -831,7 +914,7 @@ static void randAllocTask(void) {
 static void csRandAllocTest(const char *buf) {
 	int i;
 		// Ram Disk를 이용해도 에러나는 부분. 동적 메모리가 0 Byte여야하는데, 비어있지 않아 오류나는 것 같음.
-	for(i = 0; i < 1000; i++) createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (QWORD)randAllocTask);
+	for(i = 0; i < 1000; i++) createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD, 0, 0, (QWORD)randAllocTask, TASK_LOADBALANCING_ID);
 }
 
 // 하드 디스크 정보 표시
@@ -1760,4 +1843,37 @@ static void csInterruptProcCnt(const char *buf) {
 static void csInterruptLoadBalancing(const char *buf) {
 	printF("Start Interrupt Load Balancing...\n");
 	setInterruptLoadBalancing(TRUE);
+}
+
+// 태스크 부하 분산 기능 시작
+static void csTaskLoadBalancing(const char *buf) {
+	int i;
+
+	printF("Start Task Load Balancing...\n");
+	for(i = 0; i < MAXPROCESSORCNT; i++) setTaskLoadBalancing(i, TRUE);
+}
+
+// 태스크 프로세서 친화도 변경
+static void csChangeAffinity(const char *buf) {
+	PARAMLIST list;
+	char id[30], affinity[30];
+	QWORD _id;
+	BYTE _affinity;
+
+	// 파라미터 추출
+	initParam(&list, buf);
+	getNextParam(&list, id);
+	getNextParam(&list, affinity);
+
+	// 태스크 ID 필드 추출
+	if(memCmp(id, "0x", 2) == 0) _id = aToi(id + 2, 16);
+	else _id = aToi(id, 10);
+
+	// 프로세서 친화도 추출
+	if(memCmp(id, "0x", 2) == 0) _affinity = aToi(affinity + 2, 16);
+	else _affinity = aToi(affinity, 10);
+
+	printF("Change Task Affinity ID [0x%q] Affinity[0x%x] ", _id, _affinity);
+	if(alterAffinity(_id, _affinity) == TRUE) printF("Success !!\n");
+	else printF("Fail...\n");
 }

@@ -82,7 +82,7 @@ BYTE getCode(void) {
 }
 
 // 키보드 LED의 ON/OFF 변경
-BOOL changeLED(BOOL caps, BOOL num, BOOL scroll) {
+BOOL alterLED(BOOL caps, BOOL num, BOOL scroll) {
 	int i, j;
 	BOOL preInterrupt;
 	BOOL res;
@@ -240,7 +240,7 @@ void updateKeyNLED(BYTE scanCode) {
 	}
 
 	// LED 상태가 변했으면 키보드로 커맨드 전송해 LED 변경
-	if(ledStat == TRUE) changeLED(gs_keyManager.capsOn, gs_keyManager.numOn, gs_keyManager.scrollOn);
+	if(ledStat == TRUE) alterLED(gs_keyManager.capsOn, gs_keyManager.numOn, gs_keyManager.scrollOn);
 }
 
 // 스캔 코드를 ASCII 코드로 변환

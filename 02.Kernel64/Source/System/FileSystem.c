@@ -113,6 +113,10 @@ BOOL _format(void) {
 	MBR *mbr;
 	DWORD totalSectorCnt, remainSectorCnt, maxClusterCnt, clusterCnt, linkSectorCnt, i;
 
+	char buf[16];
+	DWORD len, size = 0, tmp;
+	FILE *fp;
+
 	// 동기화 처리
 	_lock(&(gs_fileSystemManager.mut));
 

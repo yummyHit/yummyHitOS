@@ -212,7 +212,7 @@ BOOL inputBufCheck(void);
 BOOL ackForQueue(void);
 BOOL activeKeyboard(void);
 BOOL getCode(void);
-BOOL changeLED(BOOL caps, BOOL num, BOOL scroll);
+BOOL alterLED(BOOL caps, BOOL num, BOOL scroll);
 void onA20Gate(void);
 void reBoot(void);
 BOOL isEngScanCode(BYTE scanCode);

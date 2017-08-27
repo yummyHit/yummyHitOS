@@ -166,6 +166,7 @@ void keyboardHandler(int vecNum) {
 void timerHandler(int vecNum) {
 	static int ls_timerCnt = 0;
 	int irq;
+	BYTE _id;
 
 	ls_timerCnt = (ls_timerCnt + 1) % 10;
 	printDebug(vecNum, ls_timerCnt, 3);
@@ -180,33 +181,36 @@ void timerHandler(int vecNum) {
 	incInterruptCnt(irq);
 
 	// IRQ 0 인터럽트 처리는 Bootstrap Processor만 처리
-	if(getAPICID() == 0) {
-		// 타이머 발생 횟수 증가
-		g_tickCnt++;
+	_id = getAPICID();
+	if(_id == 0) g_tickCnt++;	// 타이머 발생 횟수 증가
 
-		// 태스크가 사용한 프로세서 시간 줄임
-		decProcessorTime();
+	// 태스크가 사용한 프로세서 시간 줄임
+	decProcessorTime(_id);
 
-		// 프로세서가 사용할 수 있는 시간을 다썼으면 태스크 전환 수행
-		if(isProcessorTime() == TRUE) scheduleInterrupt();
-	}
+	// 프로세서가 사용할 수 있는 시간을 다썼으면 태스크 전환 수행
+	if(isProcessorTime(_id) == TRUE) scheduleInterrupt();
 }
 
 // Device Not Available 예외 핸들러
 void devFPUHandler(int vecNum) {
 	TCB *fpu, *nowTask;
 	QWORD lastID;
+	BYTE _id;
 	static int ls_devCnt = 0;
+
 	// FPU 예외가 발생했음을 알리려고 메시지 출력
 	ls_devCnt = (ls_devCnt + 1) % 10;
 	printDebug(vecNum, ls_devCnt, 4);
+
+	// 현재 코어의 로컬 APIC ID 확인
+	_id = getAPICID();
 
 	// CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
 	clearTS();
 
 	// 이전 FPU를 사용한 태스크가 있는지 확인해 있다면 FPU의 상태를 태스크에 저장
-	lastID = getLastFPU();
-	nowTask = getRunningTask();
+	lastID = getLastFPU(_id);
+	nowTask = getRunningTask(_id);
 
 	// 이전 FPU를 사용한 것이 자신이면 아무것도 안 함
 	if(lastID == nowTask->link.id) return;
@@ -222,7 +226,7 @@ void devFPUHandler(int vecNum) {
 	} else loadFPU(nowTask->contextFPU);
 
 	// FPU를 사용한 태스크 ID를 현재 태스크로 변경
-	setLastFPU(nowTask->link.id);
+	setLastFPU(_id, nowTask->link.id);
 }
 
 // 하드 디스크에서 발생하는 인터럽트 핸들러

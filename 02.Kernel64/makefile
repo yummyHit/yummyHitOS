@@ -47,6 +47,10 @@ InternalDependency:
 	
 Kernel64.elf: $(EPOBJFILE) $(COBJFILES) $(ASMOBJFILES)
 	$(LD64) -o $@ $^
+
+clean:
+	rm -f $(SRCDIR)/Headers/*.gch
+	rm -f $(OBJDIR)/*.*
 	
 ifeq (Dependency.dep, $(wildcard Dependency.dep))
 include Dependency.dep

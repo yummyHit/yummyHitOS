@@ -72,7 +72,7 @@ void Main(void) {
 	printXY(7, 7, 0x1F, "Keyboard Activate And Queue Initialize ...........");
 	if(initKeyboard() == TRUE) {
 		printXY(57, 7, 0x1A, "[  Hit  ]");
-		changeLED(FALSE, FALSE, FALSE);
+		alterLED(FALSE, FALSE, FALSE);
 	} else {
 		printXY(57, 7, 0x1C, "[  Err  ]");
 		printXY(7, 8, 0x1C, "Keyboard is Not active ! Check your keyboard port ...");
@@ -101,7 +101,7 @@ void Main(void) {
 	y += 4;
 	setCursor(0, y);
 
-	createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (QWORD)idleTask);
+	createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (QWORD)idleTask, getAPICID());
 	startShell();
 }
 
@@ -136,14 +136,7 @@ void forAP(void) {
 	// 대칭 IO 모드 테스트를 위해 AP가 시작된 후 한 번만 출력
 	printF("Application Processor[APIC ID: %d] is Activated\n", getAPICID());
 
-/*
-	// 1초마다 한 번씩 메시지 출력
-	tickCnt = getTickCnt();
-	while(1) if(getTickCnt() - tickCnt > 1000) {
-		tickCnt = getTickCnt();
-		printF("Application Processor[APIC ID: %d] is Activated\n", getAPICID());
-	}
-*/
+	// 유휴 태스크 실행
 	idleTask();
 }
 
