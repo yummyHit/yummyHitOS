@@ -12,9 +12,10 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 
 jmp 0x07C0:START		; CS 세그먼트 레지스터에 0x07C0 복사, START 레이블로 이동
 
-TOTALSECTORCOUNT:	dw 0x02	; 부트 로더를 제외한 OS 이미지의 크기. 최대 1152 섹터(0x90000byte)까지 가능
-KERNEL32SECTORCOUNT:	dw 0x02	; 보호 모드 커널의 총 섹터 수
+TOTALSECTORCNT:		dw 0x02	; 부트 로더를 제외한 OS 이미지의 크기. 최대 1152 섹터(0x90000byte)까지 가능
+KERNEL32SECTORCNT:	dw 0x02	; 보호 모드 커널의 총 섹터 수
 BOOTSTRAPPROCESSOR:	db 0x01	; Bootstrap Processor인지 여부
+ISGRAPHICMODE:		db 0x01	; 그래픽 모드로 시작하는지 여부
 
 ; 코드 영역
 START:
@@ -24,10 +25,10 @@ START:
 	; 스택을 0x0000:0000~0x0000:FFFF 영역에 64KB 크기로 생성
 	mov ax, 0x0000		; 스택 세그먼트의 시작 어드레스(0x0000)를 세그먼트 레지스터 값으로 변환
 	mov ss, ax		; SS 세그먼트 레지스터에 설정
-	mov sp, 0xFFFE		; SP 레지스터의 어드레스를 0xFFFE로 설정
-	mov bp, 0xFFFE		; BP 레지스터의 어드레스를 0xFFFE로 설정
+	mov sp, 0xFFFF		; SP 레지스터의 어드레스를 0xFFFF로 설정
+	mov bp, 0xFFFF		; BP 레지스터의 어드레스를 0xFFFF로 설정
 
-	mov si,		0	; SI 레지스터(문자열 원본 인덱스 레지스터)를 초기화
+	mov si,	0		; SI 레지스터(문자열 원본 인덱스 레지스터)를 초기화
 	call MONITORCLEAR
 
 	push LOADINGMSG
@@ -44,7 +45,7 @@ RESETDISK:
 	mov dl, 0
 	int 0x13
 	; 에러가 발생하면 에러 처리로 이동
-	jc HANDLEDISKERROR
+	jc HANDLEDISKERR
 
 	; 디스크에서 섹터 읽음. 디스크의 내용을 메모리로 복사할 어드레스(ES:BX)를 0x10000으로 설정
 	mov si, 0x1000			; OS 이미지를 복사할 어드레스(0x10000)를 세그먼트 레지스터 값으로 변환
@@ -52,12 +53,12 @@ RESETDISK:
 	mov es, si			; ES 세그먼트 레지스터에 값 설정
 	mov bx, 0x0000			; BX 레지스터에 0x0000을 설정하여 복사할 어드레스를 0x1000:0000(0x10000)으로 최종 설정
 
-	mov di, word [ TOTALSECTORCOUNT ] ; 복사할 OS 이미지의 섹터 수를 DI 레지스터에 설정
+	mov di, word [ TOTALSECTORCNT ] ; 복사할 OS 이미지의 섹터 수를 DI 레지스터에 설정
 
 .READDATA:
 	; 모든 섹터를 다 읽었는지 확인
 	cmp di, 0			; 복사할 OS 이미지 섹터 수를 0과 비교
-	je READEND			; 복사할 섹터 수가 0이라면 다 복사 했으므로 READEND로 이동
+	je .READEND			; 복사할 섹터 수가 0이라면 다 복사 했으므로 .READEND로 이동
 	sub di, 0x1			; 복사할 섹터 수를 1 감소
 
 	; BIOS Read Function 호출
@@ -68,7 +69,7 @@ RESETDISK:
 	mov dh, byte [ HEADNUM ]	; 읽을 헤드 번호 설정
 	mov dl, 0x00			; 읽을 드라이브 번호(0=Floppy) 설정
 	int 0x13			; 인터럽트 서비스 수행
-	jc HANDLEDISKERROR		; 에러가 발생했다면 HANDLEDISKERROR로 이동
+	jc HANDLEDISKERR		; 에러가 발생했다면 HANDLEDISKERR로 이동
 
 	; 복사할 어드레스와 트랙, 헤드, 섹터 어드레스 계산
 	add si, 0x0020			; 512(0x200)바이트만큼 읽었으므로, 이를 세그먼트 레지스터 값으로 변환
@@ -94,7 +95,7 @@ RESETDISK:
 	add byte [ TRACKNUM ], 0x01	; 트랙 번호 1 증가
 	jmp .READDATA
 
-READEND:
+.READEND:
 	; OS 이미지가 완료되었다는 메시지 출력
 	push HITMSG			; 출력할 메시지의 어드레스를 스택에 삽입
 	push 0x1A			; 초록색
@@ -103,12 +104,47 @@ READEND:
 	call PRINTMSG			; PRINTMSG 함수 호출
 	add sp, 8			; 삽입한 파라미터 제거
 
+	; VBE 기능 번호 0x4F01을 호출해 그래픽 모드에 대한 모드 정보 블록 구함
+	mov ax, 0x4F01		; VBE 기능 번호를 AX 레지스터에 저장
+	mov cx, 0x117		; 1024 * 768 해상도에 16비트(R(5):G(6):B(5)) 색 모드 지정
+	mov bx, 0x07E0		; BX 레지스터에 0x07E0 저장
+	mov es, bx		; ES 세그먼트 레지스터에 BX 값 설정하고
+	mov di, 0x00		; DI 레지스터에 0x00을 설정해 0x07E0:0000 어드레스에 모드 정보 블록 저장
+	int 0x10		; 인터럽트 서비스 수행
+	cmp ax, 0x004F		; 에러가 발생했다면 VBEERR로 이동
+	jne .VBEERR
+
+	; VBE 기능 번호 0x4F02를 호출해 그래픽 모드로 전환. 부트 로더의 그래픽 모드 전환 플래그를 확인해 1일 때만 전환
+	cmp byte [ ISGRAPHICMODE ], 0x00	; 그래픽 모드 시작하는지 여부를 0x00과 비교
+	je .PROTECTMODE		; 0x00과 같다면 바로 보호 모드로 전환
+
+	mov ax, 0x4F02		; VBE 기능 번호를 AX 레지스터에 저장
+	mov bx, 0x4117		; 1024 * 768 해상도에 16비트(R(5):G(6):B(5)) 색 사용하는 선형 프레임 버퍼 모드 지정.
+				; VBE 모드 번호(비트 0~8) = 0x117, 버퍼 모드(비트 14) = 1(선형 프레임 버퍼 모드)
+	int 0x10		; 인터럽트 서비스 수행
+	cmp ax, 0x004F		; 에러가 발생했다면 VBEERR로 이동
+	jne .VBEERR
+
+	; 그래픽 모드로 전환되었다면 보호 모드 커널로 이동
+	jmp .PROTECTMODE
+
+.VBEERR:
+	; 예외 처리. 그래픽 모드 전환이 실패했다는 메시지 출력
+	push GRAPHICERRMSG
+	push 0x1F
+	push 1
+	push 7
+	call PRINTMSG
+	add sp, 8
+	call HANDLEDISKERR
+
+.PROTECTMODE:
 	; 로딩한 가상 OS 이미지 실행
 	jmp 0x1000:0x0000
 
 ; 디스크 에러를 처리하는 함수
-HANDLEDISKERROR:		; 에러 처리 코드
-	push ERRORMSG		; 에러 문자열의 어드레스를 스택에 삽입
+HANDLEDISKERR:			; 에러 처리 코드
+	push ERRMSG		; 에러 문자열의 어드레스를 스택에 삽입
 	push 0x1C		; 빨간색
 	push 1			; 화면 Y 좌표(1)를 스택에 삽입
 	push 57			; 화면 X 좌표(57)를 스택에 삽입
@@ -206,9 +242,10 @@ MONITORCLEAR:
 	pop bp
 	ret
 
-ERRORMSG:	db '[  Error  ]', 0
+ERRMSG:	db '[  ERR  ]', 0
 LOADINGMSG:	db 'OS image Loading .................................', 0
 HITMSG:	db '[  Hit  ]', 0
+GRAPHICERRMSG : db 'Change Graphic Mode ..............................', 0
 
 ; 디스크 읽기에 관련된 변수들
 SECTORNUM:	db 0x02    ; OS 이미지가 시작하는 섹터 번호를 저장하는 영역

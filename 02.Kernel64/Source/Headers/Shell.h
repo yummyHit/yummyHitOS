@@ -95,5 +95,6 @@ static void csInterruptProcCnt(const char *buf);
 static void csInterruptLoadBalancing(const char *buf);
 static void csTaskLoadBalancing(const char *buf);
 static void csChangeAffinity(const char *buf);
+static void csVBEModeInfo(const char *buf);
 
 #endif /*__SHELL_H__*/

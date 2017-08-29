@@ -23,6 +23,7 @@
 #include <MP.h>
 #include <IOAPIC.h>
 #include <InterruptHandler.h>
+#include <VBE.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -71,6 +72,7 @@ SHELLENTRY gs_cmdTable[] = {
 	{"intLoadBalancing", "### Start Interrupt Load Balancing ###", csInterruptLoadBalancing},
 	{"taskLoadBalancing", "### Start Task Load Balancing ###", csTaskLoadBalancing},
 	{"changeAffinity", "### Change Task Affinity. ex)changeAffinity 1(ID) 0xFF(Affinity)", csChangeAffinity},
+	{"vbeModeInfo", "### Show VBE Mode Information ###", csVBEModeInfo},
 };
 
 // 셸 메인 루프
@@ -1876,4 +1878,25 @@ static void csChangeAffinity(const char *buf) {
 	printF("Change Task Affinity ID [0x%q] Affinity[0x%x] ", _id, _affinity);
 	if(alterAffinity(_id, _affinity) == TRUE) printF("Success !!\n");
 	else printF("Fail...\n");
+}
+
+// VBE 모드 정보 블록 출력
+static void csVBEModeInfo(const char *buf) {
+	VBEMODEINFO *mode;
+
+	// VBE 모드 정보 블록 반환
+	mode = getVBEModeInfo();
+	printF("VESA %x\n", mode->winWeighting);
+	printF("X Pixel: %d\n", mode->xPixel);
+	printF("Y Pixel: %d\n", mode->yPixel);
+	printF("Bits Per Pixel: %d\n", mode->perPixelBit);
+
+	// 해상도와 색 정보 위주 출력
+	printF("Red Mask Size: %d, Field Position: %d\n", mode->redMaskSize, mode->redPosition);
+	printF("Green Mask Size: %d, Field Position: %d\n", mode->greenMaskSize, mode->greenPosition);
+	printF("Blue Mask Size: %d, Field Position: %d\n", mode->blueMaskSize, mode->bluePosition);
+	printF("Linear Frame Base Address: 0x%X\n", mode->linearBaseAddr);
+	printF("Linear Red Mask Size: %d, Field Position: %d\n", mode->linearRedMaskSize, mode->linearRedPosition);
+	printF("Linear Green Mask Size: %d, Field Position: %d\n", mode->linearGreenMaskSize, mode->linearGreenPosition);
+	printF("Linear Blue Mask Size: %d, Field Position: %d\n", mode->linearBlueMaskSize, mode->linearBluePosition);
 }

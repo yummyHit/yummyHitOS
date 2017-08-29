@@ -21,8 +21,10 @@
 #include <LocalAPIC.h>
 #include <MP.h>
 #include <IOAPIC.h>
+#include <VBE.h>
 
 void forAP(void);
+void startGUI();
 void yummy_ascii_art(const char *buf);
 
 // BSP용 C언어 커널 엔트리 포인트, 아래 함수는 C언어 커널 시작 부분
@@ -102,7 +104,10 @@ void Main(void) {
 	setCursor(0, y);
 
 	createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (QWORD)idleTask, getAPICID());
-	startShell();
+
+	// 그래픽 모드가 아니면 콘솔 셸 실행, 그래픽 모드면 그래픽 모드 실행
+	if(*(BYTE*)VBE_GRAPHICMODE_STARTADDR == 0) startShell();
+	else startGUI();
 }
 
 // Application Processor용 C언어 커널 엔트리 포인트. 코어에 설정하는 작업만 수행
@@ -138,6 +143,45 @@ void forAP(void) {
 
 	// 유휴 태스크 실행
 	idleTask();
+}
+
+// Graphic Mode Test
+void startGUI() {
+	VBEMODEINFO *mode;
+	WORD *bufAddr, color[40] = {0,};
+	int width, height, i, j, cnt;
+
+	// 키 입력 대기
+	getCh();
+
+	// VBE 모드 정보 블록을 반환하고 선형 프레임 버퍼의 시작 어드레스 저장
+	mode = getVBEModeInfo();
+	bufAddr = (WORD*)((QWORD)mode->linearBaseAddr);
+
+	// 화면을 세로로 32등분해 색칠
+	height = mode->yPixel / 32;
+	width = mode->xPixel / 40;
+	while(1) {
+		for(j = 0; j < mode->yPixel; j++) {
+			// X축 크기만큼 프레임 버퍼에 색 저장. Y축 현재 위치(j)에 X축 크기를 곱하면 Y축 시작 어드레스를 계산할 수 있고
+			// 여기에 X축 오프셋(i)을 더하면 현재 픽셀 출력 어드레스를 구할 수 있음
+
+			// (원본) Y 위치가 32등분한 단위로 나누어 떨어지면 색 변경
+			/*
+			for(i = 0; i < mode->xPixel; i++) bufAddr[(j * mode->xPixel) + i] = color;
+			if((j % height) == 0) color = _rand() & 0xFFFF;
+			*/
+
+			// 내 맘대로 바꿔서 가로 32 * 세로 24 크기로 색칠하기!!(1280 / 40 = 32 && 768 / 32 = 24)
+			for(i = 0, cnt = 0; i < mode->xPixel; i++) {
+				if(((j % height) == 0) && ((i % width) == 0)) color[cnt++] = _rand() & 0xFFFF;
+				else if((i % width) == 0) cnt++;
+				bufAddr[(j * mode->xPixel) + i] = color[cnt - 1];
+			}
+		}
+		// 키 입력 대기
+		getCh();
+	}
 }
 
 void yummy_ascii_art(const char *buf) {
