@@ -22,6 +22,7 @@
 #include <MP.h>
 #include <IOAPIC.h>
 #include <VBE.h>
+#include <BaseGraph.h>
 
 void forAP(void);
 void startGUI();
@@ -145,41 +146,195 @@ void forAP(void) {
 	idleTask();
 }
 
+// x를 절대값으로 변환하는 매크로
+#define ABS(x)	(((x) >= 0) ? (x) : -(x))
+
+// 임의의 X, Y좌표 반환
+void getRandXY(int *x, int *y) {
+	int rand;
+
+	// X좌표 계산
+	rand = _rand();
+	*x = ABS(rand) % 1000;
+
+	// Y좌표 계산
+	rand = _rand();
+	*y = ABS(rand) % 700;
+}
+
+// 임의의 색 반환
+COLOR getRandColor(void) {
+	int r, g, b, rand;
+
+	rand = _rand();
+	r = ABS(rand) % 256;
+
+	rand = _rand();
+	g = ABS(rand) % 256;
+
+	rand = _rand();
+	b = ABS(rand) % 256;
+
+	return RGB(r, g, b);
+}
+
+// 윈도우 프레임 그림
+void drawWinFrame(int x, int y, int width, int height, const char *title) {
+	char *str1 = "### This is YummyHitOS's GUI Testing Version ###";
+	char *str2 = "###       YummyHitOs'll be back soon !!      ###";
+
+	// 윈도우 프레임의 가장자리를 그림. 2픽셀 두께
+	drawRect(x, y, x + width, y + height, RGB(109, 218, 22), FALSE);
+	drawRect(x + 1, y + 1, x + width - 1, y + height - 1, RGB(109, 218, 22), FALSE);
+
+	// 제목 표시줄 채움
+	drawRect(x, y + 3, x + width - 1, y + 21, RGB(102, 0, 255), TRUE);
+
+	// 윈도우 제목 표시
+	drawText(x + 6, y + 3, RGB(255, 255, 255), RGB(102, 0, 255), title, strLen(title));
+
+	// 제목 표시줄을 입체로 보이게 위쪽의 선 그림. 2픽셀 두께
+	drawLine(x + 1, y + 1, x + width - 1, y + 1, RGB(102, 102, 255));
+	drawLine(x + 1, y + 2, x + width - 1, y + 2, RGB(102, 102, 204));
+
+	drawLine(x + 1, y + 2, x + 1, y + 20, RGB(102, 102, 255));
+	drawLine(x + 2, y + 2, x + 2, y + 20, RGB(102, 102, 204));
+
+	// 제목 표시줄의 아래쪽에 선 그림
+	drawLine(x + 2, y + 19, x + width - 2, y + 19, RGB(85, 255, 85));
+	drawLine(x + 2, y + 20, x + width - 2, y + 20, RGB(85, 255, 85));
+
+	// 닫기 버튼을 그림. 오른쪽 상단에 표시
+	drawRect(x + width - 2 - 18, y + 1, x + width - 2, y + 19, RGB(255, 255, 255), TRUE);
+
+	// 닫기 버튼을 입체로 보이게 선 그림. 2픽셀 두께
+	drawRect(x + width - 2, y + 1, x + width - 2, y + 19 - 1, RGB(86, 86, 86), TRUE);
+	drawRect(x + width - 2 -  1, y + 1, x + width - 2 - 1, y + 19 - 1, RGB(86, 86, 86), TRUE);
+	drawRect(x + width - 2 - 18 + 1, y + 19, x + width - 2, y + 19, RGB(86, 86, 86), TRUE);
+	drawRect(x + width - 2 - 18 + 1, y + 19 - 1, x + width - 2, y + 19 - 1, RGB(86, 86, 86), TRUE);
+
+	drawLine(x + width - 2 - 18, y + 1, x + width - 2 - 1, y + 1, RGB(229, 229, 229));
+	drawLine(x + width - 2 - 18, y + 1 + 1, x + width - 2 - 2, y + 1 + 1, RGB(229, 229, 229));
+	drawLine(x + width - 2 - 18, y + 1, x + width - 2 - 18, y + 19, RGB(229, 229, 229));
+	drawLine(x + width - 2 - 18 + 1, y + 1, x + width - 2 - 18 + 1, y + 19 - 1, RGB(229, 229, 229));
+
+	// 대각선 X 그림. 3픽셀
+	drawLine(x + width - 2 - 18 + 4, y + 1 + 4, x + width - 2 - 4, y + 19 - 4, RGB(102, 0, 255));
+	drawLine(x + width - 2 - 18 + 5, y + 1 + 4, x + width - 2 - 4, y + 19 - 5, RGB(102, 0, 255));
+	drawLine(x + width - 2 - 18 + 4, y + 1 + 5, x + width - 2 - 5, y + 19 - 4, RGB(102, 0, 255));
+	drawLine(x + width - 2 - 18 + 4, y + 19 - 4, x + width - 2 - 4, y + 1 + 4, RGB(102, 0, 255));
+	drawLine(x + width - 2 - 18 + 5, y + 19 - 4, x + width - 2 - 4, y + 1 + 5, RGB(102, 0, 255));
+	drawLine(x + width - 2 - 18 + 4, y + 19 - 5, x + width - 2 - 5, y + 1 + 4, RGB(102, 0, 255));
+
+	// 내부 그림
+	drawRect(x + 2, y + 21, x + width - 2, y + height - 2, RGB(255, 255, 255), TRUE);
+
+	// 문자 출력
+	drawText(x + 10, y + 30, RGB(102, 0, 204), RGB(255, 255, 255), str1, strLen(str1));
+	drawText(x + 10, y + 50, RGB(119, 68, 255), RGB(255, 255, 255), str2, strLen(str2));
+}
+
 // Graphic Mode Test
 void startGUI() {
 	VBEMODEINFO *mode;
-	WORD *bufAddr, color[40] = {0,};
-	int width, height, i, j, cnt;
+	int x1, y1, x2, y2, i;
+	COLOR color1, color2;
+	char *str[] = {"Pixel", "Line", "Rectangle", "Circle", "### YummyHitOS ###"};
+
+	// 점, 선, 사각형, 원, 문자 간단히 출력
+	// (0, 0)에 Pixel이란 문자열과 픽셀을 검은바탕 흰색 출력
+	drawText(0, 0, RGB(255, 255, 255), RGB(0, 0, 0), str[0], strLen(str[0]));
+	drawPixel(1, 20, RGB(255, 255, 255));
+	drawPixel(2, 20, RGB(255, 255, 255));
+
+	// (0, 25)에 Line이란 문자열과 라인을 검은바탕 노란색 출력
+	drawText(0, 25, RGB(255, 255, 80), RGB(0, 0, 0), str[1], strLen(str[1]));
+	drawLine(20, 50, 1000, 50, RGB(255, 255, 80));
+	drawLine(20, 50, 1000, 100, RGB(255, 255, 80));
+	drawLine(20, 50, 1000, 150, RGB(255, 255, 80));
+	drawLine(20, 50, 1000, 200, RGB(255, 255, 80));
+	drawLine(20, 50, 1000, 250, RGB(255, 255, 80));
+
+	// (0, 180)에 Rectangle이란 문자열과 사각형을 검은바탕 녹색 출력
+	drawText(0, 180, RGB(85, 255, 85), RGB(0, 0, 0), str[2], strLen(str[2]));
+	drawRect(20, 200, 70, 250, RGB(85, 255, 85), FALSE);
+	drawRect(120, 200, 220, 300, RGB(85, 255, 85), TRUE);
+	drawRect(270, 200, 420, 350, RGB(85, 255, 85), FALSE);
+	drawRect(470, 200, 670, 400, RGB(85, 255, 85), TRUE);
+
+	// (0, 550)에 Circle이란 문자열과 원을 검은바탕 보라색 출력
+	drawText(0, 550, RGB(102, 0, 255), RGB(0, 0, 0), str[3], strLen(str[3]));
+	drawCircle(45, 600, 25, RGB(102, 0, 255), FALSE);
+	drawCircle(170, 600, 50, RGB(102, 0, 255), TRUE);
+	drawCircle(345, 600, 75, RGB(102, 0, 255), FALSE);
+	drawCircle(570, 600, 100, RGB(102, 0, 255), TRUE);
 
 	// 키 입력 대기
 	getCh();
 
-	// VBE 모드 정보 블록을 반환하고 선형 프레임 버퍼의 시작 어드레스 저장
-	mode = getVBEModeInfo();
-	bufAddr = (WORD*)((QWORD)mode->linearBaseAddr);
+	// 점, 선, 사각형, 원, 문자 무작위 출력
+	do {
+		// 점 그리기
+		for(i = 0; i < 100; i++) {
+			// 임의의 X좌표와 색 반환
+			getRandXY(&x1, &y1);
+			color1 = getRandColor();
 
-	// 화면을 세로로 32등분해 색칠
-	height = mode->yPixel / 32;
-	width = mode->xPixel / 40;
-	while(1) {
-		for(j = 0; j < mode->yPixel; j++) {
-			// X축 크기만큼 프레임 버퍼에 색 저장. Y축 현재 위치(j)에 X축 크기를 곱하면 Y축 시작 어드레스를 계산할 수 있고
-			// 여기에 X축 오프셋(i)을 더하면 현재 픽셀 출력 어드레스를 구할 수 있음
-
-			// (원본) Y 위치가 32등분한 단위로 나누어 떨어지면 색 변경
-			/*
-			for(i = 0; i < mode->xPixel; i++) bufAddr[(j * mode->xPixel) + i] = color;
-			if((j % height) == 0) color = _rand() & 0xFFFF;
-			*/
-
-			// 내 맘대로 바꿔서 가로 32 * 세로 24 크기로 색칠하기!!(1280 / 40 = 32 && 768 / 32 = 24)
-			for(i = 0, cnt = 0; i < mode->xPixel; i++) {
-				if(((j % height) == 0) && ((i % width) == 0)) color[cnt++] = _rand() & 0xFFFF;
-				else if((i % width) == 0) cnt++;
-				bufAddr[(j * mode->xPixel) + i] = color[cnt - 1];
-			}
+			drawPixel(x1, y1, color1);
 		}
-		// 키 입력 대기
+
+		// 선 그리기
+		for(i = 0; i < 100; i++) {
+			// 임의의 X좌표와 색 반환
+			getRandXY(&x1, &y1);
+			getRandXY(&x2, &y2);
+			color1 = getRandColor();
+
+			drawLine(x1, y1, x2, y2, color1);
+		}
+
+		// 사각형 그리기
+		for(i = 0; i < 20; i++) {
+			// 임의의 X좌표와 색 반환
+			getRandXY(&x1, &y1);
+			getRandXY(&x2, &y2);
+			color1 = getRandColor();
+
+			drawRect(x1, y1, x2, y2, color1, _rand() % 2);
+		}
+
+		// 원 그리기
+		for(i = 0; i < 100; i ++) {
+			// 임의의 X좌표와 색 반환
+			getRandXY(&x1, &y1);
+			color1 = getRandColor();
+
+			drawCircle(x1, y1, ABS(_rand() % 50 + 1), color1, _rand() % 2);
+		}
+
+		// 텍스트 표시
+		for(i = 0; i < 100; i ++) {
+			// 임의의 X좌표와 색 반환
+			getRandXY(&x1, &y1);
+			color1 = getRandColor();
+			color2 = getRandColor();
+
+			// 텍스트 출력
+			drawText(x1, y1, color1, color2, str[4], strLen(str[4]));
+		}
+	} while(getCh() != 'q');
+
+	// 윈도우 프레임 출력
+	while(1) {
+		// 배경 출력
+		drawRect(0, 0, 1024, 768, RGB(183, 147, 255), TRUE);
+
+		// 윈도우 프레임 3개 그림
+		for(i = 0; i < 3; i++) {
+			getRandXY(&x1, &y1);
+			drawWinFrame(x1, y1, 400, 200, "First GUI Frame");
+		}
+
 		getCh();
 	}
 }
