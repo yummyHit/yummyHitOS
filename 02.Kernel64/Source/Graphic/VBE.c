@@ -9,6 +9,6 @@
 
 static VBEMODEINFO *gs_vbeModeInfo = (VBEMODEINFO*)VBE_MODEINFO_BLOCKADDR;
 
-inline VBEMODEINFO *getVBEModeInfo(void) {
+VBEMODEINFO *getVBEModeInfo(void) {
 	return gs_vbeModeInfo;
 }

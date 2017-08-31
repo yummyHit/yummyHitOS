@@ -34,7 +34,7 @@ typedef struct queueManager {
 void initQueue(QUEUE *queue, void *buf, int maxCnt, int size);
 BOOL isQFull(const QUEUE *queue);
 BOOL isQEmpty(const QUEUE *queue);
-BOOL addData(QUEUE *queue, const void *data);
-BOOL rmData(QUEUE *queue, void *data);
+BOOL addQData(QUEUE *queue, const void *data);
+BOOL rmQData(QUEUE *queue, void *data);
 
 #endif /*__QUEUE_H__*/

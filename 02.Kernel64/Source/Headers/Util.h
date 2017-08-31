@@ -17,7 +17,7 @@
 #define _MAX(x, y)	(((x) > (y)) ? (x) : (y))
 
 void memSet(void *dest, BYTE data, int size);
-void memSetWord(void *dest, WORD data, int size);
+inline void memSetWord(void *dest, WORD data, int size);
 int memCpy(void *dest, const void *src, int size);
 int memCmp(const void *dest, const void *src, int size);
 BOOL setInterruptFlag(BOOL _onInterrupt);

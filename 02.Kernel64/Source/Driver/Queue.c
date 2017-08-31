@@ -35,7 +35,7 @@ BOOL isQEmpty(const QUEUE *queue) {
 }
 
 // 큐에 데이터 삽입
-BOOL addData(QUEUE *queue, const void *data) {
+BOOL addQData(QUEUE *queue, const void *data) {
 	// 큐가 가득 찼으면 삽입 불가능
 	if(isQFull(queue) == TRUE) return FALSE;
 
@@ -49,7 +49,7 @@ BOOL addData(QUEUE *queue, const void *data) {
 }
 
 // 큐에서 데이터 제거
-BOOL rmData(QUEUE *queue, void *data) {
+BOOL rmQData(QUEUE *queue, void *data) {
 	// 큐가 비었으면 제거 불가능
 	if(isQEmpty(queue) == TRUE) return FALSE;
 

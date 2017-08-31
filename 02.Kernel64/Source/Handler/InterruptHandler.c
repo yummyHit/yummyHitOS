@@ -14,6 +14,7 @@
 #include <Descriptor.h>
 #include <AsmUtil.h>
 #include <HardDisk.h>
+#include <Mouse.h>
 
 // 인터럽트 핸들러 자료구조
 static INTERRUPTMANAGER gs_interruptManager;
@@ -88,10 +89,10 @@ static void printDebug(int vec, int cnt, int handler) {
 	exc_buf[6] = int_buf[6] = '0' + vec % 10;
 	// 발생 횟수 출력
 	exc_buf[8] = int_buf[8] = '0' + cnt;
-	if(handler == 1 || handler == 3) printXY(70, 0, 0x1E, int_buf);
+	if(handler == 1) printXY(70, 0, 0x1E, int_buf);
 	else if(handler == 2) printXY(0, 0, 0x1E, int_buf);
-	else if(handler == 4) printXY(0, 0, 0x1E, exc_buf);
-	else if(handler == 5) printXY(10, 0, 0x1E, int_buf);
+	else if(handler == 3) printXY(0, 0, 0x1E, exc_buf);
+	else if(handler == 4) printXY(10, 0, 0x1E, int_buf);
 	printXY(34, 0, 0xE5, " YummyHitOS ");
 }
 
@@ -144,9 +145,16 @@ void keyboardHandler(int vecNum) {
 	printDebug(vecNum, ls_keyboardCnt, 2);
 
 	// 키보드 컨트롤러에서 데이터 읽고 ASCII로 변환해 큐에 삽입
-	if(outputBufCheck() == TRUE) {
-		tmp = getCode();
-		convertNPutCode(tmp);
+	if(outputBufChk() == TRUE) {
+		// 마우스 데이터가 아니면 키 큐에 삽입, 마우스 데이터면 마우스 큐에 삽
+		if(isMouseData() == FALSE) {
+			// 출력 버퍼(포트 0x60)에서 키 스캔 코드를 읽는 용도지만, 키보드와 마우스 데이터는 공통 출력 버퍼를 사용하니 마우스 데이터 읽을 때도 사용
+			tmp = getCode();
+			convertNPutCode(tmp);
+		} else {
+			tmp = getCode();
+			gatherMouseData(tmp);
+		}
 	}
 
 	// 인터럽트 벡터에서 IRQ 번호 추출
@@ -169,7 +177,7 @@ void timerHandler(int vecNum) {
 	BYTE _id;
 
 	ls_timerCnt = (ls_timerCnt + 1) % 10;
-	printDebug(vecNum, ls_timerCnt, 3);
+	printDebug(vecNum, ls_timerCnt, 1);
 
 	// 인터럽트 벡터에서 IRQ 번호 추출
 	irq = vecNum - PIC_IRQ_STARTVEC;
@@ -200,7 +208,7 @@ void devFPUHandler(int vecNum) {
 
 	// FPU 예외가 발생했음을 알리려고 메시지 출력
 	ls_devCnt = (ls_devCnt + 1) % 10;
-	printDebug(vecNum, ls_devCnt, 4);
+	printDebug(vecNum, ls_devCnt, 3);
 
 	// 현재 코어의 로컬 APIC ID 확인
 	_id = getAPICID();
@@ -236,7 +244,7 @@ void hardDiskHandler(int vecNum) {
 	int irq;
 
 	ls_hddCnt = (ls_hddCnt + 1) % 10;
-	printDebug(vecNum, ls_hddCnt, 5);
+	printDebug(vecNum, ls_hddCnt, 4);
 
 	// 인터럽트 벡터에서 IRQ 번호 추출
 	irq = vecNum - PIC_IRQ_STARTVEC;
@@ -244,6 +252,41 @@ void hardDiskHandler(int vecNum) {
 	// 첫 번째 PATA 포트의 인터럽트 벡터(IRQ 14) 처리
 	if(irq == 14) setHDDInterruptFlag(TRUE, TRUE);	// 첫 번째 PATA 포트 인터럽트 발생 여부 TRUE
 	else setHDDInterruptFlag(FALSE, TRUE);	// 두 번째 PATA 포트 인터럽트 벡터(IRQ 15) 발생 여부 TRUE
+
+	// EOI 전송
+	sendEOI(irq);
+
+	// 인터럽트 발생 횟수 업데이트
+	incInterruptCnt(irq);
+
+	// 부하 분산 처리
+	procLoadBalancing(irq);
+}
+
+// 마우스 인터럽트 핸들러
+void mouseHandler(int vecNum) {
+	static int ls_mouseCnt = 0;
+	BYTE tmp;
+	int irq;
+
+	ls_mouseCnt = (ls_mouseCnt + 1) % 10;
+	printDebug(vecNum, ls_mouseCnt, 2);
+
+	// 출력 버퍼(포트 0x60)에 수신된 데이터가 있는지 여부 확인 후 읽은 데이터를 키 큐 또는 마우스 큐에 삽입
+	if(outputBufChk() == TRUE) {
+		// 마우스 데이터가 아니면 키 큐에 삽입
+		if(isMouseData() == FALSE) {
+			// 출력 버퍼(포트 0x60)에서 키 스캔 코드를 읽는 용도지만, 키보드와 마우스 데이터는 공통 출력 버퍼를 사용하니 마우스 데이터 읽을 때도 사용
+			tmp = getCode();
+			convertNPutCode(tmp);
+		} else {
+			tmp = getCode();
+			gatherMouseData(tmp);
+		}
+	}
+
+	// 인터럽트 벡터에서 IRQ 번호 추출
+	irq = vecNum - PIC_IRQ_STARTVEC;
 
 	// EOI 전송
 	sendEOI(irq);

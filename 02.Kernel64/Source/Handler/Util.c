@@ -23,7 +23,7 @@ void memSet(void *dest, BYTE data, int size) {
 	for(i = 0; i < (size % 8); i++) ((char*)dest)[remainOffset++] = data;
 }
 
-inline void memSetWord(void *dest, WORD data, int size) {
+void memSetWord(void *dest, WORD data, int size) {
 	int i, remainOffset;
 	QWORD _data = 0;
 

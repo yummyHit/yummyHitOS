@@ -1738,7 +1738,7 @@ static void csSymmetricIOMode(const char *buf) {
 
 	// PIC 컨트롤러의 인터럽트 모두 마스크해 인터럽트가 발생할 수 없도록 함
 	printF("Mask All PIC Controller Interrupt\n");
-	maskPIC(0xFFF);
+	maskPIC(0xFFFF);
 
 	// 프로세서 전체의 로컬 APIC 활성화
 	printF("Enable Global Local APIC\n");

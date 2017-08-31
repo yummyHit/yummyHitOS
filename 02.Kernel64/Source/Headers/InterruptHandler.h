@@ -43,5 +43,6 @@ void keyboardHandler(int vecNum);
 void timerHandler(int verNum);
 void devFPUHandler(int vecNum);
 void hardDiskHandler(int vecNum);
+void mouseHandler(int vecNum);
 
 #endif /*__INTERRUPTHANDLER_H__*/

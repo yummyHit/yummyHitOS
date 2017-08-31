@@ -207,9 +207,9 @@ static KEYMAPPINGENTRY gs_keyMapTable[KEY_MAPPINGTABLEMAXCNT] =
 };
 
 // 함수
-BOOL outputBufCheck(void);
-BOOL inputBufCheck(void);
-BOOL ackForQueue(void);
+BOOL outputBufChk(void);
+BOOL inputBufChk(void);
+BOOL ackForQ(void);
 BOOL activeKeyboard(void);
 BOOL getCode(void);
 BOOL alterLED(BOOL caps, BOOL num, BOOL scroll);
