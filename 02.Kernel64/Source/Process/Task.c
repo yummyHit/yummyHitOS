@@ -32,7 +32,7 @@ static void initTCBPool(void) {
 	gs_tcbPoolManager.allocCnt = 1;
 
 	// 스핀락 초기화
-	initSpinLock(&gs_tcbPoolManager.spinLock);
+	initSpinLock(&(gs_tcbPoolManager.spinLock));
 }
 
 // TCB 할당받음
@@ -41,11 +41,11 @@ static TCB *allocTCB(void) {
 	int i;
 
 	// 동기화 처리
-	lock_spinLock(&gs_tcbPoolManager.spinLock);
+	lock_spinLock(&(gs_tcbPoolManager.spinLock));
 
 	if(gs_tcbPoolManager.useCnt == gs_tcbPoolManager.maxCnt) {
 		// 동기화 처리
-		unlock_spinLock(&gs_tcbPoolManager.spinLock);
+		unlock_spinLock(&(gs_tcbPoolManager.spinLock));
 		return NULL;
 	}
 
@@ -61,7 +61,7 @@ static TCB *allocTCB(void) {
 	if(gs_tcbPoolManager.allocCnt == 0) gs_tcbPoolManager.allocCnt = 1;
 
 	// 동기화 처리
-	unlock_spinLock(&gs_tcbPoolManager.spinLock);
+	unlock_spinLock(&(gs_tcbPoolManager.spinLock));
 	return empty;
 }
 
@@ -76,14 +76,14 @@ static void freeTCB(QWORD id) {
 	memSet(&(gs_tcbPoolManager.startAddr[i].context), 0, sizeof(CONTEXT));
 
 	// 동기화 처리
-	lock_spinLock(&gs_tcbPoolManager.spinLock);
+	lock_spinLock(&(gs_tcbPoolManager.spinLock));
 
 	gs_tcbPoolManager.startAddr[i].link.id = i;
 
 	gs_tcbPoolManager.useCnt--;
 
 	// 동기화 처리
-	unlock_spinLock(&gs_tcbPoolManager.spinLock);
+	unlock_spinLock(&(gs_tcbPoolManager.spinLock));
 }
 
 // 태스크 생성. 태스크 ID에 따라 스택 풀에서 스택 자동 할당. 프로세스와 쓰레드 모두 생성 가능. affinity에 태스크를 수행하고 싶은 코어 ID 설정 가능

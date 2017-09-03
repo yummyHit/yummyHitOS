@@ -137,7 +137,7 @@ BYTE getCh(void) {
 
 	// 키가 눌러질 때까지 대기, 키 큐에 데이터가 수신되면 키가 눌렸다는 데이터 수신시 ASCII 코드 반환
 	while(1) {
-		while(rmKeyData(&data) == FALSE) schedule();
+		while(getKeyData(&data) == FALSE) schedule();
 		if(data.flag & KEY_FLAGS_DOWN) return data.ascii;
 	}
 }

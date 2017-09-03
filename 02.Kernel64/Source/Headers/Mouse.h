@@ -17,9 +17,9 @@
 #define MOUSE_MAXQUEUECNT	100
 
 // 클릭 상태
-#define MOUSE_LCLICK		0x01
-#define MOUSE_RCLICK		0x02
-#define MOUSE_WHEEL		0x04
+#define MOUSE_LCLICK_ON		0x01
+#define MOUSE_RCLICK_ON		0x02
+#define MOUSE_WHEEL_ON		0x04
 
 // 구조체, 1바이트로 정렬
 #pragma pack(push, 1)

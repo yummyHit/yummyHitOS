@@ -326,8 +326,8 @@ BOOL convertNPutCode(BYTE scanCode) {
 	return res;
 }
 
-// 키 큐에서 키 데이터 제거
-BOOL rmKeyData(KEYDATA *data) {
+// 키 큐에서 키 데이터 제거, 수신 대기
+BOOL getKeyData(KEYDATA *data) {
 	BOOL res, preInterrupt;
 
 	// 임계 영역 시작

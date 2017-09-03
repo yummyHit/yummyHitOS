@@ -223,6 +223,6 @@ void updateKeyNLED(BYTE scanCode);
 BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag);
 BOOL initKeyboard(void);
 BOOL convertNPutCode(BYTE scanCode);
-BOOL rmKeyData(KEYDATA *data);
+BOOL getKeyData(KEYDATA *data);
 
 #endif /*__KEYBOARD_H__*/
