@@ -34,6 +34,7 @@ int sprintF(char *buf, const char *format, ...);
 int vsprintF(char *buf, const char *format, va_list v);
 QWORD getTickCnt(void);
 void _sleep(QWORD ms);
+BOOL isGUIMode(void);
 
 extern volatile QWORD g_tickCnt;
 

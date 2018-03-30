@@ -10,12 +10,19 @@
 #include <WinManager.h>
 #include <VBE.h>
 #include <Mouse.h>
-#include <Task.h>
+#include <CLITask.h>
+#include <GUITask.h>
+#include <Font.h>
+#include <AppPanelTask.h>
 
 // 윈도우 매니저 태스크
 void startWinManager(void) {
 	int xMouse, yMouse;
 	BOOL mouseRes, keyRes, eventRes;
+
+	QWORD lastTickCnt, preLoopCnt, loopCnt, minLoopCnt, backgroundID;
+	char tmp[40];
+	RECT loopCntArea;
 
 	// GUI 시스템 초기화
 	initGUISystem();
@@ -24,8 +31,35 @@ void startWinManager(void) {
 	getWinCursor(&xMouse, &yMouse);
 	moveCursor(xMouse, yMouse);
 
+	// 애플리케이션 패널 태스크 실행
+	createTask(TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD | TASK_FLAGS_LOW, 0, 0, (QWORD)appPanelGUITask, TASK_LOADBALANCING_ID);
+
+	// 루프 수행 횟수 측정용 변수 초기화
+	lastTickCnt = getTickCnt();
+	preLoopCnt = 0;
+	loopCnt = 0;
+	minLoopCnt = 0xFFFFFFFFFFFFFFFF;
+	backgroundID = getBackgroundID();
+
 	// 윈도우 매니저 태스크 루프
 	while(1) {
+		// 1초마다 윈도우 매니저 태스크 루프를 수행한 횟수를 측정해 최솟값 기록
+		if(getTickCnt() - lastTickCnt > 1000) {
+			lastTickCnt = getTickCnt();
+			// 1초 전 수행한 태스크 루프의 수와 현재 태스크 루프의 수를 빼 최소 루프 수행 횟수와 비교해 업데이트
+			if((loopCnt - preLoopCnt) < minLoopCnt) minLoopCnt = loopCnt - preLoopCnt;
+			preLoopCnt = loopCnt;
+
+			// 루프의 최소 수행 횟수를 1초마다 업데이트
+			sprintF(tmp, "MIN Loop Execution Count:%d   ", minLoopCnt);
+			drawText(backgroundID, 0, 0, RGB(255, 255, 135), RGB(186, 140, 255), tmp, strLen(tmp));
+
+			// 배경 윈도우 전체를 업데이트하면 시간이 오래 걸려 배경 윈도우에 루프 수행 횟수가 출력된 부분만 업데이트
+			setRectData(0, 0, strLen(tmp) * FONT_ENG_WIDTH, FONT_ENG_HEIGHT, &loopCntArea);
+			updateWinArea(&loopCntArea, backgroundID);
+		}
+		loopCnt++;
+
 		// 마우스 데이터 처리
 		mouseRes = procMouseData();
 
@@ -45,7 +79,7 @@ void startWinManager(void) {
 BOOL procMouseData(void) {
 	QWORD mouseID, winID;
 	BYTE btnStat, btnUpdate;
-	int x, y, xMouse, yMouse, preX, preY;
+	int x, y, xMouse, yMouse, preX, preY, i;
 	RECT area;
 	EVENT event;
 	WINDOWMANAGER *win;
@@ -53,32 +87,45 @@ BOOL procMouseData(void) {
 	char title[WINDOW_TITLE_MAXLEN];
 	char *str1 = "### YummyHitOS is reached Window Version ###", *str2 = "###     YummyHitOs'll be back soon !!    ###";
 
-	// 마우스 데이터 수신되기 기다림
-	if(rmMouseData(&btnStat, &x, &y) == FALSE) return FALSE;
-
 	// 윈도우 매니저 반환
 	win = getWinManager();
 
-	// 현재 마우스 커서 위치 반환
-	getWinCursor(&xMouse, &yMouse);
+	// 마우스 이벤트 통합
+	for(i = 0; i < WINDOWMANAGER_DATACNT; i++) {
+		// 마우스 데이터 수신 대기
+		if(rmMouseData(&btnStat, &x, &y) == FALSE) {
+			// 처음으로 확인했는데 데이터 없으면 종료
+			if(i == 0) return FALSE;
+			else break;
+		}
 
-	// 움직이기 이전 좌표 저장
-	preX = xMouse;
-	preY = yMouse;
+		// 현재 마우스 커서 위치 반환
+		getWinCursor(&xMouse, &yMouse);
 
-	// 마우스가 움직인 거리를 이전 커서 위치에 더해 현재 좌표 계산
-	xMouse += x;
-	yMouse += y;
+		// 처음 마우스 이벤트가 수신된 것이면 현재 좌표를 이전 마우스 위치로 저장
+		if(i == 0) {
+			// 움직이기 이전 좌표 저장
+			preX = xMouse;
+			preY = yMouse;
+		}
 
-	// 새로운 위치로 마우스 커서 이동, 다시 현재 커서 위치 반환. 마우스 커서가 화면을 벗어나지 않도록 처리된 커서 좌표 사용.
-	moveCursor(xMouse, yMouse);
-	getWinCursor(&xMouse, &yMouse);
+		// 마우스가 움직인 거리를 이전 커서 위치에 더해 현재 좌표 계산
+		xMouse += x;
+		yMouse += y;
+
+		// 새로운 위치로 마우스 커서 이동, 다시 현재 커서 위치 반환. 마우스 커서가 화면을 벗어나지 않도록 처리된 커서 좌표 사용.
+		moveCursor(xMouse, yMouse);
+		getWinCursor(&xMouse, &yMouse);
+
+		// 버튼 상태는 이전 버튼 상태와 현재 버튼 상태를 XOR하여 1로 설정됐는지 확인
+		btnUpdate = win->preBtnStat ^ btnStat;
+
+		// 마우스가 움직였으나 버튼 변화가 있으면 이벤트 처리
+		if(btnUpdate != 0) break;
+	}
 
 	// 현재 마우스 커서 아래 윈도우 검색
 	mouseID = findWinPoint(xMouse, yMouse);
-
-	// 버튼 상태가 변했는지 확인 후 상태에 따라 마우스 및 윈도우 데이터 처리. 이전 버튼 상태와 현재 버튼 상태를 XOR해 설정 확인
-	btnUpdate = win->preBtnStat ^ btnStat;
 
 	// 마우스 왼쪽 버튼에 변화가 생긴 경우 처리
 	if(btnUpdate & MOUSE_LCLICK_ON) {
@@ -128,17 +175,10 @@ BOOL procMouseData(void) {
 			setMouseEvent(mouseID, EVENT_MOUSE_RCLICK_ON, xMouse, yMouse, btnStat, &event);
 			eventToWin(mouseID, &event);
 
-			// 테스트를 위한 오른쪽 버튼시 윈도우 생성
-			sprintF(title, "YummyHitOS by %d", winCnt++);
-			winID = createWin(xMouse - 10, yMouse - WINDOW_TITLE_HEIGHT / 2, 400, 200, WINDOW_FLAGS_DRAWFRAME | WINDOW_FLAGS_DRAWTITLE, title);
-
-			// 윈도우 내부에 텍스트 출력 후 윈도우를 화면에 나타냄
-			drawText(winID, 10, WINDOW_TITLE_HEIGHT + 10, RGB(102, 0, 204), WINDOW_COLOR_BACKGROUND, str1, strLen(str1));
-			drawText(winID, 10, WINDOW_TITLE_HEIGHT + 30, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, str2, strLen(str2));
-			showWin(winID, TRUE);
-		} else {
-			// 오른쪽 버튼 떨어짐 이벤트 전송
-			setMouseEvent(mouseID, EVENT_MOUSE_RCLICK_OFF, xMouse, yMouse, btnStat, &event);
+			// 테스트를 위해 오른쪽 버튼이 눌리면 GUI 태스크 생성
+//			createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, NULL, NULL, (QWORD)firstGUITask, TASK_LOADBALANCING_ID);
+		} else  {
+			setMouseEvent(mouseID, EVENT_MOUSE_RCLICK_OFF, xMouse, yMouse ,btnStat, &event);
 			eventToWin(mouseID, &event);
 		}
 	} else if(btnUpdate & MOUSE_WHEEL_ON) {
@@ -191,34 +231,82 @@ BOOL procKeyData(void) {
 
 // 이벤트 큐에 수신된 이벤트 처리
 BOOL procEventData(void) {
-	EVENT event;
-	WINDOWEVENT *winEvent;
-	QWORD winID;
-	RECT area;
+	EVENT event[WINDOWMANAGER_DATACNT];
+	int cnt, i, j;
+	WINDOWEVENT *winEvent, *nextWinEvent;
+	QWORD id;
+	RECT area, crossArea;
 
-	// 윈도우 매니저의 이벤트 큐에 이벤트 수신 대기
-	if(winManagerToEvent(&event) == FALSE) return FALSE;
+	// 윈도우 매니저 태스크의 이벤트 큐에 수신된 이벤트 통합
+	for(i = 0; i < WINDOWMANAGER_DATACNT; i++) {
+		// 윈도우 매니저의 이벤트 큐에 이벤트 수신 대기
+		if(winManagerToEvent(&(event[i])) == FALSE) {
+			// 처음부터 이벤트가 수신되지 않았으면 종료
+			if(i == 0) return FALSE;
+			else break;
+		}
 
-	winEvent = &(event.winEvent);
+		winEvent = &(event[i].winEvent);
 
-	// 타입별 처리
-	switch(event.type) {
-	// 현재 윈도우가 있는 영역 업데이트
-	case EVENT_WINDOWMANAGER_UPDATEBYID:
-		if(getWinArea(winEvent->id, &area) == TRUE) updateWinArea(&area);
-		break;
-	// 윈도우 내부 영역 업데이트
-	case EVENT_WINDOWMANAGER_UPDATEBYWINAREA:
-		// 윈도우 기준 한 좌표를 화면 좌표로 반환해 업데이트
-		if(rectToMonitor(winEvent->id, &(winEvent->area), &area) == TRUE) updateWinArea(&area);
-		break;
-	// 화면 좌표로 전달된 영역 업데이트
-	case EVENT_WINDOWMANAGER_UPDATEBYMONAREA:
-		updateWinArea(&(winEvent->area));
-		break;
-	default:
-		break;
+		// 윈도우 ID로 업데이트하는 이벤트가 수신되면 윈도우 영역을 이벤트 데이터에 삽입
+		if(event[i].type == EVENT_WINDOWMANAGER_UPDATEBYID) {
+			// 윈도우 크기를 이벤트 자료구조에 삽입
+			if(getWinArea(winEvent->id, &area) == FALSE) setRectData(0, 0, 0, 0, &(winEvent->area));
+			else setRectData(0, 0, getRectWidth(&area) - 1, getRectHeight(&area) - 1, &(winEvent->area));
+		}
 	}
 
+	// 저장된 이벤트를 검사하며 합칠 수 있는 이벤트는 하나로 만듦
+	cnt = i;
+
+	for(j = 0; j < cnt; j++) {
+		// 수신된 이벤트 중 이번에 처리할 것과 같은 윈도우에서 발생하는 이벤트 검색
+		winEvent = &(event[j].winEvent);
+		if((event[j].type != EVENT_WINDOWMANAGER_UPDATEBYID) && (event[j].type != EVENT_WINDOWMANAGER_UPDATEBYWINAREA) && (event[j].type != EVENT_WINDOWMANAGER_UPDATEBYMONAREA)) continue;
+
+		// 수신한 이벤트 끝까지 루프를 수행하며 수신된 이벤트 검사
+		for(i = j + 1; i < cnt; i++) {
+			nextWinEvent = &(event[i].winEvent);
+			// 화면 업데이트가 아니거나 윈도우 ID가 일치하지 않으면 제외
+			if(((event[i].type != EVENT_WINDOWMANAGER_UPDATEBYID) && (event[i].type != EVENT_WINDOWMANAGER_UPDATEBYWINAREA) && (event[i].type != EVENT_WINDOWMANAGER_UPDATEBYMONAREA)) || (winEvent->id != nextWinEvent->id)) continue;
+
+			// 겹치는 영역을 계산해 겹치지 않으면 제외
+			if(getRectCross(&(winEvent->area), &(nextWinEvent->area), &crossArea) == FALSE) continue;
+
+			// 두 영역이 일치하거나 어느 한쪽이 포함되면 이벤트 통합
+			if(memCmp(&(winEvent->area), &crossArea, sizeof(RECT)) == 0) {
+				// 현재 이벤트 윈도우 영역이 겹치는 영역과 일치하면 다음 이벤트 윈도우 영역이 현재 윈도우 영역과 같거나 포함
+				// 현재 이벤트에 다음 이벤트 윈도우 영역을 복사하고 다음 이벤트 삭제
+				memCpy(&(winEvent->area), &(nextWinEvent->area), sizeof(RECT));
+				event[i].type = EVENT_UNKNOWN;
+			} else if(memCmp(&(nextWinEvent->area), &crossArea, sizeof(RECT)) == 0) {
+				// 다음 이벤트 윈도우 영역이 겹치는 영역과 일치하면 현재 이벤트 윈도우 영역이 다음 윈도우 영역과 같거나 포함
+				// 윈도우 영역을 복사 안하고 다음 이벤트 삭제
+				event[i].type = EVENT_UNKNOWN;
+			}
+		}
+	}
+
+	// 통합된 이벤트 모두 처리
+	for(i = 0; i < cnt; i++) {
+		winEvent = &(event[i].winEvent);
+
+		// 타입별 처리
+		switch(event[i].type) {
+		// 현재 윈도우가 있는 영역 업데이트
+		case EVENT_WINDOWMANAGER_UPDATEBYID:
+		// 윈도우 내부 영역 업데이트
+		case EVENT_WINDOWMANAGER_UPDATEBYWINAREA:
+			// 윈도우 기준 한 좌표를 화면 좌표로 반환해 업데이트
+			if(rectToMonitor(winEvent->id, &(winEvent->area), &area) == TRUE) updateWinArea(&area, winEvent->id);
+			break;
+		// 화면 좌표로 전달된 영역 업데이트
+		case EVENT_WINDOWMANAGER_UPDATEBYMONAREA:
+			updateWinArea(&(winEvent->area), WINDOW_INVALID_ID);
+			break;
+		default:
+			break;
+		}
+	}
 	return TRUE;
 }

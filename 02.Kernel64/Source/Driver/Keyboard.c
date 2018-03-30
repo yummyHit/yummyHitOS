@@ -172,6 +172,14 @@ void reBoot(void) {
 	while(1);
 }
 
+void shutDown(void) {
+	int i;
+	
+	for(i = 0; i < 0xFFFF; i++) if(inputBufChk() == FALSE) break;
+
+	outByte(0xF4, 0x00);
+	while(1);
+}
 
 // 스캔 코드가 알파벳 범위인지 여부 반환
 BOOL isEngScanCode(BYTE scanCode) {

@@ -107,33 +107,34 @@ void inDrawPixel(const RECT *area, COLOR *addr, int x, int y, COLOR color) {
 }
 
 // 직선 그리기에 이용되는 반복 구간 함수
-void lineLoop(const RECT *area, COLOR *addr, int dCenter, int dOther, int dC, int dC1, int dC2, int dO, int dO1, int cNext, int oNext, int errA, int errB, COLOR color, int chk) {
+void lineLoop(const RECT *area, COLOR *addr, int dCenter, int dOther, int center, int center1, int center2, int other, int other1, int cNext, int oNext, int errA, int errB, COLOR color, int chk) {
 	// 기울기로 픽셀마다 더해줄 오차, 중심축이 아닌 반대 축의 변화량 2배. 시프트 연산으로 * 2 대체
 	errB = dOther << 1;
-	dO = dO1;
-	for(dC = dC1; dC != dC2; dC += cNext) {
+	other = other1;
+	for(center = center1; center != center2; center += cNext) {
 		// 점 그리기
-		if(!chk) inDrawPixel(area, addr, dC, dO, color);
-		else inDrawPixel(area, addr, dO, dC, color);
+		if(chk == 0) inDrawPixel(area, addr, center, other, color);
+		else inDrawPixel(area, addr, other, center, color);
 
 		// 오차 누적
 		errA += errB;
 
 		// 누적된 오차가 중심축 변화량보다 크면 위에 점을 선택, 오차를 위에 점 기준으로 갱신
 		if(errA >= dCenter) {
-			dO += oNext;
+			other += oNext;
 			// 중심축 변화량의 2배 감소. 시프트 연산으로 * 2 대체
 			errA -= dCenter << 1;
 		}
 	}
 	// dC == dC2인 최종 위치에 점 그리기
-	if(!chk) inDrawPixel(area, addr, dC, dO, color);
-	else inDrawPixel(area, addr, dO, dC, color);
+	if(chk == 0) inDrawPixel(area, addr, center, other, color);
+	else inDrawPixel(area, addr, other, center, color);
 }
 
 // 직선 그리기
 void inDrawLine(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, COLOR color) {
-	int dx, dy, err = 0, _err, x, y, nextX, nextY, lineArea;
+	int dx, dy, err = 0, dErr, x, y, nextX, nextY;
+	RECT lineArea;
 
 	// 클리핑 처리. 직선이 그려지는 영역과 메모리 영역이 겹치지 않으면 안그림
 	setRectData(x1, y1, x2, y2, &lineArea);
@@ -156,8 +157,8 @@ void inDrawLine(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, C
 	} else nextY = 1;
 
 	// X축 변화량이 Y축 변화량보다 크다면 X축을 중심으로, Y축 변화량이 X축 변화량보다 크다면 Y축을 중심으로 직선 그림
-	if(dx > dy) lineLoop(area, addr, dx, dy, x, x1, x2, y, y1, nextX, nextY, err, _err, color, 0);
-	else lineLoop(area, addr, dy, dx, y, y1, y2, x, x1, nextY, nextX, err, _err, color, 1);
+	if(dx > dy) lineLoop(area, addr, dx, dy, x, x1, x2, y, y1, nextX, nextY, err, dErr, color, 0);
+	else lineLoop(area, addr, dy, dx, y, y1, y2, x, x1, nextY, nextX, err, dErr, color, 1);
 }
 
 // 사각형 그리기
@@ -203,61 +204,61 @@ void inDrawRect(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, C
 }
 
 // 원 그리기
-void inDrawCircle(const RECT *area, COLOR *addr, int _x, int _y, int rad, COLOR color, BOOL fill) {
-	int x, y, distance;
+void inDrawCircle(const RECT *area, COLOR *addr, int x, int y, int rad, COLOR color, BOOL fill) {
+	int xCircle, yCircle, distance;
 
 	// 반지름이 0보다 작으면 그릴 필요 없음
 	if(rad < 0) return;
 
 	// (0, R)인 좌표에서 시작
-	y = rad;
+	yCircle = rad;
 
 	// 채움 여부에 따라 시작점 그림
 	if(fill == FALSE) {
 		// 시작점은 네 접점 모두 그림
-		inDrawPixel(area, addr, 0 + _x, rad + _y, color);
-		inDrawPixel(area, addr, 0 + _x, -rad + _y, color);
-		inDrawPixel(area, addr, rad + _x, 0 + _y, color);
-		inDrawPixel(area, addr, -rad + _x, 0 + _y, color);
+		inDrawPixel(area, addr, 0 + x, rad + y, color);
+		inDrawPixel(area, addr, 0 + x, -rad + y, color);
+		inDrawPixel(area, addr, rad + x, 0 + y, color);
+		inDrawPixel(area, addr, -rad + x, 0 + y, color);
 	} else {
 		// 시작 직선은 X축과 Y축 모두 그림
-		inDrawLine(area, addr, 0 + _x, rad + _y, 0 + _x, -rad + _y, color);
-		inDrawLine(area, addr, rad + _x, 0 + _y, -rad + _x, 0 + _y, color);
+		inDrawLine(area, addr, 0 + x, rad + y, 0 + x, -rad + y, color);
+		inDrawLine(area, addr, rad + x, 0 + y, -rad + x, 0 + y, color);
 	}
 
 	// 최초 시작점의 중심점과 원의 거리
 	distance = -rad;
 
 	// 원 그리기
-	for(x = 1; x <= y; x++) {
+	for(xCircle = 1; xCircle <= yCircle; xCircle++) {
 		// 원에서 떨어진 거리 계산. 시프트 연산으로 * 2 대체
-		distance += (x << 1) - 1;
+		distance += (xCircle << 1) - 1;
 
 		// 중심점이 원의 외부에 있으면 아래의 점 선택
 		if(distance >= 0) {
-			y--;
+			yCircle--;
 
 			// 새로운 점에서 다시 원과 거리 계산. 시프트 연산으로 * 2 대체
-			distance += (-y << 1) + 2;
+			distance += (-yCircle << 1) + 2;
 		}
 
 		// 채움 여부에 따라 그림
 		if(fill == FALSE) {
 			// 8방향 모두 점 그림
-			inDrawPixel(area, addr, x + _x, y + _y, color);
-			inDrawPixel(area, addr, x + _x, -y + _y, color);
-			inDrawPixel(area, addr, -x + _x, y + _y, color);
-			inDrawPixel(area, addr, -x + _x, -y + _y, color);
-			inDrawPixel(area, addr, y + _x, x + _y, color);
-			inDrawPixel(area, addr, y + _x, -x + _y, color);
-			inDrawPixel(area, addr, -y + _x, x + _y, color);
-			inDrawPixel(area, addr, -y + _x, -x + _y, color);
+			inDrawPixel(area, addr, xCircle + x, yCircle + y, color);
+			inDrawPixel(area, addr, xCircle + x, -yCircle + y, color);
+			inDrawPixel(area, addr, -xCircle + x, yCircle + y, color);
+			inDrawPixel(area, addr, -xCircle + x, -yCircle + y, color);
+			inDrawPixel(area, addr, yCircle + x, xCircle + y, color);
+			inDrawPixel(area, addr, yCircle + x, -xCircle + y, color);
+			inDrawPixel(area, addr, -yCircle + x, xCircle + y, color);
+			inDrawPixel(area, addr, -yCircle + x, -xCircle + y, color);
 		} else {
 			// 대칭되는 점을 찾아 X축에 평행한 직선을 그어 채워진 원 그림. 평행선 그리는 것은 사각형 그리기 함수로 처리
-			inDrawRect(area, addr, -x + _x, y + _y, x + _x, y + _y, color, TRUE);
-			inDrawRect(area, addr, -x + _x, -y + _y, x + _x, -y + _y, color, TRUE);
-			inDrawRect(area, addr, -y + _x, x + _y, y + _x, x + _y, color, TRUE);
-			inDrawRect(area, addr, -y + _x, -x + _y, y + _x, -x + _y, color, TRUE);
+			inDrawRect(area, addr, -xCircle + x, yCircle + y, xCircle + x, yCircle + y, color, TRUE);
+			inDrawRect(area, addr, -xCircle + x, -yCircle + y, xCircle + x, -yCircle + y, color, TRUE);
+			inDrawRect(area, addr, -yCircle + x, xCircle + y, yCircle + x, xCircle + y, color, TRUE);
+			inDrawRect(area, addr, -yCircle + x, -xCircle + y, yCircle + x, -xCircle + y, color, TRUE);
 		}
 	}
 }

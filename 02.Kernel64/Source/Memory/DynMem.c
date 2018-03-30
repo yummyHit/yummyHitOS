@@ -7,7 +7,7 @@
 
 #include <DynMem.h>
 #include <Util.h>
-#include <Task.h>
+#include <CLITask.h>
 #include <Synchronize.h>
 
 static DYNMEM gs_dynMem;

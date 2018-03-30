@@ -8,7 +8,7 @@
 #ifndef __HARDDISK_H__
 #define __HARDDISK_H__
 
-#include <Task.h>
+#include <CLITask.h>
 #include <Synchronize.h>
 
 #pragma once

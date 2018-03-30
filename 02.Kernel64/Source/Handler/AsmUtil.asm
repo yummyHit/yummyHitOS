@@ -13,7 +13,7 @@ SECTION .text			; text 섹션(세그먼트)을 정의
 global inByte, outByte, inWord, outWord
 global loadGDTR, loadTSS, loadIDTR
 global onInterrupt, offInterrupt, readRFLAGS, readTSC
-global switchContext, _hlt, testNSet, _pause
+global switchContext, _hlt, testNSet, _pause;, _shutdown
 global initFPU, saveFPU, loadFPU, setTS, clearTS
 global onLocalAPIC
 
@@ -232,6 +232,18 @@ testNSet:
 _pause:
 	pause		; 프로세서를 일시 중지 상태로 진입
 	ret
+
+;;Wait for a empty Input Buffer
+;waitInBuf:
+;	in al, 0x64
+;	test al, 00000010b
+;	jne waitInBuf
+;
+;_shutdown:
+;	call waitInBuf
+;	;Send 0xFE to the keyboard controller.
+;	mov al, 0xFE
+;	out 0x64, al
 
 ; FPU 초기화
 initFPU:

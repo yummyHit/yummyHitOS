@@ -9,7 +9,7 @@
 #define __ASMUTIL_H__
 
 #include <Types.h>
-#include <Task.h>
+#include <CLITask.h>
 
 #pragma once
 
@@ -29,6 +29,7 @@ QWORD readTSC(void);
 
 void switchContext(CONTEXT *nowContext, CONTEXT *nextContext);
 void _hlt(void);
+//void _shutdown(void);
 BOOL testNSet(volatile BYTE *dest, BYTE cmp, BYTE src);
 void _pause(void);
 

@@ -41,7 +41,7 @@ START:
 ; 디스크를 리셋하는 코드의 시작
 RESETDISK:
 	; BIOS Reset Function 호출. 서비스 번호 0, 드라이브 번호(0 = Floppy)
-	mov ax, 0
+	mov ah, 0x00
 	mov dl, 0
 	int 0x13
 	; 에러가 발생하면 에러 처리로 이동
@@ -228,7 +228,7 @@ MONITORCLEAR:
 
 .MONITORCLEARLOOP:	; 화면을 지우는 루프
 	mov byte [ es: si ], 0		; 비디오 메모리의 문자가 위치하는 어드레스에 0을 복사하여 문자 삭제
-	mov byte [ es: si + 1 ], 0x1F	; 비디오 메모리의 속성이 위치하는 어드레스에 0x0F(검은 바탕에 밝은 녹색)을 복사
+	mov byte [ es: si + 1 ], 0x1F	; 비디오 메모리의 속성이 위치하는 어드레스에 0x1F(검은 바탕에 밝은 녹색)을 복사
 	add si, 2			; 문자와 속성을 설정했으니 다음 위치로 이동
 	cmp si, 80 * 25 * 2		; 화면의 전체 크기는 80문자 * 25라인
 					; 출력한 문자의 수를 의미하는 SI 레지스터와 비교
@@ -251,7 +251,6 @@ GRAPHICERRMSG : db 'Change Graphic Mode ..............................', 0
 SECTORNUM:	db 0x02    ; OS 이미지가 시작하는 섹터 번호를 저장하는 영역
 HEADNUM:	db 0x00    ; OS 이미지가 시작하는 헤드 번호를 저장하는 영역
 TRACKNUM:	db 0x00    ; OS 이미지가 시작하는 트랙 번호를 저장하는 영역
-
 
 times 510 - ( $ - $$ )	db	0x00	; $ : 현재 라인의 어드레스
 					; $$ : 현재 섹션의 시작 어드레스

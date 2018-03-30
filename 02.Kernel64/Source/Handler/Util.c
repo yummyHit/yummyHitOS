@@ -8,6 +8,7 @@
 #include <Util.h>
 #include <AsmUtil.h>
 #include <stdarg.h>
+#include <VBE.h>
 
 volatile QWORD g_tickCnt = 0;
 
@@ -367,4 +368,11 @@ void _sleep(QWORD ms) {
 	lastTickCnt = g_tickCnt;
 
 	while((g_tickCnt - lastTickCnt) <= ms) schedule();
+}
+
+// 그래픽 모드인지 여부 반환
+BOOL isGUIMode(void) {
+	// 그래픽 모드 시작 여부가 저장된 어드레스(0x7C0A)
+	if(*(BYTE*)VBE_GUIMODE_STARTADDR == 0) return FALSE;
+	return TRUE;
 }

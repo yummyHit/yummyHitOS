@@ -12,7 +12,7 @@
 #include <PIT.h>
 #include <Console.h>
 #include <Shell.h>
-#include <Task.h>
+#include <CLITask.h>
 #include <DynMem.h>
 #include <HardDisk.h>
 #include <FileSystem.h>
@@ -28,7 +28,7 @@
 
 void forAP(void);
 BOOL multiCoreMode(void);
-void startGUI();
+//void startGUI();
 void yummy_ascii_art(const char *buf);
 
 // BSP용 C언어 커널 엔트리 포인트, 아래 함수는 C언어 커널 시작 부분
@@ -125,7 +125,7 @@ void Main(void) {
 	createTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, (QWORD)idleTask, getAPICID());
 
 	// 그래픽 모드가 아니면 콘솔 셸 실행, 그래픽 모드면 그래픽 모드 실행
-	if(*(BYTE*)VBE_GRAPHICMODE_STARTADDR == 0) startShell();
+	if(*(BYTE*)VBE_GUIMODE_STARTADDR == 0) startShell();
 	else startWinManager();
 }
 

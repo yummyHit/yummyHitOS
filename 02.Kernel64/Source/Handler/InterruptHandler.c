@@ -10,7 +10,7 @@
 #include <Keyboard.h>
 #include <Console.h>
 #include <Util.h>
-#include <Task.h>
+#include <CLITask.h>
 #include <Descriptor.h>
 #include <AsmUtil.h>
 #include <HardDisk.h>

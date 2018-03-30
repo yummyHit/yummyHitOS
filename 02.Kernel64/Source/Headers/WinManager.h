@@ -12,6 +12,9 @@
 
 #pragma once
 
+// 윈도우 매니저 태스크가 처리할 데이터나 이벤트 통합 최대 개수
+#define WINDOWMANAGER_DATACNT	20
+
 void startWinManager(void);
 BOOL procMouseData(void);
 BOOL procKeyData(void);

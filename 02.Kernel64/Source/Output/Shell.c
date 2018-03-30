@@ -12,7 +12,7 @@
 #include <PIT.h>
 #include <RTC.h>
 #include <AsmUtil.h>
-#include <Task.h>
+#include <CLITask.h>
 #include <Synchronize.h>
 #include <DynMem.h>
 #include <HardDisk.h>

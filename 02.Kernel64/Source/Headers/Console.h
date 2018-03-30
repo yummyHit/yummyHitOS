@@ -44,7 +44,7 @@
 // 콘솔 너비, 높이, 비디오 메모리 시작 어드레스 설정
 #define CONSOLE_WIDTH		80
 #define CONSOLE_HEIGHT		25
-#define CONSOLE_VIDEOMEMADDR	 0xB8000
+#define CONSOLE_VIDEOMEMADDR	0xB8000
 
 // 비디오 컨트롤러 IO포트 어드레스 및 레지스터
 #define VGA_PORT_INDEX		0x3D4

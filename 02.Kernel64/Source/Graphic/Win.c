@@ -7,9 +7,10 @@
 
 #include <Win.h>
 #include <VBE.h>
-#include <Task.h>
+#include <CLITask.h>
 #include <Font.h>
 #include <DynMem.h>
+#include <Util.h>
 
 // GUI 시스템 관련 자료구조
 static WINDOWPOOLMANAGER gs_winPoolManager;
@@ -145,6 +146,13 @@ void initGUISystem(void) {
 	// 이벤트 큐 초기화
 	initQueue(&(gs_winManager.queue), buf, WINDOW_MAXCNT, sizeof(EVENT));
 
+	// 화면 업데이트 시 사용할 비트맵 버퍼 생성. 비트맵은 화면 전체 크기로 생성해 공용으로 사용
+	gs_winManager.bitmap = allocMem((mode->xPixel * mode->yPixel + 7) / 8);
+	if(gs_winManager.bitmap == NULL) {
+		printF("Draw Bitmap Allocate Fail...\n");
+		while(1);
+	}
+
 	// 마우스 버튼의 상태와 윈도우 이동 여부 초기화
 	gs_winManager.preBtnStat = 0;
 	gs_winManager.moveMode = FALSE;
@@ -235,7 +243,7 @@ QWORD createWin(int x, int y, int width, int height, DWORD flag, const char *tit
 	id = getTopWin();
 
 	// 윈도우 리스트의 가장 마지막에 추가해 최상위 윈도우로 설정
-	addListTail(&gs_winManager.list, win);
+	addListHead(&gs_winManager.list, win);
 
 	// 동기화 처리
 	_unlock(&(gs_winManager.lock));
@@ -378,7 +386,7 @@ WINDOW *findWinLock(QWORD id) {
 	_lock(&(win->lock));
 	// 윈도우를 동기화 한 후 윈도우 ID로 윈도우를 검색할 수 없으면 도중에 윈도우가 바뀐 것이니 NULL 반환
 	win = getWin(id);
-	if(win == NULL) {
+	if((win == NULL) || (win->qBuf == NULL) || (win->winBuf == NULL)) {
 		// 동기화 처리
 		_unlock(&(win->lock));
 		return NULL;
@@ -398,7 +406,7 @@ BOOL showWin(QWORD id, BOOL show) {
 
 	// 윈도우 속성 설정
 	if(show == TRUE) win->flag |= WINDOW_FLAGS_SHOW;
-	else win->flag |= ~WINDOW_FLAGS_SHOW;
+	else win->flag &= ~WINDOW_FLAGS_SHOW;
 
 	// 동기화 처리
 	_unlock(&(win->lock));
@@ -413,30 +421,72 @@ BOOL showWin(QWORD id, BOOL show) {
 }
 
 // 특정 영역 포함 윈도우 모두 그림
-BOOL updateWinArea(const RECT *area) {
+BOOL updateWinArea(const RECT *area, QWORD id) {
 	WINDOW *win, *targetWin = NULL;
-	RECT crossArea, cursorArea;
+	RECT crossArea, cursorArea, tmpCrossArea, largeCrossArea[WINDOW_CROSSAREA_LOGMAXCNT];
+	DRAWBITMAP bitmap;
+	int largeCrossAreaSize[WINDOW_CROSSAREA_LOGMAXCNT], tmpCrossAreaSize, minAreaSize, minAreaIdx, i;
 
 	// 화면 영역과 겹치는 영역이 없으면 그릴 필요 없음
 	if(getRectCross(&(gs_winManager.area), area, &crossArea) == FALSE) return FALSE;
 
-	// Z 순서 최하위(윈도우 리스트의 첫 번째부터 마지막까지) 루프를 돌며 업데이트 할 영역과 겹치는 윈도우 찾아 비디오 메모리로 전송. 동기화 처리
+	// Z 순서 최하위(윈도우 리스트의 첫 번째부터 마지막까지) 루프를 돌며 업데이트 할 영역과 겹치는 윈도우 찾아 비디오 메모리로 전송. 화면에 업데이트할 영역 기록 공간 초기화
+	memSet(largeCrossAreaSize, 0, sizeof(largeCrossAreaSize));
+	memSet(largeCrossArea, 0, sizeof(largeCrossArea));
+
+	// 동기화 처리
 	_lock(&(gs_winManager.lock));
 
-	// 현재 윈도우 리스트는 Z 순서의 역방향이 되고 마지막 윈도우가 최상위 윈도우로 정렬되어 있음. 따라서 윈도우 리스트를 처음부터 따라가며 그릴 영역 포함하는 윈도우 찾고 그 윈도우부터 최상위 윈도우까지 화면에 전송
+	// 화면에 업데이트할 영역 저장하는 비트맵 생성
+	createBitmap(&crossArea, &bitmap);
+
+	// 현재 윈도우 리스트는 Z 순서의에 따라 정렬되어 있음. 윈도우 리스트를 처음부터 따라가며 그릴 영역 포함하는 윈도우 찾고 그 윈도우부터 최상위 윈도우까지 화면에 전송
 	win = getListHead(&(gs_winManager.list));
 	while(win != NULL) {
 		// 윈도우를 화면에 나타내는 옵션이 설정되어 있으며, 업데이트할 부분과 윈도우가 차지하는 영역이 겹치면 겹치는 만큼 화면에 전송
-		if((win->flag & WINDOW_FLAGS_SHOW) && (isRectCross(&(win->area), &crossArea) == TRUE)) {
+		if((win->flag & WINDOW_FLAGS_SHOW) && (getRectCross(&(win->area), &crossArea, &tmpCrossArea) == TRUE)) {
+			// 윈도우와 겹치는 영역 넓이 계산
+			tmpCrossAreaSize = getRectWidth(&tmpCrossArea) * getRectHeight(&tmpCrossArea);
+
+			// 이전에 기록한 윈도우 업데이트 영역 검색해 이전 영역에 포함되는지 확인
+			for(i = 0; i < WINDOW_CROSSAREA_LOGMAXCNT; i++)
+				// 겹치는 영역을 이전에 저장한 영역과 비교해 화면 업데이트 결정. 큰 영역에 포함되면 업데이트 안함
+				if((tmpCrossAreaSize <= largeCrossAreaSize[i]) && (isInRect(&(largeCrossArea[i]), tmpCrossArea.x1, tmpCrossArea.y1) == TRUE) && (isInRect(&(largeCrossArea[i]), tmpCrossArea.x2, tmpCrossArea.y2) == TRUE)) break;
+
+			// 일치하는 업데이트 영역을 찾았으면 이전에 업데이트 되었으니 다음 윈도우로 이동
+			if(i < WINDOW_CROSSAREA_LOGMAXCNT) {
+				// 다음 윈도우 찾음
+				win = getNextList(&(gs_winManager.list), win);
+				continue;
+			}
+
+			// 현재 영역이 이전 업데이트의 가장 큰 영역과 완전히 포함되지 않으면 넓이를 비교해 이전 업데이트의 가장 작은 영역 검색
+			minAreaSize = 0xFFFFFF;
+			minAreaIdx = 0;
+			for(i = 0; i < WINDOW_CROSSAREA_LOGMAXCNT; i++) if(largeCrossAreaSize[i] < minAreaSize) {
+				minAreaSize = largeCrossAreaSize[i];
+				minAreaIdx = i;
+			}
+
+			// 저장된 영역 중 최소 크기보다 현재 겹치는 넓이가 크면 해당 위치를 교체해 영역 크기로 10개 유지
+			if(minAreaSize < tmpCrossAreaSize) {
+				memCpy(&(largeCrossArea[minAreaIdx]), &tmpCrossArea, sizeof(RECT));
+				largeCrossAreaSize[minAreaIdx] = tmpCrossAreaSize;
+			}
+
 			// 동기화 처리
 			_lock(&(win->lock));
 
-			// 실제로 비디오 메모리로 전송하는 함수
-			winBufToFrame(win, &crossArea);
+			// 윈도우 ID가 유효하면 그 전까지 윈도우를 그리지 않고 비트맵만 업데이트 한 것으로 변경
+			if((id != WINDOW_INVALID_ID) && (id != win->link.id)) fillBitmap(&bitmap, &(win->area), FALSE);
+			else winBufToFrame(win, &bitmap);
 
 			// 동기화 처리
 			_unlock(&(win->lock));
 		}
+
+		// 모든 영역이 업데이트되면 더 이상 그릴 필요 없음
+		if(isBitmapFin(&bitmap) == TRUE) break;
 
 		// 다음 윈도우 찾음
 		win = getNextList(&(gs_winManager.list), win);
@@ -453,13 +503,14 @@ BOOL updateWinArea(const RECT *area) {
 }
 
 // 윈도우 화면 버퍼의 일부 또는 전체를 프레임 버퍼로 복사
-static void winBufToFrame(const WINDOW *win, const RECT *area) {
+static void winBufToFrame(const WINDOW *win, DRAWBITMAP *bitmap) {
 	RECT tmpArea, crossArea;
-	int crossWidth, crossHeight, monWidth, winWidth, i;
+	int crossWidth, crossHeight, monWidth, winWidth, i, byteOffset, bitOffset, xOffset, yOffset, lastOffset, bulkCnt;
 	COLOR *memAddr, *bufAddr;
+	BYTE tmpBitmap;
 
 	// 전송해야 하는 영역과 화면 영역이 겹치는 부분 임시 계산
-	if(getRectCross(&(gs_winManager.area), area, &tmpArea) == FALSE) return;
+	if(getRectCross(&(gs_winManager.area), &(bitmap->area), &tmpArea) == FALSE) return;
 
 	// 윈도우 영역과 임시로 계산한 영역이 겹치는 부분 재계산. 두 영역이 겹치지 않으면 비디오 메모리로 전송할 필요 없음
 	if(getRectCross(&tmpArea, &(win->area), &crossArea) == FALSE) return;
@@ -470,20 +521,81 @@ static void winBufToFrame(const WINDOW *win, const RECT *area) {
 	crossWidth = getRectWidth(&crossArea);
 	crossHeight = getRectHeight(&crossArea);
 
-	// 전송 시작할 비디오 메모리 어드레스와 윈도우 화면 버퍼 어드레스 계산
-	memAddr = gs_winManager.memAddr + crossArea.y1 * monWidth + crossArea.x1;
+	// 겹치는 영역 높이만큼 무한 출력
+	for(yOffset = 0; yOffset < crossHeight; yOffset++) {
+		// 겹치는 영역 화면 업데이트에서 존재하는 위치 계산
+		if(getStartBitmap(bitmap, crossArea.x1, crossArea.y1 + yOffset, &byteOffset, &bitOffset) == FALSE) break;
 
-	// 윈도우 화면 버퍼는 화면 전체가 아닌 윈도우 기준 좌표이므로 겹치는 영역을 윈도우 내부 좌표 기준으로 변환
-	bufAddr = win->winBuf + (crossArea.y1 - win->area.y1) * winWidth + (crossArea.x1 - win->area.x1);
+		// 전송 시작할 비디오 메모리 어드레스와 윈도우 화면 버퍼 어드레스 계산
+		memAddr = gs_winManager.memAddr + (crossArea.y1 + yOffset) * monWidth + crossArea.x1;
 
-	// 루프를 돌며 윈도우 화면 버퍼 내용을 비디오 메모리로 복사
-	for(i = 0; i < crossHeight; i++) {
-		// 라인별 한 번에 전송
-		memCpy(memAddr, bufAddr, crossWidth * sizeof(COLOR));
+		// 윈도우 화면 버퍼는 화면 전체가 아닌 윈도우 기준 좌표이므로 겹치는 영역을 윈도우 내부 좌표 기준으로 변환
+		bufAddr = win->winBuf + (crossArea.y1 - win->area.y1 + yOffset) * winWidth + (crossArea.x1 - win->area.x1);
 
-		// 다음 라인으로 메모리 어드레스 이동
-		memAddr += monWidth;
-		bufAddr += winWidth;
+		// 겹친 영역 너비만큼 출력
+		for(xOffset = 0; xOffset < crossWidth;) {
+			// 8개 픽셀을 한 번에 업데이트 할 수 있으면 8픽셀 단위로 처리할 수 있는 크기 계산해 한 번에 처리
+			if((bitmap->bitmap[byteOffset] == 0xFF) && (bitOffset == 0x00) && ((crossWidth - xOffset) >= 8)) {
+				for(bulkCnt = 0; (bulkCnt < ((crossWidth - xOffset) >> 3)); bulkCnt++) if(bitmap->bitmap[byteOffset + bulkCnt] != 0xFF) break;
+
+				// 8픽셀 단위로 한 번에 처리
+				memCpy(memAddr, bufAddr, (sizeof(COLOR) * bulkCnt) << 3);
+
+				// 메모리 어드레스와 비트맵 정보를 8픽셀 단위로 업데이트
+				memAddr += bulkCnt << 3;
+				bufAddr += bulkCnt << 3;
+				memSet(bitmap->bitmap + byteOffset, 0x00, bulkCnt);
+
+				// 전체 개수에서 8픽셀 단위로 전송한 수 만큼 값 더함
+				xOffset += bulkCnt << 3;
+
+				// 비트맵 오프셋 변경
+				byteOffset += bulkCnt;
+				bitOffset = 0;
+			} else if((bitmap->bitmap[byteOffset] == 0x00) && (bitOffset == 0x00) && ((crossWidth - xOffset) >= 8 )) {
+				// 현재 영역이 이미 업데이트 되어 8개 픽셀을 한 번에 제외할 수 있으면 8픽셀 단위로 처리할 수 있는 크기를 계산해 한 번에 처리.
+				for(bulkCnt = 0; (bulkCnt < ((crossWidth - xOffset) >> 3)); bulkCnt++) if(bitmap->bitmap[byteOffset + bulkCnt] != 0x00) break;
+
+				// 메모리 어드레스를 변경된 것으로 업데이트
+				memAddr += bulkCnt << 3;
+				bufAddr += bulkCnt << 3;
+
+				// 전체 개수에서 8픽셀 단위로 제외한 수만큼 값 더함
+				xOffset += bulkCnt << 3;
+
+				// 비트맵 오프셋 변경
+				byteOffset += bulkCnt;
+				bitOffset = 0;
+			} else {
+				// 현재 업데이트할 위치 비트맵
+				tmpBitmap = bitmap->bitmap[byteOffset];
+
+				// 현재 비트맵에서 출력해야 할 마지막 픽셀 비트 오프셋 구함
+				lastOffset = _MIN(8, crossWidth - xOffset + bitOffset);
+
+				// 한 점씩 이동
+				for(i = bitOffset; i < lastOffset; i++) {
+					// 비트맵이 1로 설정되어 있으면 화면에 출력.
+					if(tmpBitmap & (0x01 << i)) {
+						*memAddr = *bufAddr;
+						// 비트맵 정보를 변경된 것으로 업데이트
+						tmpBitmap &= ~(0x01 << i);
+					}
+
+					// 메모리 어드레스를 변경된 것으로 업데이트
+					memAddr++;
+					bufAddr++;
+				}
+
+				// 전체 개수에서 1픽셀 단위로 전송한 수만큼 값 더함
+				xOffset += (lastOffset - bitOffset);
+
+				// 비트맵 정보를 변경된 것으로 업데이트
+				bitmap->bitmap[byteOffset] = tmpBitmap;
+				byteOffset++;
+				bitOffset = 0;
+			}
+		}
 	}
 }
 
@@ -501,11 +613,14 @@ QWORD findWinPoint(int x, int y) {
 	// 배경 윈도우 다음부터 검색
 	win = getListHead(&(gs_winManager.list));
 	do {
+		// 윈도우가 화면에 보이고 윈도우가 X, Y좌표를 포함하면 ID 업데이트
+		if((win->flag & WINDOW_FLAGS_SHOW) && (isInRect(&(win->area), x, y) == TRUE)) {
+			id = win->link.id;
+			break;
+		}
+
 		// 다음 윈도우 반환
 		win = getNextList(&(gs_winManager.list), win);
-
-		// 윈도우가 화면에 보이고 윈도우가 X, Y좌표를 포함하면 ID 업데이트
-		if((win != NULL) && (win->flag & WINDOW_FLAGS_SHOW) && (isInRect(&(win->area), x, y) == TRUE)) id = win->link.id;
 	} while(win != NULL);
 
 	// 동기화 처리
@@ -559,7 +674,7 @@ QWORD getTopWin(void) {
 	_lock(&(gs_winManager.lock));
 
 	// 윈도우 리스트 최상위 윈도우 반환
-	win = (WINDOW*)getListTail(&(gs_winManager.list));
+	win = (WINDOW*)getListHead(&(gs_winManager.list));
 	if(win != NULL) id = win->link.id;
 	else id = WINDOW_INVALID_ID;
 
@@ -578,11 +693,15 @@ BOOL moveWinTop(QWORD id) {
 
 	// 현재 윈도우 리스트에서 선택된 윈도우 ID 반환
 	topID = getTopWin();
+	// 최상위 윈도우가 자신이면 수행할 필요 없음
+	if(topID == id) return TRUE;
+
+	_lock(&(gs_winManager.lock));
 
 	// 윈도우 리스트에서 제거해 윈도우 리스트 마지막으로 이동
 	win = delList(&(gs_winManager.list), id);
 	if(win != NULL) {
-		addListTail(&(gs_winManager.list), win);
+		addListHead(&(gs_winManager.list), win);
 
 		// 윈도우 영역을 윈도우 내부 좌표로 변환해 플래그와 함께 저장. 아래에서 윈도우 화면 업데이트시 사용
 		monitorToRect(id, &(win->area), &area);
@@ -679,6 +798,7 @@ BOOL moveWin(QWORD id, int x, int y) {
 	// 윈도우 이동 메시지 전송
 	setWinEvent(id, EVENT_WINDOW_MOVE, &event);
 	eventToWin(id, &event);
+
 	return TRUE;
 }
 
@@ -743,12 +863,12 @@ BOOL pointToMonitor(QWORD id, const POINT *xy, POINT *xyMon) {
 	if(getWinArea(id, &area) == FALSE) return FALSE;
 
 	xyMon->x = xy->x + area.x1;
-	xyMon->y = xy->y - area.y1;
+	xyMon->y = xy->y + area.y1;
 	return TRUE;
 }
 
 // 전체 화면을 기준으로 사각형 좌표를 윈도우 내부 좌표로 변환
-BOOL monitorToRect(QWORD id, const RECT* area, RECT *areaWin) {
+BOOL monitorToRect(QWORD id, const RECT *area, RECT *areaWin) {
 	RECT winArea;
 
 	// 윈도우 영역 반환
@@ -988,7 +1108,6 @@ BOOL drawWinFrame(QWORD id) {
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1014,14 +1133,13 @@ BOOL drawWinBackground(QWORD id) {
 
 	// 윈도우 테두리를 그리는 옵션이 설정되어 있으면 테두리 제외 영역 채움
 	if(win->flag & WINDOW_FLAGS_DRAWFRAME) x = 2;
-	else x= 0;
+	else x = 0;
 
 	// 윈도우 내부 채움
 	inDrawRect(&area, win->winBuf, x, y, width - 1 - x, height - 1 - x, WINDOW_COLOR_BACKGROUND, TRUE);
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1084,7 +1202,6 @@ BOOL drawWinTitle(QWORD id, const char *title, BOOL select) {
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1120,7 +1237,7 @@ BOOL drawBtn(QWORD id, RECT *btnArea, COLOR background, const char *buf, COLOR t
 
 	// 버튼을 입체로 보이게 테두리 그림. 2픽셀 두께. 버튼 왼쪽과 위는 밝게 표시
 	inDrawLine(&area, win->winBuf, btnArea->x1, btnArea->y1, btnArea->x2, btnArea->y1, WINDOW_COLOR_BTN_OUT);
-	inDrawLine(&area, win->winBuf, btnArea->x1, btnArea->y1, btnArea->x2 - 1, btnArea->y1 + 1, WINDOW_COLOR_BTN_OUT);
+	inDrawLine(&area, win->winBuf, btnArea->x1, btnArea->y1 + 1, btnArea->x2 - 1, btnArea->y1 + 1, WINDOW_COLOR_BTN_OUT);
 	inDrawLine(&area, win->winBuf, btnArea->x1, btnArea->y1, btnArea->x1, btnArea->y2, WINDOW_COLOR_BTN_OUT);
 	inDrawLine(&area, win->winBuf, btnArea->x1 + 1, btnArea->y1, btnArea->x1 + 1, btnArea->y2 - 1, WINDOW_COLOR_BTN_OUT);
 
@@ -1132,7 +1249,6 @@ BOOL drawBtn(QWORD id, RECT *btnArea, COLOR background, const char *buf, COLOR t
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1161,7 +1277,7 @@ BYTE gs_mouseBuf[MOUSE_CURSOR_WIDTH * MOUSE_CURSOR_HEIGHT] = {
 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,};
 
 // X, Y 위치에 마우스 커서 출력
-void drawCursor(int x, int y) {
+static void drawCursor(int x, int y) {
 	int i, j;
 	BYTE *position;
 
@@ -1218,7 +1334,7 @@ void moveCursor(int x, int y) {
 	_unlock(&(gs_winManager.lock));
 
 	// 마우스가 이전에 있던 영역 다시 그림
-	updateWinArea(&preArea);
+	updateWinArea(&preArea, WINDOW_INVALID_ID);
 
 	// 새로운 위치에 마우스 커서 출력
 	drawCursor(x, y);
@@ -1237,7 +1353,7 @@ BOOL drawPixel(QWORD id, int x, int y, COLOR color) {
 
 	// 윈도우 검색과 동기화 처리
 	win = findWinLock(id);
-	if(win == NULL) return;
+	if(win == NULL) return FALSE;
 
 	// 윈도우 시작 좌표를 0, 0으로 하는 좌표로 영역 반환
 	setRectData(0, 0, win->area.x2 - win->area.x1, win->area.y2 - win->area.y1, &area);
@@ -1247,7 +1363,6 @@ BOOL drawPixel(QWORD id, int x, int y, COLOR color) {
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1268,7 +1383,6 @@ BOOL drawLine(QWORD id, int x1, int y1, int x2, int y2, COLOR color) {
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1289,7 +1403,6 @@ BOOL drawRect(QWORD id, int x1, int y1, int x2, int y2, COLOR color, BOOL fill) 
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1310,7 +1423,6 @@ BOOL drawCircle(QWORD id, int x, int y, int rad, COLOR color, BOOL fill) {
 
 	// 동기화 처리
 	_unlock(&(win->lock));
-
 	return TRUE;
 }
 
@@ -1331,6 +1443,127 @@ BOOL drawText(QWORD id, int x, int y, COLOR text, COLOR background, const char *
 
 	// 동기화 처리
 	_unlock(&(win->lock));
+	return TRUE;
+}
+
+// 화면 업데이트에 사용하는 화면 업데이트 비트맵 관련
+BOOL createBitmap(const RECT *area, DRAWBITMAP *bitmap) {
+	// 화면 영역과 겹치는 부분이 없으면 비트맵 생성 필요 없음
+	if(getRectCross(&(gs_winManager.area), area, &(bitmap->area)) == FALSE) return FALSE;
+
+	// 윈도우 매니저에 있는 화면 업데이트 비트맵 버퍼 설정
+	bitmap->bitmap = gs_winManager.bitmap;
+
+	return fillBitmap(bitmap, &(bitmap->area), TRUE);
+}
+
+// 화면에 업데이트할 비트맵 영역과 현재 영역이 겹치는 부분 값 0, 1로 채움
+static BOOL fillBitmap(DRAWBITMAP *bitmap, RECT *area, BOOL fill) {
+	RECT crossArea;
+	int byteOffset, bitOffset, width, height, i, xOffset, yOffset, bulkCnt, lastOffset;
+	BYTE tmpBitmap;
+
+	// 업데이트할 영역과 겹치는 부분이 없으면 비트맵 버퍼에 값 안채움
+	if(getRectCross(&(bitmap->area), area, &crossArea) == FALSE) return FALSE;
+
+	// 겹치는 영역 너비와 높이 계산
+	width = getRectWidth(&crossArea);
+	height = getRectHeight(&crossArea);
+
+	// 겹치는 영역 높이만큼 출력하는 루프 반복
+	for(yOffset = 0; yOffset < height; yOffset++) {
+		// 비트맵 버퍼 내 라인 시작 위치 반환
+		if(getStartBitmap(bitmap, crossArea.x1, crossArea.y1 + yOffset, &byteOffset, &bitOffset) == FALSE) break;
+
+		// 겹친 영역 너비만큼 출력하는 루프 반복
+		for(xOffset = 0; xOffset < width;) {
+			// 8픽셀 단위로 처리할 수 있는 크기 계산해 한 번에 처리
+			if((bitOffset == 0x00) && ((width - xOffset) >= 8)) {
+				// 현재 위치에서 8픽셀 단위로 처리할 수 있는 최대 크기 계산
+				bulkCnt = (width - xOffset) >> 3;
+
+				// 8픽셀 단위로 한 번에 차리
+				if(fill == TRUE) memSet(bitmap->bitmap + byteOffset, 0xFF, bulkCnt);
+				else memSet(bitmap->bitmap + byteOffset, 0x00, bulkCnt);
+
+				// 전체 개수에서 개별적으로 설정한 비트맵 수만큼 값 변경
+				xOffset += bulkCnt << 3;
+
+				// 비트맵 오프셋 변경
+				byteOffset += bulkCnt;
+				bitOffset = 0;
+			} else {
+				// 현재 비트맵에서 출력해야 할 마지막 픽셀 비트 오프셋 계산
+				lastOffset = _MIN(8, width - xOffset + bitOffset);
+
+				// 비트맵 생성
+				tmpBitmap = 0;
+				for(i = bitOffset; i < lastOffset; i++) tmpBitmap |= (0x01 << i);
+
+				// 전체 개수에서 8픽셀씩 설정한 비트맵 수만큼 값 변경
+				xOffset += (lastOffset - bitOffset);
+
+				// 비트맵 정보를 변경된 것으로 업데이트
+				if(fill == TRUE) bitmap->bitmap[byteOffset] |= tmpBitmap;
+				else bitmap->bitmap[byteOffset] &= ~(tmpBitmap);
+				byteOffset++;
+				bitOffset = 0;
+			}
+		}
+	}
+	return TRUE;
+}
+
+// 화면 좌표가 화면 업데이트 비트맵 내부에서 시작하는 바이트 오프셋과 비트 오프셋 반환
+BOOL getStartBitmap(const DRAWBITMAP *bitmap, int x, int y, int *byteOffset, int *bitOffset) {
+	int width, xOffset, yOffset;
+
+	// 비트맵 영역 내부에 좌표가 포함되지 않으면 안찾음
+	if(isInRect(&(bitmap->area), x, y) == FALSE) return FALSE;
+
+	// 업데이트 영역 내부 오프셋 계산
+	xOffset = x - bitmap->area.x1;
+	yOffset = y - bitmap->area.y1;
+	// 업데이트할 영역 너비 계산
+	width = getRectWidth(&(bitmap->area));
+
+	// 바이트 오프셋은 X, Y가 그릴 영역에서 위치한 곳을 8(바이트당 8픽셀)로 나눠 계산
+	*byteOffset = (yOffset * width + xOffset) >> 3;
+	// 위에서 계산한 바이트 내 비트 오프셋은 8로 나눈 나머지로 계산
+	*bitOffset = (yOffset * width + xOffset) & 0x7;
+
+	return TRUE;
+}
+
+// 화면에 그릴 비트맵이 모두 0으로 설정되어 더 이상 업데이트 할 것이 없는지 반환
+BOOL isBitmapFin(const DRAWBITMAP *bitmap) {
+	int cnt, idx, width, height, i, size;
+	BYTE *tmp;
+
+	// 업데이트할 영역 너비와 높이 계산
+	width = getRectWidth(&(bitmap->area));
+	height = getRectHeight(&(bitmap->area));
+
+	// 비트맵 바이트 수 계산
+	size = width * height;
+	cnt = size >> 3;
+
+	// 8바이트씩 한 번에 비교
+	tmp = bitmap->bitmap;
+	for(i = 0; i < (cnt >> 3); i++) {
+		if(*(QWORD*)(tmp) != 0) return FALSE;
+		tmp += 8;
+	}
+
+	// 8바이트 단위로 떨어지지 않는 나머지 비교
+	for(i = 0; i < (cnt & 0x7); i++) {
+		if(*tmp != 0) return FALSE;
+		tmp++;
+	}
+
+	// 전체 크기가 8로 나누어 떨어지지 않는다면 한 바이트가 가득 차지 않은 마지막 바이트가 있으므로 이를 검사
+	idx = size & 0x7;
+	for(i = 0; i < idx; i++) if(*tmp & (0x01 << i)) return FALSE;
 
 	return TRUE;
 }

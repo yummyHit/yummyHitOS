@@ -52,7 +52,7 @@
 #define WINDOW_COLOR_TITLE_SECONDOUT	RGB(102, 102, 204)
 #define WINDOW_COLOR_TITLE_UNDERLINE	RGB(87, 16, 149)
 #define WINDOW_COLOR_BTN_OUT		RGB(229, 229, 229)
-#define WINDOW_COLOR_BTN_DARK	RGB(86, 86, 86)
+#define WINDOW_COLOR_BTN_DARK		RGB(86, 86, 86)
 #define WINDOW_COLOR_SYSTEM_BACKGROUND	RGB(186, 140, 255)
 #define WINDOW_COLOR_XLINE		RGB(102, 0, 255)
 
@@ -226,8 +226,19 @@ typedef struct windowManager {
 
 	// 이동 중인 윈도우 ID와 모드
 	QWORD moveID;
-	QWORD moveMode;
+	BOOL moveMode;
+
+	// 화면 업데이트용 비트맵 버퍼 어드레스
+	BYTE *bitmap;
 } WINDOWMANAGER;
+
+// 화면에 업데이트할 영역의 비트맵 정보 저장하는 자료구조
+typedef struct drawBitmap {
+	// 업데이트할 화면 영역
+	RECT area;
+	// 화면 영역 정보가 저장된 비트맵 어드레스
+	BYTE *bitmap;
+} DRAWBITMAP;
 
 static void initWinPool(void);
 static WINDOW *allocWin(void);
@@ -243,8 +254,8 @@ BOOL delAllWin(QWORD id);
 WINDOW *getWin(QWORD id);
 WINDOW *findWinLock(QWORD id);
 BOOL showWin(QWORD id, BOOL show);
-BOOL updateWinArea(const RECT *area);
-static void winBufToFrame(const WINDOW *win, const RECT *area);
+BOOL updateWinArea(const RECT *area, QWORD id);
+static void winBufToFrame(const WINDOW *win, DRAWBITMAP *bitmap);
 QWORD findWinPoint(int x, int y);
 QWORD findWinTitle(const char *title);
 BOOL isWinExist(QWORD id);
@@ -285,5 +296,10 @@ BOOL drawText(QWORD id, int x, int y, COLOR text, COLOR background, const char *
 static void drawCursor(int x, int y);
 void moveCursor(int x, int y);
 void getWinCursor(int *x, int *y);
+
+BOOL createBitmap(const RECT *area, DRAWBITMAP *bitmap);
+static BOOL fillBitmap(DRAWBITMAP *bitmap, RECT *area, BOOL fill);
+inline BOOL getStartBitmap(const DRAWBITMAP *bitmap, int x, int y, int *byteOffset, int *bitOffset);
+inline BOOL isBitmapFin(const DRAWBITMAP *bitmap);
 
 #endif /*__WIN_H__*/

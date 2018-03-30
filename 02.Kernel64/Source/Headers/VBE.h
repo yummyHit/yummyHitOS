@@ -15,7 +15,7 @@
 // 매크로, 모드 정보 블록이 저장된 어드레스
 #define VBE_MODEINFO_BLOCKADDR		0x7E00
 // 그래픽 모드로 시작하는 플래그가 저장된 어드레스
-#define VBE_GRAPHICMODE_STARTADDR	0x7C0A
+#define VBE_GUIMODE_STARTADDR	0x7C0A
 
 // 구조체
 #pragma pack(push, 1)

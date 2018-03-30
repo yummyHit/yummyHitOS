@@ -148,7 +148,7 @@ void printXY(int x, int y, BYTE color, const char *str) {
 	int i;
 
 	// 비디오 메모리 어드레스에서 현재 출력할 위치 계산
-	mon += (y * 80) + x;
+	mon += (y * CONSOLE_WIDTH) + x;
 
 	// 문자열 길이만큼 루프 돌면서 문자와 속성 저장
 	for(i = 0; str[i] != 0; i++) {

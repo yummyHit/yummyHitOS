@@ -6,7 +6,7 @@
  */
 
 #include "Page.h"
-#include <Task.h>
+#include <CLITask.h>
 #define DYNMEM_START_ADDR	((TASK_STACKPOOLADDR + 0x1fffff) & 0xffe00000)
 
 // IA-32e 모드 커널을 위한 페이지 테이블 생성

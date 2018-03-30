@@ -8,7 +8,7 @@
 #include <FileSystem.h>
 #include <HardDisk.h>
 #include <DynMem.h>
-#include <Task.h>
+#include <CLITask.h>
 #include <Util.h>
 #include <CacheMem.h>
 #include <RamDisk.h>

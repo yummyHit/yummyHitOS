@@ -215,6 +215,7 @@ BOOL getCode(void);
 BOOL alterLED(BOOL caps, BOOL num, BOOL scroll);
 void onA20Gate(void);
 void reBoot(void);
+void shutDown(void);
 BOOL isEngScanCode(BYTE scanCode);
 BOOL isNumScanCode(BYTE scanCode);
 BOOL isPadScanCode(BYTE scanCode);

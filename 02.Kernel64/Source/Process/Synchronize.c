@@ -7,7 +7,7 @@
 
 #include <Synchronize.h>
 #include <Util.h>
-#include <Task.h>
+#include <CLITask.h>
 #include <AsmUtil.h>
 
 // 스핀락 도입 이전에 사용하던 함수들
