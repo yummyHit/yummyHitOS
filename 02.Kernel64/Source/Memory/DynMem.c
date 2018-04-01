@@ -309,10 +309,10 @@ static BYTE getFlagBitmap(int blockIdx, int offset) {
 }
 
 // 동적 메모리 영역 정보 반환
-void getDynMemInfo(QWORD *dynmemStartAddr, QWORD *dynmemTotalSize, QWORD *metaDataSize, QWORD *usedMemSize) {
-	*dynmemStartAddr = DYNMEM_START_ADDR;
-	*dynmemTotalSize = calcDynMemSize();
-	*metaDataSize = calcMetaBlockCnt(*dynmemTotalSize) * DYNMEM_MIN_SIZE;
+void getDynMemInfo(QWORD *dynMemStartAddr, QWORD *dynMemTotalSize, QWORD *metaDataSize, QWORD *usedMemSize) {
+	*dynMemStartAddr = DYNMEM_START_ADDR;
+	*dynMemTotalSize = calcDynMemSize();
+	*metaDataSize = calcMetaBlockCnt(*dynMemTotalSize) * DYNMEM_MIN_SIZE;
 	*usedMemSize = gs_dynMem.usedSize;
 }
 

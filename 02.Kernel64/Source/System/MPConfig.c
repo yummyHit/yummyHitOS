@@ -58,7 +58,7 @@ BOOL analysisMPConfig(void) {
 	MPCONFIGHEADER *head;
 	BYTE type;
 	WORD i;
-	PROCESSORENTRY *processorEntry;
+	PROCESSORENTRY *procEntry;
 	BUSENTRY *busEntry;
 
 	// 초기화
@@ -87,8 +87,8 @@ BOOL analysisMPConfig(void) {
 		switch(type) {
 		// 프로세서 엔트리면 프로세서 수 하나 증가
 		case MP_ENTRYTYPE_PROCESSOR:
-			processorEntry = (PROCESSORENTRY*)entryAddr;
-			if(processorEntry->cpuFlag & MP_CPUFLAG_ON) gs_mpConfigManager.processorCnt++;
+			procEntry = (PROCESSORENTRY*)entryAddr;
+			if(procEntry->cpuFlag & MP_CPUFLAG_ON) gs_mpConfigManager.procCnt++;
 			entryAddr += sizeof(PROCESSORENTRY);
 			break;
 		// 버스 엔트리면 ISA 버스인지 확인해 저장
@@ -120,7 +120,7 @@ void printMPConfig(void) {
 	QWORD ptrAddr, entryAddr;
 	MPFLOATINGPTR *ptr;
 	MPCONFIGHEADER *head;
-	PROCESSORENTRY *processorEntry;
+	PROCESSORENTRY *procEntry;
 	BUSENTRY *busEntry;
 	IOAPICENTRY *ioAPICEntry;
 	IOINTERRUPTENTRY *ioInterruptEntry;
@@ -145,7 +145,7 @@ void printMPConfig(void) {
 	printF("PIC Mode Support : %d\n", manager->usePICMode);
 	printF("MP Configuration Table Header Address : 0x%Q\n", manager->tblHeader);
 	printF("Base MP Configuration Table Entry Start Address : 0x%Q\n", manager->startAddr);
-	printF("Processor Count : %d\n", manager->processorCnt);
+	printF("Processor Count : %d\n", manager->procCnt);
 	printF("ISA Bus ID : %d\n", manager->isaBusID);
 
 	printF("Press any key to continue... ('q' is exit) : ");
@@ -213,19 +213,19 @@ void printMPConfig(void) {
 		switch(type) {
 		// 프로세스 엔트리 정보 출력
 		case MP_ENTRYTYPE_PROCESSOR:
-			processorEntry = (PROCESSORENTRY*)entryAddr;
+			procEntry = (PROCESSORENTRY*)entryAddr;
 			printF("Entry Type : Processor\n");
-			printF("Local APIC ID : %d\n", processorEntry->localAPICID);
-			printF("Local APIC Version : 0x%X\n", processorEntry->localAPICVersion);
-			printF("CPU Flags : 0x%X ", processorEntry->cpuFlag);
+			printF("Local APIC ID : %d\n", procEntry->localAPICID);
+			printF("Local APIC Version : 0x%X\n", procEntry->localAPICVersion);
+			printF("CPU Flags : 0x%X ", procEntry->cpuFlag);
 			// Enable, Disable
-			if(processorEntry->cpuFlag & MP_CPUFLAG_ON) printF("(Enable, ");
+			if(procEntry->cpuFlag & MP_CPUFLAG_ON) printF("(Enable, ");
 			else printF("(Disable, ");
 			// BSP, AP
-			if(processorEntry->cpuFlag & MP_CPUFLAG_BSP) printF("BSP)\n");
+			if(procEntry->cpuFlag & MP_CPUFLAG_BSP) printF("BSP)\n");
 			else printF("AP)\n");
-			printF("CPU Signature : 0x%X\n", processorEntry->cpuSign);
-			printF("Feature Flags : 0x%X\n\n", processorEntry->featureFlag);
+			printF("CPU Signature : 0x%X\n", procEntry->cpuSign);
+			printF("Feature Flags : 0x%X\n\n", procEntry->featureFlag);
 
 			// 프로세스 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(PROCESSORENTRY);
@@ -311,10 +311,10 @@ void printMPConfig(void) {
 }
 
 // 프로세서 또는 코어 개수 반환
-int getProcessorCnt(void) {
+int getProcCnt(void) {
 	// MP 설정 테이블이 없을 수도 있으니 0으로 설정되면 1 반환
-	if(gs_mpConfigManager.processorCnt == 0) return 1;
-	return gs_mpConfigManager.processorCnt;
+	if(gs_mpConfigManager.procCnt == 0) return 1;
+	return gs_mpConfigManager.procCnt;
 }
 
 IOAPICENTRY *findIO_APICEntry(void) {

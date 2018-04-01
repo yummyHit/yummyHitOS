@@ -507,20 +507,20 @@ static void csChangePriority(const char *buf) {
 
 // 현재 생성된 모든 태스크 정보 출력
 static void csTaskList(const char *buf) {
-	int i, cnt = 0, totalCnt = 0, len, processorCnt;
+	int i, cnt = 0, totalCnt = 0, len, procCnt;
 	char _buf[20];
 	TCB *tcb;
 
 	// 코어 수만큼 루프를 돌며 각 스케줄러에 있는 태스크 수 더함
-	processorCnt = getProcessorCnt();
+	procCnt = getProcCnt();
 
-	for(i = 0; i < processorCnt; i++) totalCnt += getTaskCnt(i);
+	for(i = 0; i < procCnt; i++) totalCnt += getTaskCnt(i);
 
 	printF("   ================== Task Total Count [%d] ===================\n", totalCnt);
 
 	// 코어가 두 개 이상이면 각 스케줄러별 개수 출력
-	if(processorCnt > 1) {
-		for(i = 0; i < processorCnt; i++) {
+	if(procCnt > 1) {
+		for(i = 0; i < procCnt; i++) {
 			if((i != 0) && ((i % 4) == 0)) printF("\n");
 			sprintF(_buf, "Core %d : %d", i, getTaskCnt(i));
 			printF(_buf);
@@ -610,9 +610,9 @@ static void csCPULoad(const char *buf) {
 	printF("   ====================== Processor Load ======================\n");
 
 	// 각 코어별 부하 출력
-	for(i = 0; i < getProcessorCnt(); i++) {
+	for(i = 0; i < getProcCnt(); i++) {
 		if((i != 0) && ((i % 4) == 0)) printF("\n");
-		sprintF(_buf, "Core %d : %d%%", i, getProcessorLoad(i));
+		sprintF(_buf, "Core %d : %d%%", i, getProcLoad(i));
 		printF("%s", _buf);
 
 		// 출력하고 남은 공간 모두 스페이스바로 채움
@@ -1787,7 +1787,7 @@ static void csInterruptProcCnt(const char *buf) {
 	printF("   ====================== Interrupt Count =====================\n");
 
 	// MP 설정 테이블에 저장된 코어 개수 읽음
-	procCnt = getProcessorCnt();
+	procCnt = getProcCnt();
 
 	// 프로세서 수만큼 Column 출력. 한 줄에 코어 4개씩 출력하고 한 Column당 15칸 할당
 	for(i = 0; i < procCnt; i++) {

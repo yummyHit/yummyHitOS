@@ -298,7 +298,7 @@ BOOL procEventData(void) {
 		// 윈도우 내부 영역 업데이트
 		case EVENT_WINDOWMANAGER_UPDATEBYWINAREA:
 			// 윈도우 기준 한 좌표를 화면 좌표로 반환해 업데이트
-			if(rectToMonitor(winEvent->id, &(winEvent->area), &area) == TRUE) updateWinArea(&area, winEvent->id);
+			if(rectToMon(winEvent->id, &(winEvent->area), &area) == TRUE) updateWinArea(&area, winEvent->id);
 			break;
 		// 화면 좌표로 전달된 영역 업데이트
 		case EVENT_WINDOWMANAGER_UPDATEBYMONAREA:

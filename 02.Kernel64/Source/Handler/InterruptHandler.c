@@ -65,7 +65,7 @@ void procLoadBalancing(int irq) {
 
 	// 코어 개수를 구해 루프를 수행하며 인터럽트 처리 횟수가 가장 작은 코어 선택
 	minCntIdx = 0;
-	coreCnt = getProcessorCnt();
+	coreCnt = getProcCnt();
 	for(i = 0; i < coreCnt; i++) {
 		if((gs_interruptManager.coreInterruptCnt[i][irq] < minCnt)) {
 			minCnt = gs_interruptManager.coreInterruptCnt[i][irq];
@@ -193,10 +193,10 @@ void timerHandler(int vecNum) {
 	if(_id == 0) g_tickCnt++;	// 타이머 발생 횟수 증가
 
 	// 태스크가 사용한 프로세서 시간 줄임
-	decProcessorTime(_id);
+	decProcTime(_id);
 
 	// 프로세서가 사용할 수 있는 시간을 다썼으면 태스크 전환 수행
-	if(isProcessorTime(_id) == TRUE) scheduleInterrupt();
+	if(isProcTime(_id) == TRUE) scheduleInterrupt();
 }
 
 // Device Not Available 예외 핸들러

@@ -247,7 +247,7 @@ static void freeWin(QWORD id);
 void initGUISystem(void);
 WINDOWMANAGER *getWinManager(void);
 QWORD getBackgroundID(void);
-void getMonitorArea(RECT *area);
+void getMonArea(RECT *area);
 QWORD createWin(int x, int y, int width, int height, DWORD flag, const char *title);
 BOOL delWin(QWORD id);
 BOOL delAllWin(QWORD id);
@@ -268,13 +268,13 @@ static BOOL updateWinTitle(QWORD id, BOOL select);
 
 BOOL getWinArea(QWORD id, RECT *area);
 BOOL monitorToPoint(QWORD id, const POINT *xy, POINT *xyWin);
-BOOL pointToMonitor(QWORD id, const POINT *xy, POINT *xyMon);
+BOOL pointToMon(QWORD id, const POINT *xy, POINT *xyMon);
 BOOL monitorToRect(QWORD id, const RECT *area, RECT *areaWin);
-BOOL rectToMonitor(QWORD id, const RECT *area, RECT *areaMon);
+BOOL rectToMon(QWORD id, const RECT *area, RECT *areaMon);
 
-BOOL updateMonitorID(QWORD id);
-BOOL updateMonitorWinArea(QWORD id, const RECT *area);
-BOOL updateMonitorArea(const RECT *area);
+BOOL updateMonID(QWORD id);
+BOOL updateMonWinArea(QWORD id, const RECT *area);
+BOOL updateMonArea(const RECT *area);
 
 BOOL eventToWin(QWORD id, const EVENT *event);
 BOOL winToEvent(QWORD id, EVENT *event);

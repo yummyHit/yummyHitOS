@@ -97,7 +97,7 @@ typedef struct mpConfigHeader {
 } MPCONFIGHEADER;
 
 // 프로세서 엔트리 자료구조
-typedef struct processorEntry {
+typedef struct procEntry {
 	// 엔트리 타입 코드, 0
 	BYTE entryType;
 	// 프로세서에 포함된 로컬 APIC ID
@@ -185,7 +185,7 @@ typedef struct mpConfigManager {
 	// 기본 MP 설정 테이블 엔트리 시작 주소
 	QWORD startAddr;
 	// 프로세서 또는 코어 수
-	int processorCnt;
+	int procCnt;
 	// PIC 모드 지원 여부
 	BOOL usePICMode;
 	// ISA 버스 ID
@@ -196,7 +196,7 @@ BOOL findFloatingAddress(QWORD *addr);
 BOOL analysisMPConfig(void);
 MPCONFIGMANAGER *getMPConfigManager(void);
 void printMPConfig(void);
-int getProcessorCnt(void);
+int getProcCnt(void);
 IOAPICENTRY *findIO_APICEntry(void);
 
 #endif /*__MPCONFIG_H__*/

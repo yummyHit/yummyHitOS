@@ -241,7 +241,7 @@ void initScheduler(void) {
 
 	// 프로세서 사용률 계산하는데 사용하는 자료구조 초기화
 	gs_scheduler[_id].loopIdleTask = 0;
-	gs_scheduler[_id].processorLoad = 0;
+	gs_scheduler[_id].procLoad = 0;
 
 	// FPU를 사용한 태스크 ID를 유효하지 않은 값으로 초기화
 	gs_scheduler[_id].lastFPU = TASK_INVALID_ID;
@@ -509,12 +509,12 @@ BOOL scheduleInterrupt(void) {
 }
 
 // 프로세서 사용할 수 있는 시간 하나 줄임
-void decProcessorTime(BYTE _id) {
+void decProcTime(BYTE _id) {
 	gs_scheduler[_id].time--;
 }
 
 // 프로세서 사용할 수 있는 시간이 다 되었는지 여부 반환
-BOOL isProcessorTime(BYTE _id) {
+BOOL isProcTime(BYTE _id) {
 	if(gs_scheduler[_id].time <= 0) return TRUE;
 	return FALSE;
 }
@@ -620,8 +620,8 @@ BOOL isTaskExist(QWORD id) {
 }
 
 // 프로세서 사용률 반환
-QWORD getProcessorLoad(BYTE _id) {
-	return gs_scheduler[_id].processorLoad;
+QWORD getProcLoad(BYTE _id) {
+	return gs_scheduler[_id].procLoad;
 }
 
 static TCB *getProcThread(TCB *thread) {
@@ -679,13 +679,13 @@ void addTaskLoadBalancing(TCB *task) {
 // 태스크를 추가할 스케줄러 ID 반환. 파라미터로 전달된 태스크 자료구조에 적어도 플래그와 프로세서 친화도 필드가 채워져 있어야 함
 static BYTE findSchedulerCnt(const TCB *task) {
 	BYTE priority, i, minIdx;
-	int nowCnt, minCnt, tmpCnt, processorCnt;
+	int nowCnt, minCnt, tmpCnt, procCnt;
 
 	// 코어 개수 확인
-	processorCnt = getProcessorCnt();
+	procCnt = getProcCnt();
 
 	// 코어가 하나면 현재 코어 계속 수행
-	if(processorCnt == 1) return task->_id;
+	if(procCnt == 1) return task->_id;
 
 	// 우선순위 추출
 	priority = GETPRIORITY(task->flag);
@@ -696,7 +696,7 @@ static BYTE findSchedulerCnt(const TCB *task) {
 	// 나머지 코어에서 현재 태스크와 같은 레벨 검사. 자신과 태스크 수가 적어도 2 이상 차이 나는 것 중 가장 태스크 수가 작은 스케줄러 ID 반환
 	minCnt = TASK_MAXCNT;
 	minIdx = task->_id;
-	for(i = 0; i < processorCnt; i++) {
+	for(i = 0; i < procCnt; i++) {
 		if(i == task->_id) continue;
 
 		// 모든 스케줄러를 돌며 확인
@@ -770,15 +770,15 @@ void idleTask(void) {
 		nowIdleTask = gs_scheduler[_id].loopIdleTask;
 
 		// 프로세서 사용량 계산(100 - 유휴 태스크가 사용한 프로세서 시간) * 100 / 시스템 전체에서 사용한 프로세서 시간)
-		if(nowTickCnt - lastTickCnt == 0) gs_scheduler[_id].processorLoad = 0;
-		else gs_scheduler[_id].processorLoad = 100 - (nowIdleTask - lastIdleTask) * 100 / (nowTickCnt - lastTickCnt);
+		if(nowTickCnt - lastTickCnt == 0) gs_scheduler[_id].procLoad = 0;
+		else gs_scheduler[_id].procLoad = 100 - (nowIdleTask - lastIdleTask) * 100 / (nowTickCnt - lastTickCnt);
 
 		// 현재 상태를 이전 상태에 보관
 		lastTickCnt = nowTickCnt;
 		lastIdleTask = nowIdleTask;
 
 		// 프로세서의 부하에 따라 쉬게 함
-		haltProcessor(_id);
+		haltProc(_id);
 
 		// 대기 큐에 대기 중인 태스크가 있으면 태스크 종료
 		if(getListCnt(&(gs_scheduler[_id].waitList)) > 0) {
@@ -854,12 +854,12 @@ void idleTask(void) {
 }
 
 // 측정된 프로세서 부하에 따라 프로세서를 쉬게 함
-void haltProcessor(BYTE _id) {
-	if(gs_scheduler[_id].processorLoad < 40) {
+void haltProc(BYTE _id) {
+	if(gs_scheduler[_id].procLoad < 40) {
 		_hlt(); _hlt(); _hlt();
-	} else if(gs_scheduler[_id].processorLoad < 80) {
+	} else if(gs_scheduler[_id].procLoad < 80) {
 		_hlt(); _hlt();
-	} else if(gs_scheduler[_id].processorLoad < 95) _hlt();
+	} else if(gs_scheduler[_id].procLoad < 95) _hlt();
 }
 
 // 마지막으로 FPU를 사용한 태스크 ID 반환

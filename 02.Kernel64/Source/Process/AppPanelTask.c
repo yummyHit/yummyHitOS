@@ -14,6 +14,7 @@
 APPENTRY gs_appTbl[] = {
 	{"Base GUI Task", baseGUITask},
 	{"First GUI Task", firstGUITask},
+	{"Monitoring Task", sysMonTask},
 	{"Exit", exitGUITask},
 };
 
@@ -126,7 +127,7 @@ static void drawDigitClock(QWORD id) {
 	drawText(id, updateArea.x1 + 4, updateArea.y1 + 3, RGB(102, 0, 255), APP_PANEL_COLOR_BACKGROUND, buf, strLen(buf));
 
 	// 시계 그려진 영역만 화면 업데이트
-	updateMonitorWinArea(id, &updateArea);
+	updateMonWinArea(id, &updateArea);
 }
 
 // 애플리케이션 패널에 수신된 이벤트 처리
@@ -160,7 +161,7 @@ static BOOL procAppPanelWinEvent(void) {
 			// 버튼이 떨어진 상태
 			if(gs_appPanelData.winShow == FALSE) {
 				drawBtn(panelID, &(gs_appPanelData.btnArea), APP_PANEL_COLOR_BACKGROUND, "Menu", RGB(102, 0, 255));
-				updateMonitorWinArea(panelID, &(gs_appPanelData.btnArea));
+				updateMonWinArea(panelID, &(gs_appPanelData.btnArea));
 
 				// 애플리케이션 리스트 윈도우에 아무것도 선택되지 않은 것으로 초기화하고 윈도우를 화면에 최상위로 표시
 				if(gs_appPanelData.preMouseIdx != -1) {
@@ -174,7 +175,7 @@ static BOOL procAppPanelWinEvent(void) {
 			} else {
 				// 버튼이 눌린 상태
 				drawBtn(panelID, &(gs_appPanelData.btnArea), APP_PANEL_COLOR_ACTIVE, "Menu", RGB(102, 0, 255));
-				updateMonitorWinArea(panelID, &(gs_appPanelData.btnArea));
+				updateMonWinArea(panelID, &(gs_appPanelData.btnArea));
 
 				// 애플리케이션 리스트 윈도우 숨김
 				showWin(listID, FALSE);
@@ -259,7 +260,7 @@ static void drawAppListItem(int idx, BOOL mouseOver) {
 	drawText(id, itemArea.x1 + 10, itemArea.y1 + 2, RGB(102, 0, 255), color, gs_appTbl[idx].name, strLen(gs_appTbl[idx].name));
 
 	// 업데이트된 아이템을 화면에 갱신
-	updateMonitorWinArea(id, &itemArea);
+	updateMonWinArea(id, &itemArea);
 }
 
 // 애플리케이션 리스트에 수신된 이벤트 처리

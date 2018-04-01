@@ -8,9 +8,9 @@
 #include <Win.h>
 #include <VBE.h>
 #include <CLITask.h>
-#include <Font.h>
 #include <DynMem.h>
 #include <Util.h>
+#include <Font.h>
 
 // GUI 시스템 관련 자료구조
 static WINDOWPOOLMANAGER gs_winPoolManager;
@@ -178,7 +178,7 @@ QWORD getBackgroundID(void) {
 }
 
 // 화면 영역 크기 반환
-void getMonitorArea(RECT *area) {
+void getMonArea(RECT *area) {
 	memCpy(area, &(gs_winManager.area), sizeof(RECT));
 }
 
@@ -249,7 +249,7 @@ QWORD createWin(int x, int y, int width, int height, DWORD flag, const char *tit
 	_unlock(&(gs_winManager.lock));
 
 	// 윈도우 영역만큼 화면에 업데이트하고 선택되었다는 이벤트 전송
-	updateMonitorID(win->link.id);
+	updateMonID(win->link.id);
 	setWinEvent(win->link.id, EVENT_WINDOW_SELECT, &event);
 	eventToWin(win->link.id, &event);
 
@@ -318,7 +318,7 @@ BOOL delWin(QWORD id) {
 	_unlock(&(gs_winManager.lock));
 
 	// 삭제되기 전에 윈도우가 있던 영역 화면에 업데이트
-	updateMonitorArea(&area);
+	updateMonArea(&area);
 
 	// 최상위 윈도우가 지워졌으면 현재 리스트에서 최상위에 있는 윈도우를 활성화하고 선택되었다는 윈도우 이벤트 전송
 	if(onWin == TRUE) {
@@ -412,10 +412,10 @@ BOOL showWin(QWORD id, BOOL show) {
 	_unlock(&(win->lock));
 
 	// 윈도우가 있던 영역을 다시 업데이트함으로 윈도우를 나타내거나 숨김
-	if(show == TRUE) updateMonitorID(id);
+	if(show == TRUE) updateMonID(id);
 	else {
 		getWinArea(id, &area);
-		updateMonitorArea(&area);
+		updateMonArea(&area);
 	}
 	return TRUE;
 }
@@ -721,10 +721,10 @@ BOOL moveWinTop(QWORD id) {
 			// 윈도우 제목 표시줄 선택 상태로 업데이트
 			updateWinTitle(id, TRUE);
 			area.y1 += WINDOW_TITLE_HEIGHT;
-			updateMonitorWinArea(id, &area);
+			updateMonWinArea(id, &area);
 		} else {
 			// 제목 표시줄 없으면 윈도우 영역 전체 업데이트
-			updateMonitorID(id);
+			updateMonID(id);
 		}
 
 		// 이전에 활성화 된 윈도우는 제목 표시줄을 비활성화로 만들고 선택 해제 이벤트 전송
@@ -790,10 +790,10 @@ BOOL moveWin(QWORD id, int x, int y) {
 	_unlock(&(win->lock));
 
 	// 이전 윈도우가 있던 화면 영역 업데이트
-	updateMonitorArea(&preArea);
+	updateMonArea(&preArea);
 
 	// 현재 윈도우 영역 화면 업데이트
-	updateMonitorID(id);
+	updateMonID(id);
 
 	// 윈도우 이동 메시지 전송
 	setWinEvent(id, EVENT_WINDOW_MOVE, &event);
@@ -821,7 +821,7 @@ static BOOL updateWinTitle(QWORD id, BOOL select) {
 		titleArea.y2 = WINDOW_TITLE_HEIGHT;
 
 		// 윈도우 영역만큼 화면에 업데이트
-		updateMonitorWinArea(id, &titleArea);
+		updateMonWinArea(id, &titleArea);
 		return TRUE;
 	}
 	return FALSE;
@@ -856,7 +856,7 @@ BOOL monitorToPoint(QWORD id, const POINT *xy, POINT *xyWin) {
 }
 
 // 윈도우 내부를 기준으로 X, Y좌표를 화면 좌표로 변환
-BOOL pointToMonitor(QWORD id, const POINT *xy, POINT *xyMon) {
+BOOL pointToMon(QWORD id, const POINT *xy, POINT *xyMon) {
 	RECT area;
 
 	// 윈도우 영역 반환
@@ -882,7 +882,7 @@ BOOL monitorToRect(QWORD id, const RECT *area, RECT *areaWin) {
 }
 
 // 윈도우 내부를 기준으로 사각형 좌표를 화면 좌표로 변환
-BOOL rectToMonitor(QWORD id, const RECT *area, RECT *areaMon) {
+BOOL rectToMon(QWORD id, const RECT *area, RECT *areaMon) {
 	RECT winArea;
 
 	// 윈도우 영역 반환
@@ -896,7 +896,7 @@ BOOL rectToMonitor(QWORD id, const RECT *area, RECT *areaMon) {
 }
 
 // 윈도우를 화면에 업데이트. 태스크에서 사용
-BOOL updateMonitorID(QWORD id) {
+BOOL updateMonID(QWORD id) {
 	EVENT event;
 	WINDOW *win;
 
@@ -913,7 +913,7 @@ BOOL updateMonitorID(QWORD id) {
 }
 
 // 윈도우 내부를 화면에 업데이트. 태스크에서 사용
-BOOL updateMonitorWinArea(QWORD id, const RECT *area) {
+BOOL updateMonWinArea(QWORD id, const RECT *area) {
 	EVENT event;
 	WINDOW *win;
 
@@ -931,7 +931,7 @@ BOOL updateMonitorWinArea(QWORD id, const RECT *area) {
 }
 
 // 화면 좌표로 화면 업데이트. 태스크에서 사용
-BOOL updateMonitorArea(const RECT *area) {
+BOOL updateMonArea(const RECT *area) {
 	EVENT event;
 
 	// 이벤트 자료구조 채움. 윈도우 ID와 화면 영역 저장

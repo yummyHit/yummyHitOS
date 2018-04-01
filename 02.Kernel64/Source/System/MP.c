@@ -99,7 +99,7 @@ static BOOL awakeAP(void) {
 	setInterruptFlag(interruptFlag);
 
 	// AP가 모두 깨어날 때까지 대기
-	while(g_awakeAPCnt < (manager->processorCnt - 1)) _sleep(50);
+	while(g_awakeAPCnt < (manager->procCnt - 1)) _sleep(50);
 
 	return TRUE;
 }

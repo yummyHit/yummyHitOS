@@ -171,7 +171,7 @@ typedef struct scheduler {
 	int exeCnt[TASK_MAXREADYCNT];
 
 	// 프로세서 부하를 계산하기 위한 자료구조
-	QWORD processorLoad;
+	QWORD procLoad;
 
 	// 유휴 태스크에서 사용한 프로세서 시간
 	QWORD loopIdleTask;
@@ -198,8 +198,8 @@ static TCB *getNextTask(BYTE _id);
 static BOOL addReadyList(BYTE _id, TCB *task);
 BOOL schedule(void);
 BOOL scheduleInterrupt(void);
-void decProcessorTime(BYTE _id);
-BOOL isProcessorTime(BYTE _id);
+void decProcTime(BYTE _id);
+BOOL isProcTime(BYTE _id);
 static TCB *delReadyList(BYTE _id, QWORD id);
 static BOOL findSchedulerLock(QWORD id, BYTE *_id);
 BOOL alterPriority(QWORD id, BYTE priority);
@@ -209,7 +209,7 @@ int getReadyCnt(BYTE _id);
 int getTaskCnt(BYTE _id);
 TCB *getTCB(int offset);
 BOOL isTaskExist(QWORD id);
-QWORD getProcessorLoad(BYTE _id);
+QWORD getProcLoad(BYTE _id);
 static TCB *getProcThread(TCB *thread);
 void addTaskLoadBalancing(TCB *task);
 static BYTE findSchedulerCnt(const TCB *task);
@@ -217,7 +217,7 @@ BYTE setTaskLoadBalancing(BYTE _id, BOOL isLoadbalancing);
 BOOL alterAffinity(QWORD id, BYTE affinity);
 
 void idleTask(void);
-void haltProcessor(BYTE _id);
+void haltProc(BYTE _id);
 
 QWORD getLastFPU(BYTE _id);
 void setLastFPU(BYTE _id, QWORD id);
