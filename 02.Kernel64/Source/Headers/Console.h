@@ -9,6 +9,9 @@
 #define __CONSOLE_H__
 
 #include <Types.h>
+#include <Synchronize.h>
+#include <Queue.h>
+#include <Keyboard.h>
 
 #pragma once
 // 매크로. 비디오 메모리 속성 값 설정
@@ -52,6 +55,9 @@
 #define VGA_INDEX_HIGHCURSOR	0x0E
 #define VGA_INDEX_LOWCURSOR	0x0F
 
+// 그래픽 모드에서 사용하는 키 큐에 저장할 수 있는 최대 수
+#define CONSOLE_GUIKEYQ_MAXCNT	100
+
 // 구조체, 1바이트로 정렬
 #pragma pack(push, 1)
 
@@ -59,6 +65,16 @@
 typedef struct csManager {
 	// 문자, 커서 출력 위치
 	int nowPrintOffset;
+
+	// 출력할 화면 버퍼 어드레스
+	CHARACTER *monBuf;
+
+	// 그래픽 모드에서 사용할 키 큐와 뮤텍스
+	QUEUE keyQForGUI;
+	MUTEX lock;
+
+	// 셸 태스크 종료할지 여부
+	volatile BOOL exit;
 } CONSOLEMANAGER;
 
 #pragma pack(pop)
@@ -72,5 +88,9 @@ void clearMonitor(void);
 void clearMatrix(void);
 BYTE getCh(void);
 void printXY(int x, int y, BYTE color, const char *str);
+CONSOLEMANAGER *getConsoleManager(void);
+BOOL rmGUIKeyQ(KEYDATA *data);
+BOOL addGUIKeyQ(KEYDATA *data);
+void setShellExitFlag(BOOL flag);
 
 #endif /*__CONSOLE_H__*/

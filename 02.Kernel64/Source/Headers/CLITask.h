@@ -5,8 +5,8 @@
  *      Author: Yummy
  */
 
-#ifndef __TASK_H__
-#define __TASK_H__
+#ifndef __CLITASK_H__
+#define __CLITASK_H__
 
 #include <Types.h>
 #include <List.h>
@@ -222,4 +222,4 @@ void haltProc(BYTE _id);
 QWORD getLastFPU(BYTE _id);
 void setLastFPU(BYTE _id, QWORD id);
 
-#endif /*__TASK_H__*/
+#endif /*__CLITASK_H__*/

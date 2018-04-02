@@ -38,4 +38,8 @@ void sysMonTask(void);
 static void drawProcInfo(QWORD winID, int x, int y, BYTE id);
 static void drawMemInfo(QWORD winID, int y, int winWidth);
 
+// GUI 콘솔 셸 태스크 함수
+void GUIShell(void);
+static void procConsoleBuf(QWORD winID);
+
 #endif /*__GUITASK_H__*/

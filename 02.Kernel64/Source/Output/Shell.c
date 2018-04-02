@@ -31,7 +31,8 @@ SHELLENTRY gs_cmdTable[] = {
 	{"clear", "### Clear mon ###", csClear},
 	{"tot_free", "### Show your total memory ###", csFree},
 	{"strConvert", "### String To Number(Decimal or HexaDecimal) ###", csStrConvert},
-	{"shutdown", "### Shutdown & Reboot ###", csHalt},
+	{"shutdown", "### Shutdown ###", csHalt},
+	{"reboot", "### Reboot ###", csReboot},
 	{"setTime", "### Set Timer. ex)setTime 10(ms) 1(term) ###", csSetTime},
 	{"wait", "### Wait a few millisecond. ex)wait 100(ms) ###", csWait},
 	{"rdtsc", "### Read Time Stamp Counter ###", csRTSC},
@@ -81,13 +82,20 @@ void startShell(void) {
 	int bufIdx = 0;
 	BYTE key;
 	int x, y;
+	CONSOLEMANAGER *csManager;
+
+	// 콘솔 관리 자료구조 반환
+	csManager = getConsoleManager();
 
 	// 프롬프트 출력
 	printF(SHELL_PROMPTMSG);
 
+	// 콘솔 셸 종료 플래그가 TRUE 일 때 까지 반복
 	while(1) {
 		// 키가 수신될 때까지 대기
 		key = getCh();
+
+		if(csManager->exit == TRUE) break;
 
 		// Backspace 키 처리
 		if(key == KEY_BACKSPACE) {
@@ -112,7 +120,7 @@ void startShell(void) {
 			bufIdx = 0;
 		} else if((key == KEY_LSHIFT) || (key == KEY_RSHIFT) || (key == KEY_CAPSLOCK) || (key == KEY_NUMLOCK) || (key == KEY_SCROLLLOCK)) {
 			;
-		} else {
+		} else if(key < 128) {
 			// TAB 외 특수 키 무시 및 TAB 키 공백으로 전환
 			if(key == KEY_TAB) key = ' ';
 
@@ -252,8 +260,18 @@ static void csStrConvert(const char *buf) {
 	}
 }
 
-// PC 재부팅
+// PC 종료
 static void csHalt(const char *buf) {
+	printF("Cache Flushing ...");
+	if(flushFileSystemCache() == TRUE) printF("[  Hit  ]\n");
+	else printF("[  Err  ]\n");
+	printF("Press any key on your keyboard for shutdown PC !\n");
+	getCh();
+	shutDown();
+}
+
+// PC 재부팅
+static void csReboot(const char *buf) {
 	printF("Cache Flushing ...");
 	if(flushFileSystemCache() == TRUE) printF("[  Hit  ]\n");
 	else printF("[  Err  ]\n");
@@ -713,7 +731,7 @@ static void dropMatrixChar(void) {
 			}
 		} else {
 			for(i = 0; i < CONSOLE_HEIGHT - 1; i++) {
-				txt[0] = i + _rand();
+				txt[0] = (i + _rand()) % 128;
 				printXY(x, i, 0x0A, txt);
 				_sleep(50);
 			}

@@ -55,6 +55,7 @@ static void csClear(const char *buf);
 static void csFree(const char *buf);
 static void csStrConvert(const char *buf);
 static void csHalt(const char *buf);
+static void csReboot(const char *buf);
 static void csSetTime(const char *buf);
 static void csWait(const char *buf);
 static void csRTSC(const char *buf);

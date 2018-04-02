@@ -9,6 +9,9 @@
 #include <Win.h>
 #include <Font.h>
 #include <MP.h>
+#include <Console.h>
+#include <CLITask.h>
+#include <Shell.h>
 
 // 기본 GUI 태스크
 void baseGUITask(void) {
@@ -471,4 +474,154 @@ static void drawMemInfo(QWORD winID, int y, int winWidth) {
 	// 메모리 정보가 표시된 영역만 화면 업데이트
 	setRectData(0, y, winWidth, y + SYSMON_MEMORY_HEIGHT, &area);
 	updateMonWinArea(winID, &area);
+}
+
+// 이전 화면 버퍼 값 보관 영역
+static CHARACTER gs_preMonBuf[CONSOLE_WIDTH * CONSOLE_HEIGHT];
+
+// GUI 버전 콘솔 셸 태스크
+void GUIShell(void) {
+	static QWORD winID = WINDOW_INVALID_ID;
+	int winWidth, winHeight;
+	EVENT recvEvent;
+	KEYEVENT *keyEvent;
+	RECT monArea;
+	KEYDATA keyData;
+	TCB *shellTask;
+	QWORD taskID;
+
+	// 그래픽 모드 판단
+	if(isGUIMode() == FALSE) {
+		printF("It is GUI Task. You must execute GUI Mode.\n");
+		return;
+	}
+
+	// GUI 콘솔 셸 윈도우가 존재하면 생성된 윈도우를 최상위로 만들고 태스크 종료
+	if(winID != WINDOW_INVALID_ID) {
+		moveWinTop(winID);
+		return;
+	}
+
+	// 윈도우 생성
+	// 전체 화면 영역 크기 반환
+	getMonArea(&monArea);
+
+	// 윈도우 크기 설정, 화면 버퍼에 들어가는 문자 최대 너비와 높이를 고려해 계산
+	winWidth = CONSOLE_WIDTH * FONT_ENG_WIDTH + 4;
+	winHeight = CONSOLE_HEIGHT * FONT_ENG_HEIGHT + WINDOW_TITLE_HEIGHT + 2;
+
+	// 윈도우 생성 함수 호출, 화면 가운데 생성
+	winID = createWin((monArea.x2 - winWidth) / 2, (monArea.y2 - winHeight) / 2, winWidth, winHeight, WINDOW_FLAGS_DEFAULT, "YummyHit Terminal");
+	// 생성 못하면 실패
+	if(winID == WINDOW_INVALID_ID) return;
+
+	// 셸 커맨드 처리하는 콘솔 셸 태스크 생성
+	setShellExitFlag(FALSE);
+	shellTask = createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)startShell, TASK_LOADBALANCING_ID);
+	if(shellTask == NULL) {
+		// 콘솔 셸 태스크 생성에 실패하면 윈도우 삭제 후 종료
+		delWin(winID);
+		return;
+	}
+	// 콘솔 셸 태스크 ID 저장
+	taskID = shellTask->link.id;
+
+	// 이전 화면 버퍼 초기화
+	memSet(gs_preMonBuf, 0xFF, sizeof(gs_preMonBuf));
+
+	// GUI 태스크 이벤트 처리 루프
+	while(1) {
+		// 화면 버퍼의 변경된 내용을 윈도우에 업데이트
+		procConsoleBuf(winID);
+
+		// 이벤트 큐에서 이벤트 수신
+		if(winToEvent(winID, &recvEvent) == FALSE) {
+			_sleep(0);
+			continue;
+		}
+
+		// 수신된 이벤트를 타입에 따라 처리
+		switch(recvEvent.type) {
+			// 키 이벤트 처리
+			case EVENT_KEY_DOWN:
+			case EVENT_KEY_UP:
+				// 키보드 이벤트 처리 코드
+				keyEvent = &(recvEvent.keyEvent);
+				keyData.ascii = keyEvent->ascii;
+				keyData.flag = keyEvent->flag;
+				keyData.scanCode = keyEvent->scanCode;
+
+				// 키를 그래픽 모드용 키 큐로 삽입해 셸 태스크 입력으로 전달
+				addGUIKeyQ(&keyData);
+				break;
+			// 윈도우 이벤트 처리
+			case EVENT_WINDOW_CLOSE:
+				// 생성한 셸 태스크가 종료되도록 종료 플래그 설정 후 종료될 때까지 대기
+				setShellExitFlag(TRUE);
+				while(isTaskExist(taskID) == TRUE) _sleep(1);
+
+				// 윈도우 삭제 후 윈도우 ID 초기화
+				delWin(winID);
+				winID = WINDOW_INVALID_ID;
+				return;
+
+				break;
+
+				// 그 외 정보
+			default:
+				// 알 수 없는 이벤트 처리 코드
+				break;
+			}
+		}
+}
+
+// 화면 버퍼 변경된 내용 GUI 콘솔 셸 윈도우 화면 업데이트
+static void procConsoleBuf(QWORD winID) {
+	int i, j;
+	CONSOLEMANAGER *manager;
+	CHARACTER *monBuf, *ls_preMonBuf;
+	RECT lineArea;
+	BOOL changed, fullUpdate;
+	static QWORD lastTickCnt = 0;
+
+	// 콘솔 관리하는 자료구조 반환 받아 화면 버퍼 어드레스 저장 후 이전 화면 버퍼 어드레스 저장
+	manager = getConsoleManager();
+	monBuf = manager->monBuf;
+	ls_preMonBuf = gs_preMonBuf;
+
+	// 화면 전체 업데이트한 지 5초 지나면 무조건 화면 전체 다시 그림
+	if(getTickCnt() - lastTickCnt > 5000) {
+		lastTickCnt = getTickCnt();
+		fullUpdate = TRUE;
+	} else fullUpdate = FALSE;
+
+	// 화면 버퍼 높이만큼 반복
+	for(j = 0; j < CONSOLE_HEIGHT; j++) {
+		// 처음엔 변경되지 않은 것으로 플래그 설정
+		changed = FALSE;
+
+		// 현재 라인에 변화가 있는지 비교 후 변경 여부 플래그 처리
+		for(i = 0; i < CONSOLE_WIDTH; i++) {
+			// 문자 비교 후 다르거나 전체를 새로 그려야 하면 이전 화면 버퍼에 업데이트 후 변경 여부 플래그 설정
+			if((monBuf->character != ls_preMonBuf->character) || (fullUpdate == TRUE)) {
+				// 문자 화면에 출력
+				drawText(winID, i * FONT_ENG_WIDTH + 2, j * FONT_ENG_HEIGHT + WINDOW_TITLE_HEIGHT, RGB(0, 255, 0), RGB(0, 0, 0), &(monBuf->character), 1);
+
+				// 이전 화면 버퍼로 값을 옮겨 놓고 현재 라인에 이전과 다른 데이터 표시 
+				memCpy(ls_preMonBuf, monBuf, sizeof(CHARACTER));
+				changed = TRUE;
+			}
+
+			monBuf++;
+			ls_preMonBuf++;
+		}
+
+		// 현재 라인에서 변경된 데이터가 있다면 현재 라인만 화면 업데이트
+		if(changed == TRUE) {
+			// 현재 라인 영역 계산
+			setRectData(2, j * FONT_ENG_HEIGHT + WINDOW_TITLE_HEIGHT, 5 + FONT_ENG_WIDTH * CONSOLE_WIDTH, (j + 1) * FONT_ENG_HEIGHT + WINDOW_TITLE_HEIGHT - 1, &lineArea);
+			// 윈도우 일부만 화면 업데이트
+			updateMonWinArea(winID, &lineArea);
+		}
+	}
 }
