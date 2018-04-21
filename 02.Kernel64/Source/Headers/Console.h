@@ -93,4 +93,6 @@ BOOL rmGUIKeyQ(KEYDATA *data);
 BOOL addGUIKeyQ(KEYDATA *data);
 void setShellExitFlag(BOOL flag);
 
+void yummy_ascii_art(const char *buf);
+
 #endif /*__CONSOLE_H__*/

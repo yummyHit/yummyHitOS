@@ -12,6 +12,9 @@
 #include <Console.h>
 #include <CLITask.h>
 #include <Shell.h>
+#include <FileSystem.h>
+#include <JPEG.h>
+#include <DynMem.h>
 
 // 기본 GUI 태스크
 void baseGUITask(void) {
@@ -571,8 +574,8 @@ void GUIShell(void) {
 			default:
 				// 알 수 없는 이벤트 처리 코드
 				break;
-			}
 		}
+	}
 }
 
 // 화면 버퍼 변경된 내용 GUI 콘솔 셸 윈도우 화면 업데이트
@@ -624,4 +627,299 @@ static void procConsoleBuf(QWORD winID) {
 			updateMonWinArea(winID, &lineArea);
 		}
 	}
+}
+
+// 이미지 뷰어 태스크
+void imgViewTask(void) {
+	QWORD winID;
+	int xMouse, yMouse, winWidth, winHeight, editBoxWidth, fileNameLen;
+	RECT editBoxArea, btnArea, monArea;
+	EVENT recvEvent, sendEvent;
+	char fileName[FILESYSTEM_FILENAME_MAXLEN + 1];
+	MOUSEEVENT *mouseEvent;
+	KEYEVENT *keyEvent;
+	POINT monXY, xy;
+
+	// 그래픽 모드로 시작했는지 확인
+	if(isGUIMode() == FALSE) {
+		printF("It is GUI Task. You must execute GUI Mode.\n");
+		return;
+	}
+
+	// 윈도우 생성. 전체 화면 영역 크기 반환
+	getMonArea(&monArea);
+
+	// 윈도우 크기 설정, 화면 버퍼에 들어가는 문자 최대 너비와 높이 고려
+	winWidth = FONT_ENG_WIDTH * FILESYSTEM_FILENAME_MAXLEN + 165;
+	winHeight = 35 + WINDOW_TITLE_HEIGHT + 5;
+
+	// 윈도우 생성 함수 호출, 화면 가운데 생성
+	winID = createWin((monArea.x2 - winWidth) / 2, (monArea.y2 - winHeight) / 2, winWidth, winHeight, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, "JPEG Viewer");
+	if(winID == WINDOW_INVALID_ID) return;		// 윈도우 생성 못하면 실패
+
+	// 파일 이름 입력 에디트 박스 표시
+	drawText(winID, 5, WINDOW_TITLE_HEIGHT + 6, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, "File Name", 9);
+	editBoxWidth = FONT_ENG_WIDTH * FILESYSTEM_FILENAME_MAXLEN + 4;
+	setRectData(85, WINDOW_TITLE_HEIGHT + 5, 85 + editBoxWidth, WINDOW_TITLE_HEIGHT + 25, &editBoxArea);
+	drawRect(winID, editBoxArea.x1, editBoxArea.y1, editBoxArea.x2, editBoxArea.y2, RGB(0, 0, 0), FALSE);
+
+	// 파일 이름 버퍼 비운 후 에디트 박스에 빈 파일 이름 표시
+	fileNameLen = 0;
+	memSet(fileName, 0, sizeof(fileName));
+	drawFileName(winID, &editBoxArea, fileName, fileNameLen);
+
+	// 이미지 출력 버튼 영역 지정
+	setRectData(editBoxArea.x2 + 10, editBoxArea.y1, editBoxArea.x2 + 70, editBoxArea.y2, &btnArea);
+	drawBtn(winID, &btnArea, WINDOW_COLOR_BACKGROUND, "Show", RGB(102, 102, 255));
+
+	// 윈도우 표시
+	showWin(winID, TRUE);
+
+	// GUI 태스크의 이벤트 처리 루프
+	while(1) {
+		// 이벤트 큐에서 이벤트 수신
+		if(winToEvent(winID, &recvEvent) == FALSE) {
+			_sleep(0);
+			continue;
+		}
+
+		// 수신된 이벤트를 타입에 따라 나누어 처리
+		switch(recvEvent.type) {
+			// 마우스 이벤트 처리
+			case EVENT_MOUSE_LCLICK_ON:
+				mouseEvent = &(recvEvent.mouseEvent);
+
+				// 마우스 왼쪽 버튼이 이미지 출력 버튼 위에서 눌러지면 저장된 파일 이름을 이용해 이미지 화면에 표시
+				if(isInRect(&btnArea, mouseEvent->point.x, mouseEvent->point.y) == TRUE) {
+					// 버튼을 눌린 것으로 표시
+					drawBtn(winID, &btnArea, RGB(255, 255, 135), "Show", RGB(102, 102, 255));
+					// 버튼이 있는 영역만 화면 업데이트
+					updateMonWinArea(winID, &btnArea);
+
+					// 이미지 출력 윈도우 생성 후 이벤트 처리
+					if(createImgOnWinExe(winID, fileName) == FALSE) _sleep(200);	// 윈도우 생성 실패시 버튼이 눌러졌다가 떨어지는 효과를 위해 200ms 대기 
+
+					// 버튼 떨어진 것으로 표시
+					drawBtn(winID, &btnArea, WINDOW_COLOR_BACKGROUND, "Show", RGB(102, 102, 255));
+					// 버튼이 있는 영역만 화면 업데이트
+					updateMonWinArea(winID, &btnArea);
+				}
+				break;
+
+			// 키 이벤트 처리
+			case EVENT_KEY_DOWN:
+				keyEvent = &(recvEvent.keyEvent);
+
+				// 백스페이스 키는 삽입된 문자 삭제
+				if((keyEvent->ascii == KEY_BACKSPACE) && (fileNameLen > 0)) {
+					// 버퍼에 삽입된 마지막 문자 삭제
+					fileName[fileNameLen] = '\0';
+					fileNameLen--;
+
+					// 입력된 내용 에디트 박스에 표시
+					drawFileName(winID, &editBoxArea, fileName, fileNameLen);
+				} else if((keyEvent->ascii == KEY_ENTER) && (fileNameLen > 0)) {	// 엔터 키는 이미지 출력 버튼 눌린 것으로 처리
+					// 버튼 XY 좌표를 화면 좌표로 변환해 마우스 이벤트 좌표로 사용
+					xy.x = btnArea.x1 + 1;
+					xy.y = btnArea.y1 + 1;
+					pointToMon(winID, &xy, &monXY);
+
+					// 이미지 출력 버튼에 마우스 왼쪽 버튼이 눌린 것처럼 마우스 이벤트 전송
+					setMouseEvent(winID, EVENT_MOUSE_LCLICK_ON, monXY.x + 1, monXY.y + 1, 0, &sendEvent);
+					eventToWin(winID, &sendEvent);
+				} else if(keyEvent->ascii == KEY_ESC) {		// ESC 키는 윈도우 닫힘 버튼이 눌린 것으로 처리
+					// 윈도우 닫기 이벤트 윈도우로 전송
+					setWinEvent(winID, EVENT_WINDOW_CLOSE, &sendEvent);
+					eventToWin(winID, &sendEvent);
+				} else if((keyEvent->ascii <= 128) && (keyEvent->ascii != KEY_BACKSPACE) && (fileNameLen < FILESYSTEM_FILENAME_MAXLEN)) {
+					// 그 외 키는 파일 이름 버퍼에 공간 있을 때 버퍼에 삽입. 입력된 키 파일 이름 버퍼 마지막에 삽입
+					fileName[fileNameLen] = keyEvent->ascii;
+					fileNameLen++;
+
+					// 입력된 내용 에디트 박스에 표시
+					drawFileName(winID, &editBoxArea, fileName, fileNameLen);
+				}
+				break;
+
+			// 윈도우 이벤트 처리
+			case EVENT_WINDOW_CLOSE:
+				if(recvEvent.type == EVENT_WINDOW_CLOSE) {
+					// 윈도우 삭제
+					delWin(winID);
+					return;
+				}
+				break;
+
+			// 그 외 정보
+			default:
+				// 알 수 없는 이벤트 처리 코드 삽입
+				break;
+		}
+	}
+}
+
+// 에디트 박스 영역에 문자 출력
+static void drawFileName(QWORD winID, RECT *area, char *fileName, int len) {
+	// 에디트 박스 배경 모두 흰색
+	drawRect(winID, area->x1 + 1, area->y1 + 1, area->x2 - 1, area->y2 - 1, WINDOW_COLOR_BACKGROUND, TRUE);
+
+	// 파일 이름 출력
+	drawText(winID, area->x1 + 2, area->y1 + 2, RGB(102, 102, 255), WINDOW_COLOR_BACKGROUND, fileName, len);
+
+	// 파일 이름 길이가 파일 시스템 최대 길이가 아니면 커서 출력
+	if(len < FILESYSTEM_FILENAME_MAXLEN) drawText(winID, area->x1 + 2 + FONT_ENG_WIDTH * len, area->y1 + 2, RGB(102, 102, 255), WINDOW_COLOR_BACKGROUND, "_", 1);
+
+	// 에디트 박스 영역만 화면 업데이트
+	updateMonWinArea(winID, area);
+}
+
+// JPEG 파일 읽어 새로 생성한 윈도우에 표시 후 이벤트 처리
+static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName) {
+	DIR *dir;
+	struct dirent *entry;
+	DWORD fileSize;
+	RECT monArea;
+	QWORD winID;
+	WINDOW *win;
+	BYTE *fileBuf;
+	COLOR *outBuf;
+	int winWidth;
+	FILE *fp;
+	JPEG *jpg;
+	EVENT recvEvent;
+	KEYEVENT *keyEvent;
+
+	// initialize
+	fp = NULL;
+	fileBuf = NULL;
+	outBuf = NULL;
+	winID = WINDOW_INVALID_ID;
+
+	// 루트 디렉터리를 열어 파일 검색
+	dir = dopen("/");
+	fileSize = 0;
+
+	// 디렉터리에서 파일 검색
+	while(1) {
+		// 디렉터리에서 엔트리 읽음
+		entry = dread(dir);
+		// 더 이상 파일이 없으면 break
+		if(entry == NULL) break;
+
+		// 파일 이름 길이와 내용이 같은 것 검색
+		if((strLen(entry->d_name) == strLen(fileName)) && (memCmp(entry->d_name, fileName, strLen(fileName)) == 0)) {
+			fileSize = entry->size;
+			break;
+		}
+	}
+	// 디렉터리 핸들 반환. 핸들이 반환되지 않으면 메모리가 해제되지 않고 남으므로 꼭 해제해야 함.
+	dclose(dir);
+
+	if(fileSize == 0) {
+		printF("[JPEG Viewer] %s file doesn't exist or size is zero\n", fileName);
+		return FALSE;
+	}
+
+	// 파일 읽은 후 이미지 디코딩
+	fp = fopen(fileName, "rb");
+	if(fp == NULL) {
+		printF("[JPEG Viewer] %s file open fail\n", fileName);
+		return FALSE;
+	}
+
+	// 메모리를 파일 크기만큼 할당 후 JPEG 자료구조 할당
+	fileBuf = (BYTE*)allocMem(fileSize);
+	jpg = (JPEG*)allocMem(sizeof(JPEG));
+	if((fileBuf == NULL) || (jpg == NULL)) {
+		printF("[JPEG Viewer] Buffer allocation fail\n");
+		freeMem(fileBuf);
+		freeMem(jpg);
+		fclose(fp);
+		return FALSE;
+	}
+
+	// 파일 읽은 후JPEG 파일 포맷 확인
+	if((fread(fileBuf, 1, fileSize, fp) != fileSize) || (jpgInit(jpg, fileBuf, fileSize) == FALSE)) {
+		printF("[JPEG Viewer] Read fail or file is not JPEG format\n");
+		freeMem(fileBuf);
+		freeMem(jpg);
+		fclose(fp);
+		return FALSE;
+	}
+
+	// 디코드 결과 출력용 버퍼 생성
+	outBuf = allocMem(jpg->width * jpg->height * sizeof(COLOR));
+
+	// 디코드를 수행한 후 정상 처리시 윈도우 생성
+	if((outBuf != NULL) && (jpgDecode(jpg, outBuf) == TRUE)) {
+		// 전체 화면 영역 크기 반환
+		getMonArea(&monArea);
+		// 윈도우 생성, 이미지 크기와 제목 표시줄 크기 고려
+		winID = createWin((monArea.x2 - jpg->width) / 2, (monArea.y2 - jpg->height) / 2, jpg->width, jpg->height + WINDOW_TITLE_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, fileName);
+	}
+
+	// 윈도우 생성 실패 또는 출력 버퍼 할당 또는 디코딩 실패시 종료
+	if((winID == WINDOW_INVALID_ID) || (outBuf == NULL)) {
+		printF("[JPEG Viewer] Window create fail or output buffer allocation fail\n");
+		freeMem(fileBuf);
+		freeMem(jpg);
+		freeMem(outBuf);
+		delWin(winID);
+		return FALSE;
+	}
+
+	// 윈도우 너비로 제목 표시줄 영역 제외 나머지 화면 버퍼 영역 디코딩된 이미지 복사
+	win = findWinLock(winID);
+	if(win != NULL) {
+		winWidth = getRectWidth(&(win->area));
+		memCpy(win->winBuf + (WINDOW_TITLE_HEIGHT * winWidth), outBuf, jpg->width * jpg->height * sizeof(COLOR));
+
+		_unlock(&(win->lock));
+	}
+
+	// 파일 버퍼 해제 후 윈도우 화면에 표시
+	freeMem(fileBuf);
+	freeMem(jpg);
+	freeMem(outBuf);
+	showWin(winID, TRUE);
+
+	// ESC 키와 윈도우 닫기 버튼 처리 이벤트 루프. 정상적으로 윈도우 생성하여 표시했으면 파일 이름 입력 윈도우 숨김
+	showWin(mainWinID, FALSE);
+
+	while(1) {
+		// 이벤트 큐에서 이벤트 수신
+		if(winToEvent(winID, &recvEvent) == FALSE) {
+			_sleep(0);
+			continue;
+		}
+
+		// 수신된 이벤트 타입에 따라 처리
+		switch(recvEvent.type) {
+			// 키 이벤트 처리
+			case EVENT_KEY_DOWN:
+				keyEvent = &(recvEvent.keyEvent);
+				// ESC 키가 눌리면 그림을 표시하는 윈도우 삭제 후 파일 이름 입력 윈도우 표시 후 종료
+				if(keyEvent->ascii == KEY_ESC) {
+					delWin(winID);
+					showWin(mainWinID, TRUE);
+					return TRUE;
+				}
+				break;
+
+			// 윈도우 이벤트 처리
+			case EVENT_WINDOW_CLOSE:
+				// 닫기 버튼 눌리면 이미지 출력 윈도우 삭제 후 파일 이름 입력 윈도우 표시 후 종료
+				if(recvEvent.type == EVENT_WINDOW_CLOSE) {
+					delWin(winID);
+					showWin(mainWinID, TRUE);
+					return TRUE;
+				}
+				break;
+
+			default:
+				// 그 외 알 수 없는 이벤트 처리 코드 구현
+				break;
+		}
+	}
+	return TRUE;
 }

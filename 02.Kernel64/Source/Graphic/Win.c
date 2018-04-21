@@ -11,6 +11,7 @@
 #include <DynMem.h>
 #include <Util.h>
 #include <Font.h>
+#include <JPEG.h>
 
 // GUI 시스템 관련 자료구조
 static WINDOWPOOLMANAGER gs_winPoolManager;
@@ -163,6 +164,10 @@ void initGUISystem(void) {
 	gs_winManager.backgroundID = id;
 	// 배경 윈도우 내부에 배경색 채움
 	drawRect(id, 0, 0, mode->xPixel - 1, mode->yPixel - 1, WINDOW_COLOR_SYSTEM_BACKGROUND, TRUE);
+
+	// 배경 화면 이미지 표시
+	drawBackgroundImg();
+
 	// 배경 윈도우를 화면에 나타냄
 	showWin(id, TRUE);
 }
@@ -1566,4 +1571,103 @@ BOOL isBitmapFin(const DRAWBITMAP *bitmap) {
 	for(i = 0; i < idx; i++) if(*tmp & (0x01 << i)) return FALSE;
 
 	return TRUE;
+}
+
+// 윈도우 화면 버퍼에 버퍼 내용 한 번에 전송. X, Y좌표는 윈도우 내부 버퍼 기준
+BOOL bitBlt(QWORD winID, int x, int y, COLOR *buf, int width, int height) {
+	WINDOW *win;
+	RECT winArea, bufArea, crossArea;
+	int winWidth, crossWidth, crossHeight, i, j, winPosition, bufPosition, startX, startY;
+
+	// 윈도우 검색 동기화 처리
+	win = findWinLock(winID);
+	if(win == NULL) return FALSE;
+
+	// 윈도우 시작 좌표를 0,0 으로 하는 윈도우 기준 좌표로 영역 반환
+	setRectData(0, 0, win->area.x2 - win->area.x1, win->area.y2 - win->area.y1, &winArea);
+
+	// 버퍼 영역 좌표 설정
+	setRectData(x, y, x + width - 1, y + height - 1, &bufArea);
+
+	// 윈도우 역역과 버퍼 영역 겹치는 좌표 계산
+	if(getRectCross(&winArea, &bufArea, &crossArea) == FALSE) {
+		_unlock(&win->lock);
+		return FALSE;
+	}
+
+	// 윈도우 영역과 겹치는 영역 너비, 높이 계산
+	winWidth = getRectWidth(&winArea);
+	crossWidth = getRectWidth(&crossArea);
+	crossHeight = getRectHeight(&crossArea);
+
+	// 이미지 출력 시작 위치 결정. 윈도우 시작 좌표 기준 출력 시작 좌표가 음수면 버퍼 이미지를 그만큼 cut
+	if(x < 0) startX = x;
+	else startX = 0;
+
+	if(y < 0) startY = y;
+	else startY = 0;
+
+	// 너비, 높이 계산
+	for(j = 0; j < crossHeight; j++) {
+		// 화면 버퍼와 전송 버퍼 시작 오프셋 계산
+		winPosition = (winWidth * (crossArea.y1 + j)) + crossArea.x1;
+		bufPosition = (width * j + startY) + startX;
+
+		// 한 줄씩 복사
+		memCpy(win->winBuf + winPosition, buf + bufPosition, crossWidth * sizeof(COLOR));
+	}
+
+	// 동기화 처리
+	_unlock(&win->lock);
+	return TRUE;
+}
+
+// 배경 화면 이미지 파일 저장된 데이터 버퍼와 버퍼 크기
+extern unsigned char g_img[0];
+extern unsigned int g_img_size;
+
+// 배경 화면 윈도우에 배경 화면 이미지 출력
+void drawBackgroundImg(void) {
+	JPEG *jpg;
+	COLOR *outBuf;
+	WINDOWMANAGER *winManager;
+	int i, j, midX, midY, monWidth, monHeight;
+
+	// 윈도우 매니저 반환
+	winManager = getWinManager();
+
+	// JPEG 자료구조 할당
+	jpg = (JPEG*)allocMem(sizeof(JPEG));
+
+	// JPEG 초기화
+	if(jpgInit(jpg, g_img, g_img_size) == FALSE) return;
+
+	// 디코딩할 메모리 할당
+	outBuf = (COLOR*)allocMem(jpg->width * jpg->height * sizeof(COLOR));
+	if(outBuf == NULL) {
+		freeMem(jpg);
+		return;
+	}
+
+	// 디코딩 처리
+	if(jpgDecode(jpg, outBuf) == FALSE) {
+		// 디코딩 실패시 할당받은 버퍼 모두 반환
+		freeMem(outBuf);
+		freeMem(jpg);
+		return;
+	}
+
+	// 디코딩 된 이미지 윈도우 화면 가운데 표시
+	monWidth = getRectWidth(&(winManager->area));
+	monHeight = getRectHeight(&(winManager->area));
+
+	midX = (monWidth - jpg->width) / 2;
+	midY = (monHeight - jpg->height) / 2;
+
+	// 메모리에서 메모리로 한꺼번에 복사
+	bitBlt(winManager->backgroundID, midX, midY, outBuf, jpg->width, jpg->height);
+
+	// 할당받았던 버퍼 모두 반환
+	freeMem(outBuf);
+	freeMem(jpg);
 }

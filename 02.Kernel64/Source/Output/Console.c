@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <Console.h>
 #include <Keyboard.h>
+#include <FileSystem.h>
 
 // 콘솔의 정보를 관리하는 자료구조
 CONSOLEMANAGER gs_csManager = {0,};
@@ -260,4 +261,20 @@ BOOL addGUIKeyQ(KEYDATA *data) {
 // 콘솔 셸 태스크 종료 플래그 설정
 void setShellExitFlag(BOOL flag) {
 	gs_csManager.exit = flag;
+}
+
+// YummyHitOS ascii art
+void yummy_ascii_art(const char *buf) {
+	FILE *fp;
+	BYTE key;
+
+	// 파일 생성
+	fp = fopen(buf, "r");
+
+	// 파일 끝까지 출력하는 것 반복
+	while(1) {
+		if(fread(&key, 1, 1, fp) != 1) break;
+		printF("%c", key);
+	}
+	fclose(fp);
 }

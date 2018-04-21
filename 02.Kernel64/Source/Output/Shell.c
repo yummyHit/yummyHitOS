@@ -31,6 +31,7 @@ SHELLENTRY gs_cmdTable[] = {
 	{"clear", "### Clear mon ###", csClear},
 	{"tot_free", "### Show your total memory ###", csFree},
 	{"strConvert", "### String To Number(Decimal or HexaDecimal) ###", csStrConvert},
+	{"exit", "### EXIT ###", csExit},
 	{"shutdown", "### Shutdown ###", csHalt},
 	{"reboot", "### Reboot ###", csReboot},
 	{"setTime", "### Set Timer. ex)setTime 10(ms) 1(term) ###", csSetTime},
@@ -258,6 +259,19 @@ static void csStrConvert(const char *buf) {
 		}
 		cnt++;
 	}
+}
+
+// Shell 종료
+static void csExit(const char *buf) {
+	// 그래픽 모드 판단
+	if(isGUIMode() == FALSE) {
+		printF("It is GUI Task. You must execute GUI Mode.\n");
+		return;
+	}
+	printF("Cache Flushing ...");
+	if(flushFileSystemCache() == TRUE) printF("[  Hit  ]\n");
+	else printF("[  Err  ]\n");
+//	setShellExitFlag(TRUE);		// how to exit GUI terminal? not OS only terminal!
 }
 
 // PC 종료
@@ -1120,7 +1134,7 @@ static void csMakeFile(const char *buf) {
 	initParam(&list, buf);
 	len = getNextParam(&list, name);
 	name[len] = '\0';
-	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+	if((len > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (len == 0)) {
 		printF("Too Long or Too Short File Name\n");
 		return;
 	}
@@ -1145,7 +1159,7 @@ static void csRemoveFile(const char *buf) {
 	len = getNextParam(&list, name);
 	name[len] = '\0';
 
-	if((len > (FILESYSTEM_MAXFILENAMELEN -1)) || (len == 0)) {
+	if((len > (FILESYSTEM_FILENAME_MAXLEN -1)) || (len == 0)) {
 		printF("Too Long or Too Short File Name\n");
 		return;
 	}
@@ -1247,7 +1261,7 @@ static void csFileWrite(const char *buf) {
 	initParam(&list, buf);
 	len = getNextParam(&list, name);
 	name[len] = '\0';
-	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+	if((len > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (len == 0)) {
 		printF("Too Long or Too Short File Name\n");
 		return;
 	}
@@ -1290,7 +1304,7 @@ static void csFileRead(const char *buf) {
 	initParam(&list, buf);
 	len = getNextParam(&list, name);
 	name[len] = '\0';
-	if((len > (FILESYSTEM_MAXFILENAMELEN - 1)) || (len == 0)) {
+	if((len > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (len == 0)) {
 		printF("Too Long or Too Short File Name\n");
 		return;
 	}
@@ -1632,7 +1646,7 @@ static void csDownload(const char *buf) {
 	initParam(&list, buf);
 	nameLen = getNextParam(&list, name);
 	name[nameLen] = '\0';
-	if((nameLen > (FILESYSTEM_MAXFILENAMELEN - 1)) || (nameLen == 0)) {
+	if((nameLen > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (nameLen == 0)) {
 		printF("Too Long or Too Short File Name\n");
 		printF("ex)download a.txt\n");
 		return;

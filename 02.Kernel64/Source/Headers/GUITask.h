@@ -9,6 +9,7 @@
 #define __GUITASK_H__
 
 #include <Types.h>
+#include <Win.h>
 
 #pragma once
 
@@ -41,5 +42,10 @@ static void drawMemInfo(QWORD winID, int y, int winWidth);
 // GUI 콘솔 셸 태스크 함수
 void GUIShell(void);
 static void procConsoleBuf(QWORD winID);
+
+// 이미지 뷰어 태스크 함수
+void imgViewTask(void);
+static void drawFileName(QWORD winID, RECT *area, char *fileName, int len);
+static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName);
 
 #endif /*__GUITASK_H__*/

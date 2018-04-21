@@ -15,6 +15,7 @@ APPENTRY gs_appTbl[] = {
 	{"Base GUI Task", baseGUITask},
 	{"First GUI Task", firstGUITask},
 	{"Monitoring Task", sysMonTask},
+	{"JPEG Viewer Task", imgViewTask},
 	{"YummyHit Terminal", GUIShell},
 	{"Exit", exitGUITask},
 };

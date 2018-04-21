@@ -302,4 +302,7 @@ static BOOL fillBitmap(DRAWBITMAP *bitmap, RECT *area, BOOL fill);
 inline BOOL getStartBitmap(const DRAWBITMAP *bitmap, int x, int y, int *byteOffset, int *bitOffset);
 inline BOOL isBitmapFin(const DRAWBITMAP *bitmap);
 
+BOOL bitBlt(QWORD winID, int x, int y, COLOR *buf, int width, int height);
+void drawBackgroundImg(void);
+
 #endif /*__WIN_H__*/

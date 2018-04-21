@@ -29,7 +29,6 @@
 void forAP(void);
 BOOL multiCoreMode(void);
 //void startGUI();
-void yummy_ascii_art(const char *buf);
 
 // BSP용 C언어 커널 엔트리 포인트, 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
@@ -212,19 +211,4 @@ BOOL multiCoreMode(void) {
 	for(i = 0; i < MAXPROCESSORCNT; i++) setTaskLoadBalancing(i, TRUE);
 
 	return TRUE;
-}
-
-void yummy_ascii_art(const char *buf) {
-	FILE *fp;
-	BYTE key;
-
-	// 파일 생성
-	fp = fopen(buf, "r");
-
-	// 파일 끝까지 출력하는 것 반복
-	while(1) {
-		if(fread(&key, 1, 1, fp) != 1) break;
-		printF("%c", key);
-	}
-	fclose(fp);
 }

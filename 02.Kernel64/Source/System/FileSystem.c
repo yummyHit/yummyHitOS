@@ -16,7 +16,7 @@
 // 파일 시스템 자료구조
 static FILESYSTEMMANAGER gs_fileSystemManager;
 // 파일 시스템 임시 버퍼
-static BYTE gs_tmpBuf[FILESYSTEM_PERSECTOR * 512];
+static BYTE gs_tmpBuf[FILESYSTEM_PER_SECTOR * 512];
 
 // 하드 디스크 제어 관련 함수 포인터 선언
 _readHDDInfo gs_readHDDInfo = NULL;
@@ -130,7 +130,7 @@ BOOL _format(void) {
 	totalSectorCnt = hdd->totalSector;
 
 	// 전체 섹터 수를 4KB, 클러스터 크기로 나눠 최대 클러스터 수 계산
-	maxClusterCnt = totalSectorCnt / FILESYSTEM_PERSECTOR;
+	maxClusterCnt = totalSectorCnt / FILESYSTEM_PER_SECTOR;
 
 	// 최대 클러스터 수에 맞춰 링크 테이블 섹터 수 계산. 링크 데이터는 4바이터이니 한 섹터에 128개 들어감.
 	// 총 개수를 128로 나눈 후 올림하여 클러스터 링크 섹터 수 구함
@@ -139,7 +139,7 @@ BOOL _format(void) {
 	// 예약된 영역은 현재 사용하지 않으니 디스크 전체 영역에서 MBR 영역과 클러스터 링크 테이블 영역 크기를 뺀 나머지가
 	// 실제 데이터 영역. 해당 영역을 클러스터 크기로 나눠 실제 클러스터 개수 구함
 	remainSectorCnt = totalSectorCnt - linkSectorCnt - 1;
-	clusterCnt = remainSectorCnt / FILESYSTEM_PERSECTOR;
+	clusterCnt = remainSectorCnt / FILESYSTEM_PER_SECTOR;
 
 	// 실제 사용 가능한 클러스터 수에 맞춰 다시 한 번 계산
 	linkSectorCnt = (clusterCnt + 127) / 128;
@@ -168,7 +168,7 @@ BOOL _format(void) {
 
 	// MBR 이후부터 루트 디렉터리까지 모두 0으로 초기화
 	memSet(gs_tmpBuf, 0, 512);
-	for(i = 0; i < (linkSectorCnt + FILESYSTEM_PERSECTOR); i++) {
+	for(i = 0; i < (linkSectorCnt + FILESYSTEM_PER_SECTOR); i++) {
 		// 루트 디렉터리(클러스터 0)는 이미 파일시스템이 사용중이니 할당된 것으로 표시
 		if(i == 0) ((DWORD*)(gs_tmpBuf))[0] = FILESYSTEM_LAST_CLUSTER;
 		else ((DWORD*)(gs_tmpBuf))[0] = FILESYSTEM_FREE_CLUSTER;
@@ -347,7 +347,7 @@ static BOOL readDataArea(DWORD offset, BYTE *buf) {
 // 데이터 영역 오프셋에서 한 클러스터 읽음, 내부적으로 사용하며 캐시 미사용
 static BOOL inReadDataNonCache(DWORD offset, BYTE *buf) {
 	// 데이터 영역 시작 어드레스 더함
-	return gs_readHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PERSECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PERSECTOR, buf);
+	return gs_readHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PER_SECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PER_SECTOR, buf);
 }
 
 // 데이터 영역 오프셋세엇 한 클러스터 읽음, 내부적으로 사용하며 캐시 사용
@@ -389,7 +389,7 @@ static BOOL writeDataArea(DWORD offset, BYTE *buf) {
 // 데이터 영역 오프셋에 한 클러스터 씀, 내부적으로 사용하며 캐시 미사용
 static BOOL inWriteDataNonCache(DWORD offset, BYTE *buf) {
 	// 데이터 영역 시작 어드레스 더함
-	return gs_writeHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PERSECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PERSECTOR, buf);
+	return gs_writeHDDSector(TRUE, TRUE, (offset * FILESYSTEM_PER_SECTOR) + gs_fileSystemManager.dataStartAddr, FILESYSTEM_PER_SECTOR, buf);
 }
 
 // 데이터 영역 오프셋에 한 클러스터 씀, 내부적으로 사용하며 캐시 사용
@@ -510,7 +510,7 @@ static int findFreeDirEntry(void) {
 
 	// 루트 디렉터리 내 루프를 돌며 빈 엔트리, 즉 시작 클러스터 번호가 0인 엔트리 검색
 	entry = (DIRENTRY*)gs_tmpBuf;
-	for(i = 0; i < FILESYSTEM_MAXDIRENTRYCNT; i++) if(entry[i].startClusterIdx == 0) return i;
+	for(i = 0; i < FILESYSTEM_MAXDIR_ENTRYCNT; i++) if(entry[i].startClusterIdx == 0) return i;
 
 	return -1;
 }
@@ -520,7 +520,7 @@ static BOOL setDirEntry(int idx, DIRENTRY *entry) {
 	DIRENTRY *root;
 
 	// 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
-	if((gs_fileSystemManager.mnt == FALSE) || (idx < 0) || (idx >= FILESYSTEM_MAXDIRENTRYCNT)) return FALSE;
+	if((gs_fileSystemManager.mnt == FALSE) || (idx < 0) || (idx >= FILESYSTEM_MAXDIR_ENTRYCNT)) return FALSE;
 
 	// 루트 디렉터리 읽음
 	if(readDataArea(0, gs_tmpBuf) == FALSE) return FALSE;
@@ -539,7 +539,7 @@ static BOOL getDirEntry(int idx, DIRENTRY *entry) {
 	DIRENTRY *root;
 
 	// 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
-	if((gs_fileSystemManager.mnt == FALSE) || (idx < 0) || (idx >= FILESYSTEM_MAXDIRENTRYCNT)) return FALSE;
+	if((gs_fileSystemManager.mnt == FALSE) || (idx < 0) || (idx >= FILESYSTEM_MAXDIR_ENTRYCNT)) return FALSE;
 
 	// 루트 디렉터리 읽음
 	if(readDataArea(0, gs_tmpBuf) == FALSE) return FALSE;
@@ -564,7 +564,7 @@ static int findDirEntry(const char *name, DIRENTRY *entry) {
 	len = strLen(name);
 	// 루트 디렉터리 안에서 루프 돌며 파일 이름이 일치하는 엔트리 반환
 	root = (DIRENTRY*)gs_tmpBuf;
-	for(i = 0; i < FILESYSTEM_MAXDIRENTRYCNT; i++) if(memCmp(root[i].fileName, name, len) == 0) {
+	for(i = 0; i < FILESYSTEM_MAXDIR_ENTRYCNT; i++) if(memCmp(root[i].fileName, name, len) == 0) {
 		memCpy(entry, root + i, sizeof(DIRENTRY));
 		return i;
 	}
@@ -1134,14 +1134,14 @@ struct directoryEntry *dirRead(DIR *dir) {
 	handle = &(dir->dirHandle);
 
 	// 오프셋 범위가 클러스터에 존재하는 최댓값 넘으면 실패
-	if((handle->nowOffset < 0) || (handle->nowOffset >= FILESYSTEM_MAXDIRENTRYCNT)) return NULL;
+	if((handle->nowOffset < 0) || (handle->nowOffset >= FILESYSTEM_MAXDIR_ENTRYCNT)) return NULL;
 
 	// 동기화 처리
 	_lock(&(gs_fileSystemManager.mut));
 
 	// 루트 디렉터리에 있는 최대 디렉터리 엔트리 개수만큼 검색
 	entry = handle->dirBuf;
-	while(handle->nowOffset < FILESYSTEM_MAXDIRENTRYCNT) {
+	while(handle->nowOffset < FILESYSTEM_MAXDIR_ENTRYCNT) {
 		// 파일이 존재하면 해당 디렉터리 엔트리 반환
 		if(entry[handle->nowOffset].startClusterIdx != 0) {
 			// 동기화 처리

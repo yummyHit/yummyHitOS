@@ -18,21 +18,21 @@
 // 매크로와 함수 포인터
 #define FILESYSTEM_SIGN			0x7E38CF10
 // 클러스터 크기(섹터 수), 4KB
-#define FILESYSTEM_PERSECTOR		8
+#define FILESYSTEM_PER_SECTOR		8
 // 파일 클러스터 마지막 표시
 #define FILESYSTEM_LAST_CLUSTER		0xFFFFFFFF
 // 빈 클러스터 표시
 #define FILESYSTEM_FREE_CLUSTER		0x00
 // 루트 디렉터리에 있는 최대 디렉터리 엔트리 수
-#define FILESYSTEM_MAXDIRENTRYCNT	((FILESYSTEM_PERSECTOR * 512) / sizeof(DIRENTRY))
+#define FILESYSTEM_MAXDIR_ENTRYCNT	((FILESYSTEM_PER_SECTOR * 512) / sizeof(DIRENTRY))
 // 클러스터 크기(바이트 수)
-#define FILESYSTEM_CLUSTER_SIZE		(FILESYSTEM_PERSECTOR * 512)
+#define FILESYSTEM_CLUSTER_SIZE		(FILESYSTEM_PER_SECTOR * 512)
 
 // 핸들의 최대 개수, 최대 태스크 수 3배로 생성
 #define FILESYSTEM_HANDLE_MAXCNT	(TASK_MAXCNT * 3)
 
 // 파일 이름의 최대 길이
-#define FILESYSTEM_MAXFILENAMELEN	24
+#define FILESYSTEM_FILENAME_MAXLEN	24
 
 // 핸들 타입 정의
 #define FILESYSTEM_TYPE_FREE		0
@@ -114,7 +114,7 @@ typedef struct mbr {
 // 디렉터리 엔트리 자료구조
 typedef struct directoryEntry {
 	// 파일 이름
-	char fileName[FILESYSTEM_MAXFILENAMELEN];
+	char fileName[FILESYSTEM_FILENAME_MAXLEN];
 	// 파일 실제 크기
 	DWORD size;
 	// 파일이 시작하는 클러스터 인덱스

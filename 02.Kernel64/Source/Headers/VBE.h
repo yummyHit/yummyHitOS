@@ -43,7 +43,7 @@ typedef struct vbeModeInfo {
 	BYTE bankNum;			// 뱅크 수
 	BYTE memModel;			// 비디오 메모리 모델
 	BYTE bankSize;			// 뱅크의 크기(KB)
-	BYTE imagePageNum;		// 이미지 페이지 개수
+	BYTE imgPageNum;		// 이미지 페이지 개수
 	BYTE _reserved;			// 페이지 기능을 위해 예약된 영역
 
 	// 다이렉트 컬러에 관련된 필드
@@ -64,8 +64,8 @@ typedef struct vbeModeInfo {
 
 	// VBE 버전 3.0 이상 공통 부분
 	WORD linearPerByteNum;		// 선형 프레임 버퍼 모드의 화면 스캔 라인당 바이트 수
-	BYTE imagePageBankNum;		// 뱅크 모드일 때 이미지 페이지 수
-	BYTE imagePageLinearNum;	// 선형 프레임 버퍼 모드일 때 이미지 페이지 수
+	BYTE imgPageBankNum;		// 뱅크 모드일 때 이미지 페이지 수
+	BYTE imgPageLinearNum;	// 선형 프레임 버퍼 모드일 때 이미지 페이지 수
 
 	// 선형 프레임 버퍼 모드일 때 다이렉트 컬러에 관련된 필드
 	BYTE linearRedMaskSize;		// 빨간색 필드가 차지하는 크기
