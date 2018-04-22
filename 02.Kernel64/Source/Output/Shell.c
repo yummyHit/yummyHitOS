@@ -1240,7 +1240,7 @@ static void csRootDir(const char *buf) {
 
 	// 총 파일 개수와 파일 총 크기 출력
 	printF("\t\tTotal File Count: %d\n", totalCnt);
-	printF("\t\tTotal File Size: %d KByte (%d Cluster)\n", totalByte, usedClusterCnt);
+	printF("\t\tTotal File Size: %d Byte (%d Cluster)\n", totalByte, usedClusterCnt);
 
 	// 남은 클러스터 수를 이용해 여유 공간 출력
 	printF("\t\tFree Space: %d KByte (%d Cluster)\n", (manager.totalClusterCnt - usedClusterCnt) * FILESYSTEM_CLUSTER_SIZE / 1024, manager.totalClusterCnt - usedClusterCnt);

@@ -41,6 +41,10 @@
 #define WINDOW_TITLE_HEIGHT		21
 // 윈도우 닫기 버튼 크기
 #define WINDOW_XBTN_SIZE		19
+// 윈도우 최소 너비, 버튼 2개 너비에 30픽셀 여유 공간 확보
+#define WINDOW_WIDTH_MIN		(WINDOW_XBTN_SIZE * 2 + 30)
+// 윈도우 최소 높이, 제목 표시줄 높이에 30픽셀 여유 공간 확보
+#define WINDOW_HEIGHT_MIN		(WINDOW_TITLE_HEIGHT + 30)
 
 // 윈도우 색깔
 #define WINDOW_COLOR_FRAME		RGB(102, 102, 255)
@@ -228,6 +232,11 @@ typedef struct windowManager {
 	QWORD moveID;
 	BOOL moveMode;
 
+	// 윈도우 크기 변경 모드 및 ID, 윈도우 영역
+	BOOL resizeMode;
+	QWORD resizeID;
+	RECT resizeArea;
+
 	// 화면 업데이트용 비트맵 버퍼 어드레스
 	BYTE *bitmap;
 } WINDOWMANAGER;
@@ -263,6 +272,8 @@ QWORD getTopWin(void);
 BOOL moveWinTop(QWORD id);
 BOOL isInTitle(QWORD id, int x, int y);
 BOOL isCloseBtn(QWORD id, int x, int y);
+BOOL resizeWin(QWORD id, int x, int y, int width, int height);
+BOOL isResizeBtn(QWORD id, int x, int y);
 BOOL moveWin(QWORD id, int x, int y);
 static BOOL updateWinTitle(QWORD id, BOOL select);
 

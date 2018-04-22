@@ -39,7 +39,7 @@ void baseGUITask(void) {
 	height = 200;
 
 	// 윈도우 생성 함수 호출, 마우스가 있던 위치를 기준으로 생성
-	id = createWin(xMouse - 10, yMouse - WINDOW_TITLE_HEIGHT / 2, width, height, WINDOW_FLAGS_DEFAULT, "YummyHitOS Window");
+	id = createWin(xMouse - 10, yMouse - WINDOW_TITLE_HEIGHT / 2, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, "YummyHitOS Window");
 	// 윈도우 생성 못하면 실패
 	if(id == WINDOW_INVALID_ID) return;
 
@@ -788,6 +788,7 @@ static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName) {
 	JPEG *jpg;
 	EVENT recvEvent;
 	KEYEVENT *keyEvent;
+	BOOL exit;
 
 	// initialize
 	fp = NULL;
@@ -855,7 +856,7 @@ static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName) {
 		// 전체 화면 영역 크기 반환
 		getMonArea(&monArea);
 		// 윈도우 생성, 이미지 크기와 제목 표시줄 크기 고려
-		winID = createWin((monArea.x2 - jpg->width) / 2, (monArea.y2 - jpg->height) / 2, jpg->width, jpg->height + WINDOW_TITLE_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW, fileName);
+		winID = createWin((monArea.x2 - jpg->width) / 2, (monArea.y2 - jpg->height) / 2, jpg->width, jpg->height + WINDOW_TITLE_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_RESIZABLE, fileName);
 	}
 
 	// 윈도우 생성 실패 또는 출력 버퍼 할당 또는 디코딩 실패시 종료
@@ -879,14 +880,13 @@ static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName) {
 
 	// 파일 버퍼 해제 후 윈도우 화면에 표시
 	freeMem(fileBuf);
-	freeMem(jpg);
-	freeMem(outBuf);
 	showWin(winID, TRUE);
 
 	// ESC 키와 윈도우 닫기 버튼 처리 이벤트 루프. 정상적으로 윈도우 생성하여 표시했으면 파일 이름 입력 윈도우 숨김
 	showWin(mainWinID, FALSE);
 
-	while(1) {
+	exit = FALSE;
+	while(exit == FALSE) {
 		// 이벤트 큐에서 이벤트 수신
 		if(winToEvent(winID, &recvEvent) == FALSE) {
 			_sleep(0);
@@ -902,17 +902,25 @@ static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName) {
 				if(keyEvent->ascii == KEY_ESC) {
 					delWin(winID);
 					showWin(mainWinID, TRUE);
-					return TRUE;
+					exit = TRUE;
 				}
 				break;
 
-			// 윈도우 이벤트 처리
+			// 윈도우 크기 변경 이벤트 처리
+			case EVENT_WINDOW_RESIZE:
+				// 변경된 윈도우에 디코딩 된 이미지 전송
+				bitBlt(winID, 0, WINDOW_TITLE_HEIGHT, outBuf, jpg->width, jpg->height);
+				// 윈도우를 한 번 더 표시해 윈도우 내부에 전송된 이미지 업데이트
+				showWin(winID, TRUE);
+				break;
+
+			// 윈도우 닫기 이벤트 처리
 			case EVENT_WINDOW_CLOSE:
 				// 닫기 버튼 눌리면 이미지 출력 윈도우 삭제 후 파일 이름 입력 윈도우 표시 후 종료
 				if(recvEvent.type == EVENT_WINDOW_CLOSE) {
 					delWin(winID);
 					showWin(mainWinID, TRUE);
-					return TRUE;
+					exit = TRUE;
 				}
 				break;
 
@@ -921,5 +929,9 @@ static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName) {
 				break;
 		}
 	}
+
+	freeMem(jpg);
+	freeMem(outBuf);
+
 	return TRUE;
 }

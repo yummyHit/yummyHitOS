@@ -9,5 +9,5 @@
 
 #With Hard Disk Image, And Use Serial Port. It doesn't use gdb option.
 #qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -hda ~/yummyHitOS/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 16
-#qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -hda ~/yummyHitOS/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 16 -device isa-debug-exit,iobase=0xf4,iosize=0x04
-qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -hda ~/yummyHitOS/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 2 -device isa-debug-exit,iobase=0xf4,iosize=0x04
+qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -hda ~/yummyHitOS/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 16 -device isa-debug-exit,iobase=0xf4,iosize=0x04
+#qemu-system-x86_64 -L . -m 64 -fda ~/yummyHitOS/Disk.img -hda ~/yummyHitOS/HDD.img -boot a -localtime -M pc -serial tcp::7777,server,nowait -smp 2 -device isa-debug-exit,iobase=0xf4,iosize=0x04

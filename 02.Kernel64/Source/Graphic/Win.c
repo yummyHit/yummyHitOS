@@ -159,6 +159,11 @@ void initGUISystem(void) {
 	gs_winManager.moveMode = FALSE;
 	gs_winManager.moveID = WINDOW_INVALID_ID;
 
+	// 윈도우 크기 변경 정보 초기화
+	gs_winManager.resizeMode = FALSE;
+	gs_winManager.resizeID = WINDOW_INVALID_ID;
+	memSet(&(gs_winManager.resizeArea), 0, sizeof(RECT));
+
 	// 배경 윈도우 생성. 플래그에 0을 넘겨 화면에 윈도우를 그리지 않도록 함. 배경 윈도우는 윈도우 내 배경색을 모두 칠한 뒤 나타냄
 	id = createWin(0, 0, mode->xPixel, mode->yPixel, 0, WINDOW_BACKGROUND_TITLE);
 	gs_winManager.backgroundID = id;
@@ -200,6 +205,12 @@ QWORD createWin(int x, int y, int width, int height, DWORD flag, const char *tit
 	// 윈도우 자료구조 할당
 	win = allocWin();
 	if(win == NULL) return WINDOW_INVALID_ID;
+
+	// 윈도우에 제목 표시줄이 있으면 버튼 표시 자리를 주어야 함
+	if(flag & WINDOW_FLAGS_DRAWTITLE) {
+		if(width < WINDOW_WIDTH_MIN) width = WINDOW_WIDTH_MIN;
+		if(height < WINDOW_HEIGHT_MIN) height = WINDOW_HEIGHT_MIN;
+	}
 
 	// 윈도우 영역 설정
 	win->area.x1 = x;
@@ -772,6 +783,82 @@ BOOL isCloseBtn(QWORD id, int x, int y) {
 	return FALSE;
 }
 
+// 윈도우 크기 변경
+BOOL resizeWin(QWORD id, int x, int y, int width, int height) {
+	WINDOW *win;
+	COLOR *new, *old;
+	RECT preArea;
+
+	// 윈도우 검색과 동기화 처리
+	win = findWinLock(id);
+	if(win == NULL) return FALSE;
+
+	// 윈도우에 제목 표시줄 있으면 버튼 표시 자리가 있어야 함
+	if(win->flag & WINDOW_FLAGS_DRAWTITLE) {
+		if(width < WINDOW_WIDTH_MIN) width = WINDOW_WIDTH_MIN;
+		if(height < WINDOW_HEIGHT_MIN) height = WINDOW_HEIGHT_MIN;
+	}
+
+	// 새로운 크기 화면 버퍼 할당
+	new = (COLOR*)allocMem(width * height * sizeof(COLOR));
+	if(new == NULL) {
+		// 메모리 할당 실패 시 종료
+		_unlock(&(win->lock));
+		return FALSE;
+	}
+
+	// 새로운 화면 버퍼 설정 후 이전 버퍼 해제
+	old = win->winBuf;
+	win->winBuf = new;
+	freeMem(old);
+
+	// 윈도우 크기 정보 저장 후 새로운 크기로 변경
+	memCpy(&preArea, &(win->area), sizeof(RECT));
+	win->area.x1 = x;
+	win->area.y1 = y;
+	win->area.x2 = x + width - 1;
+	win->area.y2 = y + height - 1;
+
+	// 윈도우 배경 그리기
+	drawWinBackground(id);
+
+	// 윈도우 테두리 그리기
+	if(win->flag & WINDOW_FLAGS_DRAWFRAME) drawWinFrame(id);
+
+	// 윈도우 제목 표시줄 그리기
+	if(win->flag & WINDOW_FLAGS_DRAWTITLE) drawWinTitle(id, win->title, TRUE);
+
+	// 동기화 처리
+	_unlock(&(win->lock));
+
+	// 윈도우 화면에 표시하는 속성 있으면 업데이트
+	if(win->flag & WINDOW_FLAGS_SHOW) {
+		// 이전 윈도우 영역 다시 그림
+		updateMonArea(&preArea);
+
+		// 새로운 영역 다시 그림
+		showWin(id, TRUE);
+	}
+
+	return TRUE;
+}
+
+// X, Y좌표가 윈도우 크기 변경 버튼 위에 있는지 반환
+BOOL isResizeBtn(QWORD id, int x, int y) {
+	WINDOW *win;
+
+	// 윈도우 검색
+	win = getWin(id);
+
+	// 윈도우 또는 제목 표시줄이 없거나 크기 변경 속성 없으면 빠져나옴
+	if((win == NULL) || ((win->flag & WINDOW_FLAGS_DRAWTITLE) == 0) || ((win->flag & WINDOW_FLAGS_RESIZABLE) == 0)) return FALSE;
+
+	// 좌표가 윈도우 크기 변경 버튼 영역에 있는지 비교
+	if(((win->area.x2 - (WINDOW_XBTN_SIZE * 2) - 2) <= x) && (x <= (win->area.x2 - WINDOW_XBTN_SIZE - 2)) && ((win->area.y1 + 1) <= y) && (y <= (win->area.y1 + 1 + WINDOW_XBTN_SIZE))) return TRUE;
+
+	return FALSE;
+}
+
 // 윈도우를 해당 위치로 이동
 BOOL moveWin(QWORD id, int x, int y) {
 	WINDOW *win;
@@ -1207,6 +1294,42 @@ BOOL drawWinTitle(QWORD id, const char *title, BOOL select) {
 
 	// 동기화 처리
 	_unlock(&(win->lock));
+
+	// 윈도우 크기 변경 버튼 그리기
+	if(win->flag & WINDOW_FLAGS_RESIZABLE) {
+		// 크기 변경 버튼 그림.
+		btnArea.x1 = width - (WINDOW_XBTN_SIZE * 2) - 2;
+		btnArea.y1 = 1;
+		btnArea.x2 = width - WINDOW_XBTN_SIZE - 2;
+		btnArea.y2 = WINDOW_XBTN_SIZE - 1;
+		drawBtn(id, &btnArea, WINDOW_COLOR_BACKGROUND, "", WINDOW_COLOR_BACKGROUND);
+
+		// 윈도우 검색과 동기화 처리
+		win = findWinLock(id);
+		if(win == NULL) return FALSE;
+
+		// 크기 변경 버튼 내부에 대각선 화살표 3픽셀로 그림
+		// 가운데 선
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 4, btnArea.y2 - 4, btnArea.x2 - 5, btnArea.y1 + 3, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 4, btnArea.y2 - 3, btnArea.x2 - 4, btnArea.y1 + 3, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 5, btnArea.y2 - 3, btnArea.x2 - 4, btnArea.y1 + 4, WINDOW_COLOR_XLINE);
+
+		// 오른쪽 위 화살표
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 9, btnArea.y1 + 3, btnArea.x2 - 4, btnArea.y1 + 3, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 9, btnArea.y1 + 4, btnArea.x2 - 4, btnArea.y1 + 4, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x2 - 4, btnArea.y1 + 5, btnArea.x2 - 4, btnArea.y1 + 9, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x2 - 5, btnArea.y1 + 5, btnArea.x2 - 5, btnArea.y1 + 9, WINDOW_COLOR_XLINE);
+
+		// 왼쪽 아래 화살표
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 4, btnArea.y1 + 8, btnArea.x1 + 4, btnArea.y2 - 3, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 5, btnArea.y1 + 8, btnArea.x1 + 5, btnArea.y2 - 3, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 6, btnArea.y2 - 4, btnArea.x1 + 10, btnArea.y2 - 4, WINDOW_COLOR_XLINE);
+		inDrawLine(&area, win->winBuf, btnArea.x1 + 6, btnArea.y2 - 3, btnArea.x1 + 10, btnArea.y2 - 3, WINDOW_COLOR_XLINE);
+
+		// 동기화 처리
+		_unlock(&(win->lock));
+	}
+
 	return TRUE;
 }
 
