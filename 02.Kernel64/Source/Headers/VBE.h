@@ -83,6 +83,6 @@ typedef struct vbeModeInfo {
 
 #pragma pack(pop)
 
-inline VBEMODEINFO *getVBEModeInfo(void);
+inline VBEMODEINFO *kGetVBEModeInfo(void);
 
 #endif

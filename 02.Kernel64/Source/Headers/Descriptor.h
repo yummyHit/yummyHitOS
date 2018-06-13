@@ -27,8 +27,10 @@
 #define GDT_FLAGS_UPPER_G	0x80
 
 // 실제로 사용할 매크로, Lower Flags는 Code|Data|TSS, DPL0, Present로 설정
+// Kernel Level Code & Data segment descriptor
 #define GDT_FLAGS_LOWER_KERNELCODE ( GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_LOWER_KERNELDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
+// User Level Code & Data segment descriptor
 #define GDT_FLAGS_LOWER_USERCODE ( GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL3 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_LOWER_USERDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL3 | GDT_FLAGS_LOWER_P )
 
@@ -39,9 +41,11 @@
 #define GDT_FLAGS_UPPER_TSS ( GDT_FLAGS_UPPER_G )
 
 // 세그먼트 디스크립터 오프셋
-#define GDT_KERNELCODESEGMENT	0x08
-#define GDT_KERNELDATASEGMENT	0x10
-#define GDT_TSSSEGMENT		0x18
+#define GDT_KERNELCODE_SEGMENT	0x08
+#define GDT_KERNELDATA_SEGMENT	0x10
+#define GDT_USERDATA_SEGMENT	0x18
+#define GDT_USERCODE_SEGMENT	0x20
+#define GDT_TSS_SEGMENT			0x28
 
 // 세그먼트 셀렉터에 설정할 RPL
 #define SELECTOR_RPL_0		0x00
@@ -50,7 +54,7 @@
 // 기타 GDT에 관련된 매크로, GDTR의 시작 어드레스, 1MB에서 264KB까지는 페이지 테이블 영역
 #define GDTR_STARTADDR		0x142000
 // 8바이트 엔트리 개수, 널 디스크립터|커널코드|커널데이터
-#define GDT_MAXENTRY8CNT	3
+#define GDT_MAXENTRY8CNT	5
 // 16바이트 엔트리 개수, TSS는 프로세서 또는 코어의 최대 개수만큼 생성
 #define GDT_MAXENTRY16CNT	(MAXPROCESSORCNT)
 // GDT 테이블 크기, TSS 세그먼트 전체 크기
@@ -149,11 +153,11 @@ typedef struct IDTEntry {
 
 #pragma pack(pop)
 
-void initGDTNTSS(void);
-void setGDTEntry8(GDTENTRY8 *entry, DWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
-void setGDTEntry16(GDTENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
-void initTSS(TSS *tss);
-void initIDT(void);
-void setIDTEntry(IDTENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BYTE type);
+void kInitGDTNTSS(void);
+void kSetGDTEntry8(GDTENTRY8 *entry, DWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
+void kSetGDTEntry16(GDTENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type);
+void kInitTSS(TSS *tss);
+void kInitIDT(void);
+void kSetIDTEntry(IDTENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BYTE type);
 
 #endif /*__DESCRIPTOR_H__*/

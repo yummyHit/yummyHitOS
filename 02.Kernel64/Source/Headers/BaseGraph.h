@@ -38,17 +38,17 @@ typedef struct point {
 	int y;
 } POINT;
 
-inline void inDrawPixel(const RECT *area, COLOR *addr, int x, int y, COLOR color);
-void inDrawLine(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, COLOR color);
-void inDrawRect(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, COLOR color, BOOL fill);
-void inDrawCircle(const RECT *area, COLOR *addr, int _x, int _y, int rad, COLOR color, BOOL fill);
-void inDrawText(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len);
+inline void kInDrawPixel(const RECT *area, COLOR *addr, int x, int y, COLOR color);
+void kInDrawLine(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, COLOR color);
+void kInDrawRect(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, COLOR color, BOOL fill);
+void kInDrawCircle(const RECT *area, COLOR *addr, int _x, int _y, int rad, COLOR color, BOOL fill);
+void kInDrawText(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len);
 
-inline BOOL isInRect(const RECT *area, int x, int y);
-inline int getRectWidth(const RECT *area);
-inline int getRectHeight(const RECT *area);
-inline void setRectData(int x1, int y1, int x2, int y2, RECT *rect);
-inline BOOL getRectCross(const RECT *area1, const RECT *area2, RECT *inter);
-inline BOOL isRectCross(const RECT *area1, const RECT *area2);
+inline BOOL kIsInRect(const RECT *area, int x, int y);
+inline int kGetRectWidth(const RECT *area);
+inline int kGetRectHeight(const RECT *area);
+inline void kSetRectData(int x1, int y1, int x2, int y2, RECT *rect);
+inline BOOL kGetRectCross(const RECT *area1, const RECT *area2, RECT *inter);
+inline BOOL kIsRectCross(const RECT *area1, const RECT *area2);
 
 #endif

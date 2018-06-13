@@ -31,16 +31,16 @@ typedef struct listManager {
 
 #pragma pack(pop)
 
-void initList(LIST *list);
-int getListCnt(const LIST *list);
-void addListTail(LIST *list, void *item);
-void addListHead(LIST *list, void *item);
-void *delList(LIST *list, QWORD id);
-void *delListHead(LIST *list);
-void *delListTail(LIST *list);
-void *findList(const LIST *list, QWORD id);
-void *getListHead(const LIST *list);
-void *getListTail(const LIST *list);
-void *getNextList(const LIST *list, void *now);
+void kInitList(LIST *list);
+int kGetListCnt(const LIST *list);
+void kAddListTail(LIST *list, void *item);
+void kAddListHead(LIST *list, void *item);
+void *kDelList(LIST *list, QWORD id);
+void *kDelListHead(LIST *list);
+void *kDelListTail(LIST *list);
+void *kFindList(const LIST *list, QWORD id);
+void *kGetListHead(const LIST *list);
+void *kGetListTail(const LIST *list);
+void *kGetNextList(const LIST *list, void *now);
 
 #endif /*__LIST_H__*/

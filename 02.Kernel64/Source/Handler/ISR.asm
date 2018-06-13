@@ -10,16 +10,16 @@
 SECTION .text		; text 섹션(세그먼트)을 정의
 
 ; 외부에서 정의된 함수를 쓸 수 있도록 선언(Import)
-extern exceptionHandler, interruptHandler, keyboardHandler
-extern timerHandler, devFPUHandler, hardDiskHandler, mouseHandler
+extern kExceptionHandler, kInterruptHandler, kKeyboardHandler
+extern kTimerHandler, kDevFPUHandler, kHardDiskHandler, kMouseHandler
 
 ; C언어에서 호출할 수 있도록 이름 노출(Export). 예외(Exception) 처리를 위한 ISR
-global ISRDivErr, ISRDebug, ISRNMI, ISRBP, ISROF, ISRExceed, ISROPErr, ISRDevErr, ISRDoubleErr, ISRSegmentOverrun, ISRTSSErr
-global ISRSegmentErr, ISRStackErr, ISRProtectErr, ISRPageErr, ISR15, ISRFPUErr, ISRAlignChk, ISRMachChk, ISRSIMDErr, ISRETCErr
+global kISRDivErr, kISRDebug, kISRNMI, kISRBP, kISROF, kISRExceed, kISROPErr, kISRDevErr, kISRDoubleErr, kISRSegmentOverrun, kISRTSSErr
+global kISRSegmentErr, kISRStackErr, kISRProtectErr, kISRPageErr, kISR15, kISRFPUErr, kISRAlignChk, kISRMachChk, kISRSIMDErr, kISRETCErr
 
 ; 인터럽트(Interrupt) 처리를 위한 ISR
-global ISRTimer, ISRKeyboard, ISRSlavePIC, ISRSerial2, ISRSerial1, ISRParallel2, ISRFloppy, ISRParallel1
-global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, ISRHDD1, ISRHDD2, ISRETC
+global kISRTimer, kISRKeyboard, kISRSlavePIC, kISRSerial2, kISRSerial1, kISRParallel2, kISRFloppy, kISRParallel1
+global kISRRTC, kISRReserved, kISRNotUsed1, kISRNotUsed2, kISRMouse, kISRCoprocessor, kISRHDD1, kISRHDD2, kISRETC
 
 ; 콘텍스트를 저장하고 셀렉터를 교체하는 매크로
 %macro SAVE_ISR 0	; 파라미터를 전달받지 않는 매크로 정의. RBP 레지스터부터 GS 세그먼트 셀렉터까지 모두 스택에 삽입
@@ -82,434 +82,434 @@ global ISRRTC, ISRReserved, ISRNotUsed1, ISRNotUsed2, ISRMouse, ISRCoprocessor, 
 %endmacro
 
 ; #0, Divide Error ISR
-ISRDivErr:
+kISRDivErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 0
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #1, Debug ISR
-ISRDebug:
+kISRDebug:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 1
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #2, NMI ISR
-ISRNMI:
+kISRNMI:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 2
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #3, BreakPoint ISR
-ISRBP:
+kISRBP:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 3
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #4, Overflow ISR
-ISROF:
+kISROF:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 4
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #5, Bound Range Exceeded ISR
-ISRExceed:
+kISRExceed:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 5
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #6, Invalid Opcode ISR
-ISROPErr:
+kISROPErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 6
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #7, Device Not Available ISR
-ISRDevErr:
+kISRDevErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 7
-	call devFPUHandler
+	call kDevFPUHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #8, Double Fault ISR
-ISRDoubleErr:
+kISRDoubleErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 8
 	mov rsi, qword [ rbp + 8 ]
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	add rsp, 8	; 에러 코드 스택에서 제거
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #9, Coprocessor Segment Overrun ISR
-ISRSegmentOverrun:
+kISRSegmentOverrun:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 9
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #10, Invalid TSS ISR
-ISRTSSErr:
+kISRTSSErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 10
 	mov rsi, qword [ rbp + 8 ]
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #11, Segment Not Present ISR
-ISRSegmentErr:
+kISRSegmentErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 11
 	mov rsi, qword [ rbp + 8 ]
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #12, Stack Segment Fault ISR
-ISRStackErr:
+kISRStackErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 12
 	mov rsi, qword [ rbp + 8 ]
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #13, General Protection ISR
-ISRProtectErr:
+kISRProtectErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 13
 	mov rsi, qword [ rbp + 8 ]
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #14, Page Fault ISR
-ISRPageErr:
+kISRPageErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 14
 	mov rsi, qword [ rbp + 8 ]
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #15, Reserved ISR
-ISR15:
+kISR15:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 15
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #16, FPU Error ISR
-ISRFPUErr:
+kISRFPUErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 16
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #17, Alignment Check ISR
-ISRAlignChk:
+kISRAlignChk:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 17
 	mov rsi, qword [ rbp + 8 ]
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	add rsp, 8
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #18, Machine Check ISR
-ISRMachChk:
+kISRMachChk:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 18
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #19, SIMD Floating Point Exception ISR
-ISRSIMDErr:
+kISRSIMDErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 19
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #20 ~ 31, Reserved ISR
-ISRETCErr:
+kISRETCErr:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 20
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; 인터럽트 핸들러
 ; #32, Timer ISR
-ISRTimer:
+kISRTimer:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 32
-	call timerHandler
+	call kTimerHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #33, Keyboard ISR
-ISRKeyboard:
+kISRKeyboard:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 33
-	call keyboardHandler
+	call kKeyboardHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #34, Slave PIC ISR
-ISRSlavePIC:
+kISRSlavePIC:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 34
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #35, Serial Port2 ISR
-ISRSerial2:
+kISRSerial2:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 35
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #36, Serial Port1 ISR
-ISRSerial1:
+kISRSerial1:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 36
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #37, Parallel Port2 ISR
-ISRParallel2:
+kISRParallel2:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 37
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #38, Floppy Disk Controller ISR
-ISRFloppy:
+kISRFloppy:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 38
-	call exceptionHandler
+	call kExceptionHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #39, Parallel Port1 ISR
-ISRParallel1:
+kISRParallel1:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 39
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #40, RTC ISR
-ISRRTC:
+kISRRTC:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 40
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #41, Reserved Interrupt ISR
-ISRReserved:
+kISRReserved:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 41
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #42, Not Use 1
-ISRNotUsed1:
+kISRNotUsed1:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 42
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #43, Not Use 2
-ISRNotUsed2:
+kISRNotUsed2:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 43
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #44, Mouse ISR
-ISRMouse:
+kISRMouse:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 44
-	call mouseHandler
+	call kMouseHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #45, Coprocessor ISR
-ISRCoprocessor:
+kISRCoprocessor:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 45
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #46, Hard Disk Drive 1 ISR
-ISRHDD1:
+kISRHDD1:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 46
-	call hardDiskHandler
+	call kHardDiskHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #47, Hard Disk Drive 2 ISR
-ISRHDD2:
+kISRHDD2:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 47
-	call hardDiskHandler
+	call kHardDiskHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원
 
 ; #48 etc ISR
-ISRETC:
+kISRETC:
 	SAVE_ISR	; 콘텍스트 저장 후 셀렉터를 커널 데이터 디스크립터로 교체
 
 	; 핸들러에 예외 번호를 삽입하고 핸들러 호출
 	mov rdi, 48
-	call interruptHandler
+	call kInterruptHandler
 
 	LOAD_ISR
 	iretq		; 인터럽트 처리 완료 후 이전 수행 코드로 복원

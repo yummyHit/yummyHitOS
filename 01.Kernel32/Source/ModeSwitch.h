@@ -10,7 +10,7 @@
 
 #include "Types.h"
 
-void ReadCPUID(DWORD ax, DWORD *eax, DWORD *ebx, DWORD *ecx, DWORD *edx);
-void SwitchNExecKernel(void);
+void kReadCPUID(DWORD ax, DWORD *eax, DWORD *ebx, DWORD *ecx, DWORD *edx);
+void kSwitchNExecKernel(void);
 
 #endif /* __MODESWITCH_H__ */

@@ -42,8 +42,7 @@ typedef struct pageTableEntry {
 #pragma pack(pop)
 
 // 함수
-void initTables(void);
-void setPageEntry(PTENTRY *entry, DWORD highBaseAddr, DWORD lowBaseAddr, DWORD lowFlags, DWORD highFlags);
+void kInitPageTbl(void);
+void kSetPageEntry(PTENTRY *entry, DWORD highBaseAddr, DWORD lowBaseAddr, DWORD lowFlags, DWORD highFlags);
 
 #endif /*__PAGE_H__*/
-

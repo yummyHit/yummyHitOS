@@ -10,15 +10,15 @@
 SECTION .text			; text 섹션(세그먼트)을 정의
 
 ; C언어에서 호출할 수 있도록 이름 노출
-global inByte, outByte, inWord, outWord
-global loadGDTR, loadTSS, loadIDTR
-global onInterrupt, offInterrupt, readRFLAGS, readTSC
-global switchContext, _hlt, testNSet, _pause;, _shutdown
-global initFPU, saveFPU, loadFPU, setTS, clearTS
-global onLocalAPIC
+global kInByte, kOutByte, kInWord, kOutWord
+global kLoadGDTR, kLoadTSS, kLoadIDTR
+global kOnInterrupt, kOffInterrupt, kReadRFLAGS, kReadTSC
+global kSwitchContext, kHlt, kTestNSet, kPause;, kShutdown
+global kInitFPU, kSaveFPU, kLoadFPU, kSetTS, kClearTS
+global kOnLocalAPIC
 
 ; 포트로부터 1바이트 읽음(PARAM: 포트 번호)
-inByte:
+kInByte:
 	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
 			; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
 	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호)을 저장
@@ -29,7 +29,7 @@ inByte:
 	ret		; 함수를 호출한 다음 코드의 위치로 복귀
 
 ; 포트에 1바이트 씀(PARAM: 포트 번호, 데이터)
-outByte:
+kOutByte:
 	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
 	push rax	; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
 	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호)을 저장
@@ -40,7 +40,7 @@ outByte:
 	ret
 
 ; 포트로부터 2바이트 읽음(PARAM: 포트 번호)
-inWord:
+kInWord:
 	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장. 함수 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
 
 	mov rdx, rdi	; RDX 레지스터에 파라미터 1(포트 번호) 저장
@@ -51,7 +51,7 @@ inWord:
 	ret
 
 ; 포트에 2바이트 씀(PARAM: 포트 번호, 데이터)
-outWord:
+kOutWord:
 	push rdx	; 함수에서 임시로 사용하는 레지스터를 스택에 저장
 	push rax	; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
 
@@ -64,38 +64,38 @@ outWord:
 	ret
 
 ; GDTR 레지스터에 GDT테이블 설정(PARAM: GDT테이블 정보 저장하는 자료구조 어드레스)
-loadGDTR:
+kLoadGDTR:
 	lgdt [ rdi ]	; 파라미터 1(GDTR 어드레스)을 프로세서에 로드해 GDT테이블 설정
 	ret
 
 ; TR 레지스터에 TSS 세그먼트 디스크립터 설정(PARAM: TSS 세그먼트 디스크립터 오프셋)
-loadTSS:
+kLoadTSS:
 	ltr di		; 파라미터 1(TSS 세그먼트 디스크립터 오프셋)을 프로세서에 설정해 TSS 세그먼트 로드
 	ret
 
 ; IDTR 레지스터에 IDT 테이블 설정(PARAM: IDT 테이블 정보 저장하는 자료구조 어드레스)
-loadIDTR:
+kLoadIDTR:
 	lidt [ rdi ]	; 파라미터 1(IDTR 어드레스)을 프로세서에 로드해 IDT테이블 설정
 	ret
 
 ; 인터럽트 활성화
-onInterrupt:
+kOnInterrupt:
 	sti
 	ret
 
 ; 인터럽트 비활성화
-offInterrupt:
+kOffInterrupt:
 	cli
 	ret
 
 ; RFLAGS 레지스터 읽고 되돌려줌
-readRFLAGS:
+kReadRFLAGS:
 	pushfq		; RFLAGS 레지스터를 스택에 저장
 	pop rax		; 스택에 저장된 RFLAGS 레지스터를 RAX 레지스터에 저장해 함수 반환값으로 설정
 	ret
 
 ; 타임 스탬프 카운터를 읽어서 반환
-readTSC:
+kReadTSC:
 	push rdx	; RDX 레지스터를 스택에 저장
 	rdtsc		; 타임 스탬프 카운터를 읽어서 RDX:RAX에 저장
 	shl rdx, 32	; RDX 레지스터에 있는 상위 32비트 TSC 값과 RAX 레지스터에 있는 하위 32비트 TSC 값을 OR하여
@@ -156,7 +156,7 @@ readTSC:
 %endmacro		; 매크로 끝
 
 ; Current Context에 현재 콘텍스트 저장하고 Next Task에서 콘텍스트 복구(PARAM: Current Context(nowContext), Next Context(nextContext))
-switchContext:
+kSwitchContext:
 	push rbp	; 스택에 RBP 레지스터 저장 후 RSP 레지스터를 RBP에 저장
 	mov rbp, rsp
 
@@ -206,14 +206,14 @@ switchContext:
 	iretq
 
 ; 프로세서 쉬게 함
-_hlt:
+kHlt:
 	hlt	; 프로세서를 대기 상태로 진입
 	hlt
 	ret
 
 ; 테스트와 설정을 하나의 명령으로 처리. dest와 cmp를 비교해 같으면 dest에 src값 삽입
 ; PARAM: 값 저장할 어드레스(dest, rdi), 비교할 값(cmp, rsi), 설정할 값(src, rdx)
-testNSet:
+kTestNSet:
 	mov rax, rsi	; 두 번째 파라미터인 cmp를 RAX 레지스터에 저장
 
 	; RAX 레지스터에 저장된 cmp와 dest값 비교 후 두 값이 같으면 src값을 dest가 가리키는 어드레스에 삽입
@@ -229,7 +229,7 @@ testNSet:
 	ret
 
 ; 프로세서를 쉬게 함
-_pause:
+kPause:
 	pause		; 프로세서를 일시 중지 상태로 진입
 	ret
 
@@ -239,31 +239,31 @@ _pause:
 ;	test al, 00000010b
 ;	jne waitInBuf
 ;
-;_shutdown:
+;kShutdown:
 ;	call waitInBuf
 ;	;Send 0xFE to the keyboard controller.
 ;	mov al, 0xFE
 ;	out 0x64, al
 
 ; FPU 초기화
-initFPU:
+kInitFPU:
 	finit
 	ret
 
 ; FPU 관련 레지스터를 콘텍스트 버퍼에 저장
 ; PARAM: Buffer Address
-saveFPU:
+kSaveFPU:
 	fxsave [ rdi ]	; 첫 번째 파라미터로 전달된 버퍼에 FPU 레지스터를 저장
 	ret
 
 ; FPU 관련 레지스터를 콘텍스트 버퍼에서 복원
 ; PARAM: Buffer Address
-loadFPU:
+kLoadFPU:
 	fxrstor [ rdi ]	; 첫 번째 파라미터로 전달된 버퍼에서 FPU 레지스터를 복원
 	ret
 
 ; CR0 컨트롤 레지스터의 TS 비트를 1로 설정
-setTS:
+kSetTS:
 	push rax	; 스택에 RAX 레지스터 값 저장
 
 	mov rax, cr0	; CR0 컨트롤 레지스터 값을 RAX 레지스터로 저장
@@ -274,12 +274,12 @@ setTS:
 	ret
 
 ; CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
-clearTS:
+kClearTS:
 	clts
 	ret
 
 ; IA32_APIC_BASE_MSR의 APIC 전역 활성화 필드(비트 11)를 1로 설정해 APIC 활성화
-onLocalAPIC:
+kOnLocalAPIC:
 	push rax	; RDMSR과 WRMSR에서 사용하는 레지스터 모두 스택에 저장
 	push rcx
 	push rdx

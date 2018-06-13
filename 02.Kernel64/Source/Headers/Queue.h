@@ -31,10 +31,10 @@ typedef struct queueManager {
 
 #pragma pack(pop)
 
-void initQueue(QUEUE *queue, void *buf, int maxCnt, int size);
-BOOL isQFull(const QUEUE *queue);
-BOOL isQEmpty(const QUEUE *queue);
-BOOL addQData(QUEUE *queue, const void *data);
-BOOL rmQData(QUEUE *queue, void *data);
+void kInitQueue(QUEUE *queue, void *buf, int maxCnt, int size);
+BOOL kIsQFull(const QUEUE *queue);
+BOOL kIsQEmpty(const QUEUE *queue);
+BOOL kAddQData(QUEUE *queue, const void *data);
+BOOL kRmQData(QUEUE *queue, void *data);
 
 #endif /*__QUEUE_H__*/

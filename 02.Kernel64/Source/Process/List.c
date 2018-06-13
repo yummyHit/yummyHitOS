@@ -8,19 +8,19 @@
 #include <List.h>
 
 // 리스트 초기화
-void initList(LIST *list) {
+void kInitList(LIST *list) {
 	list->itemCnt = 0;
 	list->head = NULL;
 	list->tail = NULL;
 }
 
 // 리스트에 포함된 아이템 수 반환
-int getListCnt(const LIST *list) {
+int kGetListCnt(const LIST *list) {
 	return list->itemCnt;
 }
 
 // 리스트에 데이터 추가
-void addListTail(LIST *list, void *item) {
+void kAddListTail(LIST *list, void *item) {
 	LISTLINK *link;
 
 	// 다음 뎅터 어드레스를 NULL로 설정
@@ -45,7 +45,7 @@ void addListTail(LIST *list, void *item) {
 }
 
 // 리스트 첫 부분에 데이터 추가
-void addListHead(LIST *list, void *item) {
+void kAddListHead(LIST *list, void *item) {
 	LISTLINK *link;
 
 	// 다음 데이터의 어드레스를 head로 설정
@@ -66,7 +66,7 @@ void addListHead(LIST *list, void *item) {
 }
 
 // 리스트에서 데이터 제거 후 데이터 포인터 반환
-void *delList(LIST *list, QWORD id) {
+void *kDelList(LIST *list, QWORD id) {
 	LISTLINK *link, *preLink;
 
 	preLink = (LISTLINK*)list->head;
@@ -87,29 +87,29 @@ void *delList(LIST *list, QWORD id) {
 	return NULL;
 }
 
-void *delListHead(LIST *list) {
+void *kDelListHead(LIST *list) {
 	LISTLINK *link;
 
 	if(list->itemCnt == 0) return NULL;
 
 	// 헤더 제거 후 반환
 	link = (LISTLINK*)list->head;
-	return delList(list, link->id);
+	return kDelList(list, link->id);
 }
 
 // 리스트 마지막 데이터 제거 후 반환
-void *delListTail(LIST *list) {
+void *kDelListTail(LIST *list) {
 	LISTLINK *link;
 
 	if(list->itemCnt == 0) return NULL;
 
 	// 테일 제거 후 반환
 	link = (LISTLINK*)list->tail;
-	return delList(list, link->id);
+	return kDelList(list, link->id);
 }
 
 // 리스트에서 아이템 검색
-void *findList(const LIST *list, QWORD id) {
+void *kFindList(const LIST *list, QWORD id) {
 	LISTLINK *link;
 
 	for(link = (LISTLINK*)list->head; link != NULL; link = link->next) if(link->id == id) return link;
@@ -117,17 +117,17 @@ void *findList(const LIST *list, QWORD id) {
 }
 
 // 리스트 헤더 반환
-void *getListHead(const LIST *list) {
+void *kGetListHead(const LIST *list) {
 	return list->head;
 }
 
 // 리스트 테일 반환
-void *getListTail(const LIST *list) {
+void *kGetListTail(const LIST *list) {
 	return list->tail;
 }
 
 // 다음 아이템 반환
-void *getNextList(const LIST *list, void *now) {
+void *kGetNextList(const LIST *list, void *now) {
 	LISTLINK *link;
 
 	link = (LISTLINK*)now;

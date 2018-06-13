@@ -16,7 +16,7 @@
 #include <AppPanelTask.h>
 
 // 윈도우 매니저 태스크
-void startWinManager(void) {
+void kStartWinManager(void) {
 	int xMouse, yMouse;
 	BOOL mouseRes, keyRes, eventRes;
 	WINDOWMANAGER *win;
@@ -26,66 +26,66 @@ void startWinManager(void) {
 	RECT loopCntArea;
 
 	// GUI 시스템 초기화
-	initGUISystem();
+	kInitGUISystem();
 
 	// 현재 마우스 위치에 커서 출력
-	getWinCursor(&xMouse, &yMouse);
-	moveCursor(xMouse, yMouse);
+	kGetWinCursor(&xMouse, &yMouse);
+	kMoveCursor(xMouse, yMouse);
 
 	// 애플리케이션 패널 태스크 실행
-	createTask(TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD | TASK_FLAGS_LOW, 0, 0, (QWORD)appPanelGUITask, TASK_LOADBALANCING_ID);
+	kCreateTask(TASK_FLAGS_SYSTEM | TASK_FLAGS_THREAD | TASK_FLAGS_LOW, 0, 0, (QWORD)kAppPanelGUITask, TASK_LOADBALANCING_ID);
 
 	// 윈도우 매니저 반환
-	win = getWinManager();
+	win = kGetWinManager();
 
 	// 루프 수행 횟수 측정용 변수 초기화
-	lastTickCnt = getTickCnt();
+	lastTickCnt = kGetTickCnt();
 	preLoopCnt = 0;
 	loopCnt = 0;
 	minLoopCnt = 0xFFFFFFFFFFFFFFFF;
-	backgroundID = getBackgroundID();
+	backgroundID = kGetBackgroundID();
 
 	// 윈도우 매니저 태스크 루프
 	while(1) {
 #if 0
 		// 1초마다 윈도우 매니저 태스크 루프를 수행한 횟수를 측정해 최솟값 기록
-		if(getTickCnt() - lastTickCnt > 1000) {
-			lastTickCnt = getTickCnt();
+		if(kGetTickCnt() - lastTickCnt > 1000) {
+			lastTickCnt = kGetTickCnt();
 			// 1초 전 수행한 태스크 루프의 수와 현재 태스크 루프의 수를 빼 최소 루프 수행 횟수와 비교해 업데이트
 			if((loopCnt - preLoopCnt) < minLoopCnt) minLoopCnt = loopCnt - preLoopCnt;
 			preLoopCnt = loopCnt;
 
 			// 루프의 최소 수행 횟수를 1초마다 업데이트
-			sprintF(tmp, "MIN Loop Execution Count:%d   ", minLoopCnt);
-			drawText(backgroundID, 0, 0, RGB(255, 255, 135), RGB(186, 140, 255), tmp, strLen(tmp));
+			kSprintF(tmp, "MIN Loop Execution Count:%d   ", minLoopCnt);
+			kDrawText(backgroundID, 0, 0, RGB(255, 255, 135), RGB(186, 140, 255), tmp, strLen(tmp));
 
 			// 배경 윈도우 전체를 업데이트하면 시간이 오래 걸려 배경 윈도우에 루프 수행 횟수가 출력된 부분만 업데이트
-			setRectData(0, 0, strLen(tmp) * FONT_ENG_WIDTH, FONT_ENG_HEIGHT, &loopCntArea);
-			updateWinArea(&loopCntArea, backgroundID);
+			kSetRectData(0, 0, strLen(tmp) * FONT_ENG_WIDTH, FONT_ENG_HEIGHT, &loopCntArea);
+			kUpdateWinArea(&loopCntArea, backgroundID);
 		}
 		loopCnt++;
 #endif
 
 		// 마우스 데이터 처리
-		mouseRes = procMouseData();
+		mouseRes = kProcMouseData();
 
 		// 키 데이터 처리
-		keyRes = procKeyData();
+		keyRes = kProcKeyData();
 
 		// 윈도우 매니저의 이벤트 큐에 수신된 데이터 처리. 수신된 모든 이벤트 처리함
 		eventRes = FALSE;
-		while(procEventData() == TRUE) eventRes = TRUE;
+		while(kProcEventData() == TRUE) eventRes = TRUE;
 
 		// 이벤트 큐에 이벤트를 처리했다면 윈도우 크기 변경 표식이 지워질 수 있으니 다시 출력
-		if((eventRes == TRUE) && (win->resizeMode == TRUE)) drawResizeMark(&(win->resizeArea), TRUE);
+		if((eventRes == TRUE) && (win->resizeMode == TRUE)) kDrawResizeMark(&(win->resizeArea), TRUE);
 
-		// 처리한 데이터가 하나도 없다면 _sleep() 수행
-		if((mouseRes == FALSE) && (keyRes == FALSE) && (eventRes == FALSE)) _sleep(0);
+		// 처리한 데이터가 하나도 없다면 kSleep() 수행
+		if((mouseRes == FALSE) && (keyRes == FALSE) && (eventRes == FALSE)) kSleep(0);
 	}
 }
 
 // 수신된 마우스 데이터 처리
-BOOL procMouseData(void) {
+BOOL kProcMouseData(void) {
 	QWORD mouseID, winID;
 	BYTE btnStat, btnUpdate;
 	int x, y, xMouse, yMouse, preX, preY, i, width, height;
@@ -97,19 +97,19 @@ BOOL procMouseData(void) {
 	char *str1 = "### YummyHitOS is reached Window Version ###", *str2 = "###     YummyHitOs'll be back soon !!    ###";
 
 	// 윈도우 매니저 반환
-	win = getWinManager();
+	win = kGetWinManager();
 
 	// 마우스 이벤트 통합
 	for(i = 0; i < WINDOWMANAGER_DATACNT; i++) {
 		// 마우스 데이터 수신 대기
-		if(rmMouseData(&btnStat, &x, &y) == FALSE) {
+		if(kRmMouseData(&btnStat, &x, &y) == FALSE) {
 			// 처음으로 확인했는데 데이터 없으면 종료
 			if(i == 0) return FALSE;
 			else break;
 		}
 
 		// 현재 마우스 커서 위치 반환
-		getWinCursor(&xMouse, &yMouse);
+		kGetWinCursor(&xMouse, &yMouse);
 
 		// 처음 마우스 이벤트가 수신된 것이면 현재 좌표를 이전 마우스 위치로 저장
 		if(i == 0) {
@@ -123,8 +123,8 @@ BOOL procMouseData(void) {
 		yMouse += y;
 
 		// 새로운 위치로 마우스 커서 이동, 다시 현재 커서 위치 반환. 마우스 커서가 화면을 벗어나지 않도록 처리된 커서 좌표 사용.
-		moveCursor(xMouse, yMouse);
-		getWinCursor(&xMouse, &yMouse);
+		kMoveCursor(xMouse, yMouse);
+		kGetWinCursor(&xMouse, &yMouse);
 
 		// 버튼 상태는 이전 버튼 상태와 현재 버튼 상태를 XOR하여 1로 설정됐는지 확인
 		btnUpdate = win->preBtnStat ^ btnStat;
@@ -134,26 +134,26 @@ BOOL procMouseData(void) {
 	}
 
 	// 현재 마우스 커서 아래 윈도우 검색
-	mouseID = findWinPoint(xMouse, yMouse);
+	mouseID = kFindWinPoint(xMouse, yMouse);
 
 	// 마우스 왼쪽 버튼에 변화가 생긴 경우 처리
 	if(btnUpdate & MOUSE_LCLICK_ON) {
 		// 왼쪽 버튼이 눌린 경우 처리
 		if(btnStat & MOUSE_LCLICK_ON) {
 			// 마우스로 윈도우를 선택했으니 마우스 아래 윈도우가 최상위로 올라옴. 동시에 윈도우 선택과 선택해제 이벤트 전송
-			if(mouseID != win->backgroundID) moveWinTop(mouseID);
+			if(mouseID != win->backgroundID) kMoveWinTop(mouseID);
 
 			// 왼쪽 버튼이 눌린 위치가 제목 표시줄 위치면 윈도우 이동 혹은 닫기 버튼인지 확인 후 처리
-			if(isInTitle(mouseID, xMouse, yMouse) == TRUE) {
+			if(kIsInTitle(mouseID, xMouse, yMouse) == TRUE) {
 				// 닫기 버튼이 눌렸으면 닫기 처리. 닫기 버튼이 아니면 이동 모드
-				if(isCloseBtn(mouseID, xMouse, yMouse) == TRUE) {
+				if(kIsCloseBtn(mouseID, xMouse, yMouse) == TRUE) {
 					// 윈도우 닫기 이벤트 전송
-					setWinEvent(mouseID, EVENT_WINDOW_CLOSE, &event);
-					eventToWin(mouseID, &event);
+					kSetWinEvent(mouseID, EVENT_WINDOW_CLOSE, &event);
+					kEventToWin(mouseID, &event);
 
 					// 테스트를 위한 부분
-					delWin(mouseID);
-				} else if(isResizeBtn(mouseID, xMouse, yMouse) == TRUE) {
+					kDelWin(mouseID);
+				} else if(kIsResizeBtn(mouseID, xMouse, yMouse) == TRUE) {
 					// 윈도우 크기 변경 모드 설정
 					win->resizeMode = TRUE;
 
@@ -161,10 +161,10 @@ BOOL procMouseData(void) {
 					win->resizeID = mouseID;
 
 					// 현재 윈도우 크기 저장
-					getWinArea(mouseID, &(win->resizeArea));
+					kGetWinArea(mouseID, &(win->resizeArea));
 
 					// 윈도우 크기 변경 아이콘 표시
-					drawResizeMark(&(win->resizeArea), TRUE);
+					kDrawResizeMark(&(win->resizeArea), TRUE);
 				} else {
 					// 윈도우 이동 모드 설정
 					win->moveMode = TRUE;
@@ -174,8 +174,8 @@ BOOL procMouseData(void) {
 				}
 			} else {
 				// 왼쪽 버튼 눌림 이벤트 전송
-				setMouseEvent(mouseID, EVENT_MOUSE_LCLICK_ON, xMouse, yMouse, btnStat, &event);
-				eventToWin(mouseID, &event);
+				kSetMouseEvent(mouseID, EVENT_MOUSE_LCLICK_ON, xMouse, yMouse, btnStat, &event);
+				kEventToWin(mouseID, &event);
 			}
 		} else {
 			// 왼쪽 버튼이 떨어진 경우 처리. 윈도우가 이동 중이면 모드만 해제
@@ -185,60 +185,60 @@ BOOL procMouseData(void) {
 				win->moveID = WINDOW_INVALID_ID;
 			} else if(win->resizeMode == TRUE) {
 				// 윈도우 매니저 자료구조에 저장된 영역을 이용해 윈도우 크기 변경
-				width = getRectWidth(&(win->resizeArea));
-				height = getRectHeight(&(win->resizeArea));
-				resizeWin(win->resizeID, win->resizeArea.x1, win->resizeArea.y1, width, height);
+				width = kGetRectWidth(&(win->resizeArea));
+				height = kGetRectHeight(&(win->resizeArea));
+				kResizeWin(win->resizeID, win->resizeArea.x1, win->resizeArea.y1, width, height);
 
 				// 윈도우 크기 변경 아이콘 삭제
-				drawResizeMark(&(win->resizeArea), FALSE);
+				kDrawResizeMark(&(win->resizeArea), FALSE);
 
 				// 윈도우 크기 변경 이벤트 전송
-				setWinEvent(win->resizeID, EVENT_WINDOW_RESIZE, &event);
-				eventToWin(win->resizeID, &event);
+				kSetWinEvent(win->resizeID, EVENT_WINDOW_RESIZE, &event);
+				kEventToWin(win->resizeID, &event);
 
 				// 크기 변경 중 플래그 해제
 				win->resizeMode = FALSE;
 				win->resizeID = WINDOW_INVALID_ID;
 			} else {
 				// 왼쪽 버튼 떨어짐 이벤트 전송
-				setMouseEvent(mouseID, EVENT_MOUSE_LCLICK_OFF, xMouse, yMouse, btnStat, &event);
-				eventToWin(mouseID, &event);
+				kSetMouseEvent(mouseID, EVENT_MOUSE_LCLICK_OFF, xMouse, yMouse, btnStat, &event);
+				kEventToWin(mouseID, &event);
 			}
 		}
 	} else if(btnUpdate & MOUSE_RCLICK_ON) {
 		// 마우스 오른쪽 버튼에 변화가 생긴 경우 처리
 		if(btnStat & MOUSE_RCLICK_ON) {
 			// 오른쪽 버튼 눌림 이벤트 전송
-			setMouseEvent(mouseID, EVENT_MOUSE_RCLICK_ON, xMouse, yMouse, btnStat, &event);
-			eventToWin(mouseID, &event);
+			kSetMouseEvent(mouseID, EVENT_MOUSE_RCLICK_ON, xMouse, yMouse, btnStat, &event);
+			kEventToWin(mouseID, &event);
 
 			// 테스트를 위해 오른쪽 버튼이 눌리면 GUI 태스크 생성
-//			createTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, NULL, NULL, (QWORD)firstGUITask, TASK_LOADBALANCING_ID);
+//			kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, NULL, NULL, (QWORD)firstGUITask, TASK_LOADBALANCING_ID);
 		} else  {
-			setMouseEvent(mouseID, EVENT_MOUSE_RCLICK_OFF, xMouse, yMouse ,btnStat, &event);
-			eventToWin(mouseID, &event);
+			kSetMouseEvent(mouseID, EVENT_MOUSE_RCLICK_OFF, xMouse, yMouse ,btnStat, &event);
+			kEventToWin(mouseID, &event);
 		}
 	} else if(btnUpdate & MOUSE_WHEEL_ON) {
 		// 마우스 가운데 휠 변화 처리
 		if(btnStat & MOUSE_WHEEL_ON) {
 			// 휠 눌림 이벤트 전송
-			setMouseEvent(mouseID, EVENT_MOUSE_WHEEL_ON, xMouse, yMouse, btnStat, &event);
-			eventToWin(mouseID, &event);
+			kSetMouseEvent(mouseID, EVENT_MOUSE_WHEEL_ON, xMouse, yMouse, btnStat, &event);
+			kEventToWin(mouseID, &event);
 		} else {
 			// 휠 떨어짐 이벤트 전송
-			setMouseEvent(mouseID, EVENT_MOUSE_WHEEL_OFF, xMouse, yMouse, btnStat, &event);
-			eventToWin(mouseID, &event);
+			kSetMouseEvent(mouseID, EVENT_MOUSE_WHEEL_OFF, xMouse, yMouse, btnStat, &event);
+			kEventToWin(mouseID, &event);
 		}
 	} else {
 		// 마우스 버튼이 그대로면 마우스 이동 처리만 수행
-		setMouseEvent(mouseID, EVENT_MOUSE_MOVE, xMouse, yMouse, btnStat, &event);
-		eventToWin(mouseID, &event);
+		kSetMouseEvent(mouseID, EVENT_MOUSE_MOVE, xMouse, yMouse, btnStat, &event);
+		kEventToWin(mouseID, &event);
 	}
 
 	// 윈도우가 이동 중이면 윈도우 이동 처리
 	if(win->moveMode == TRUE) {
 		// 윈도우 위치 얻음. 윈도우 현재 위치를 통해 마우스가 이동한 만큼 옮겨줌.
-		if(getWinArea(win->moveID, &area) == TRUE) moveWin(win->moveID, area.x1 + xMouse - preX, area.y1 + yMouse - preY);
+		if(kGetWinArea(win->moveID, &area) == TRUE) kMoveWin(win->moveID, area.x1 + xMouse - preX, area.y1 + yMouse - preY);
 		else {
 			// 윈도우 위치를 못얻으면 윈도우가 없는 것이니 이동 모드 해제
 			win->moveMode = FALSE;
@@ -246,18 +246,18 @@ BOOL procMouseData(void) {
 		}
 	} else if(win->resizeMode == TRUE) {
 		// 윈도우 크기 변경 중이면 크기 변경 처리. 이전 위치 크기 변경 아이콘 삭제 
-		drawResizeMark(&(win->resizeArea), FALSE);
+		kDrawResizeMark(&(win->resizeArea), FALSE);
 
 		// 마우스 이동 거리를 이용해 새로운 윈도우 크기 결정
 		win->resizeArea.x2 += xMouse - preX;
 		win->resizeArea.y1 += yMouse - preY;
 
 		// 윈도우 크기가 최솟값 이하면 최솟값으로 다시 설정
-		if((win->resizeArea.x2 < win->resizeArea.x1) || (getRectWidth(&(win->resizeArea)) < WINDOW_WIDTH_MIN)) win->resizeArea.x2 = win->resizeArea.x1 + WINDOW_WIDTH_MIN - 1;
-		if((win->resizeArea.y2 < win->resizeArea.y1) || (getRectWidth(&(win->resizeArea)) < WINDOW_HEIGHT_MIN)) win->resizeArea.y2 = win->resizeArea.y1 + WINDOW_HEIGHT_MIN - 1;
+		if((win->resizeArea.x2 < win->resizeArea.x1) || (kGetRectWidth(&(win->resizeArea)) < WINDOW_WIDTH_MIN)) win->resizeArea.x2 = win->resizeArea.x1 + WINDOW_WIDTH_MIN - 1;
+		if((win->resizeArea.y2 < win->resizeArea.y1) || (kGetRectWidth(&(win->resizeArea)) < WINDOW_HEIGHT_MIN)) win->resizeArea.y2 = win->resizeArea.y1 + WINDOW_HEIGHT_MIN - 1;
 
 		// 새로운 위치에 윈도우 크기 변경 아이콘 출력
-		drawResizeMark(&(win->resizeArea), TRUE);
+		kDrawResizeMark(&(win->resizeArea), TRUE);
 	}
 
 	// 다음 처리에 사용할 현재 버튼 상태 저장
@@ -266,22 +266,22 @@ BOOL procMouseData(void) {
 }
 
 // 수신된 키 데이터 처리
-BOOL procKeyData(void) {
+BOOL kProcKeyData(void) {
 	KEYDATA key;
 	EVENT event;
 	QWORD winID;
 
 	// 키보드 데이터가 수신되기 기다림
-	if(getKeyData(&key) == FALSE) return FALSE;
+	if(kGetKeyData(&key) == FALSE) return FALSE;
 
 	// 최상위 윈도우로 메시지 전송
-	winID = getTopWin();
-	setKeyEvent(winID, &key, &event);
-	return eventToWin(winID, &event);
+	winID = kGetTopWin();
+	kSetKeyEvent(winID, &key, &event);
+	return kEventToWin(winID, &event);
 }
 
 // 이벤트 큐에 수신된 이벤트 처리
-BOOL procEventData(void) {
+BOOL kProcEventData(void) {
 	EVENT event[WINDOWMANAGER_DATACNT];
 	int cnt, i, j;
 	WINDOWEVENT *winEvent, *nextWinEvent;
@@ -291,7 +291,7 @@ BOOL procEventData(void) {
 	// 윈도우 매니저 태스크의 이벤트 큐에 수신된 이벤트 통합
 	for(i = 0; i < WINDOWMANAGER_DATACNT; i++) {
 		// 윈도우 매니저의 이벤트 큐에 이벤트 수신 대기
-		if(winManagerToEvent(&(event[i])) == FALSE) {
+		if(kWinManagerToEvent(&(event[i])) == FALSE) {
 			// 처음부터 이벤트가 수신되지 않았으면 종료
 			if(i == 0) return FALSE;
 			else break;
@@ -302,8 +302,8 @@ BOOL procEventData(void) {
 		// 윈도우 ID로 업데이트하는 이벤트가 수신되면 윈도우 영역을 이벤트 데이터에 삽입
 		if(event[i].type == EVENT_WINDOWMANAGER_UPDATEBYID) {
 			// 윈도우 크기를 이벤트 자료구조에 삽입
-			if(getWinArea(winEvent->id, &area) == FALSE) setRectData(0, 0, 0, 0, &(winEvent->area));
-			else setRectData(0, 0, getRectWidth(&area) - 1, getRectHeight(&area) - 1, &(winEvent->area));
+			if(kGetWinArea(winEvent->id, &area) == FALSE) kSetRectData(0, 0, 0, 0, &(winEvent->area));
+			else kSetRectData(0, 0, kGetRectWidth(&area) - 1, kGetRectHeight(&area) - 1, &(winEvent->area));
 		}
 	}
 
@@ -322,15 +322,15 @@ BOOL procEventData(void) {
 			if(((event[i].type != EVENT_WINDOWMANAGER_UPDATEBYID) && (event[i].type != EVENT_WINDOWMANAGER_UPDATEBYWINAREA) && (event[i].type != EVENT_WINDOWMANAGER_UPDATEBYMONAREA)) || (winEvent->id != nextWinEvent->id)) continue;
 
 			// 겹치는 영역을 계산해 겹치지 않으면 제외
-			if(getRectCross(&(winEvent->area), &(nextWinEvent->area), &crossArea) == FALSE) continue;
+			if(kGetRectCross(&(winEvent->area), &(nextWinEvent->area), &crossArea) == FALSE) continue;
 
 			// 두 영역이 일치하거나 어느 한쪽이 포함되면 이벤트 통합
-			if(memCmp(&(winEvent->area), &crossArea, sizeof(RECT)) == 0) {
+			if(kMemCmp(&(winEvent->area), &crossArea, sizeof(RECT)) == 0) {
 				// 현재 이벤트 윈도우 영역이 겹치는 영역과 일치하면 다음 이벤트 윈도우 영역이 현재 윈도우 영역과 같거나 포함
 				// 현재 이벤트에 다음 이벤트 윈도우 영역을 복사하고 다음 이벤트 삭제
-				memCpy(&(winEvent->area), &(nextWinEvent->area), sizeof(RECT));
+				kMemCpy(&(winEvent->area), &(nextWinEvent->area), sizeof(RECT));
 				event[i].type = EVENT_UNKNOWN;
-			} else if(memCmp(&(nextWinEvent->area), &crossArea, sizeof(RECT)) == 0) {
+			} else if(kMemCmp(&(nextWinEvent->area), &crossArea, sizeof(RECT)) == 0) {
 				// 다음 이벤트 윈도우 영역이 겹치는 영역과 일치하면 현재 이벤트 윈도우 영역이 다음 윈도우 영역과 같거나 포함
 				// 윈도우 영역을 복사 안하고 다음 이벤트 삭제
 				event[i].type = EVENT_UNKNOWN;
@@ -349,11 +349,11 @@ BOOL procEventData(void) {
 		// 윈도우 내부 영역 업데이트
 		case EVENT_WINDOWMANAGER_UPDATEBYWINAREA:
 			// 윈도우 기준 한 좌표를 화면 좌표로 반환해 업데이트
-			if(rectToMon(winEvent->id, &(winEvent->area), &area) == TRUE) updateWinArea(&area, winEvent->id);
+			if(kRectToMon(winEvent->id, &(winEvent->area), &area) == TRUE) kUpdateWinArea(&area, winEvent->id);
 			break;
 		// 화면 좌표로 전달된 영역 업데이트
 		case EVENT_WINDOWMANAGER_UPDATEBYMONAREA:
-			updateWinArea(&(winEvent->area), WINDOW_INVALID_ID);
+			kUpdateWinArea(&(winEvent->area), WINDOW_INVALID_ID);
 			break;
 		default:
 			break;
@@ -363,50 +363,50 @@ BOOL procEventData(void) {
 }
 
 // 비디오 메모리에 윈도우 크기 변경 아이콘 출력 혹은 삭제
-void drawResizeMark(const RECT *area, BOOL showMark) {
+void kDrawResizeMark(const RECT *area, BOOL showMark) {
 	RECT markArea;
 	WINDOWMANAGER *win;
 
 	// 윈도우 매니저 반환
-	win = getWinManager();
+	win = kGetWinManager();
 
 	// 윈도우 크기 변경 아이콘 출력 시
 	if(showMark == TRUE) {
 		// 왼쪽 위
-		setRectData(area->x1, area->y1, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
-		inDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x2, markArea.y1 + WINDOWMANAGER_THICK_RESIZEMARK, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
-		inDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x1 + WINDOWMANAGER_THICK_RESIZEMARK, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kSetRectData(area->x1, area->y1, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x2, markArea.y1 + WINDOWMANAGER_THICK_RESIZEMARK, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x1 + WINDOWMANAGER_THICK_RESIZEMARK, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
 
 		// 오른쪽 위
-		setRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y1, area->x2, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
-		inDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x2, markArea.y1 + WINDOWMANAGER_THICK_RESIZEMARK, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
-		inDrawRect(&(win->area), win->memAddr, markArea.x2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.y1, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kSetRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y1, area->x2, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x2, markArea.y1 + WINDOWMANAGER_THICK_RESIZEMARK, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.y1, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
 
 		// 왼쪽 아래
-		setRectData(area->x1, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y2, &markArea);
-		inDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
-		inDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x1 + WINDOWMANAGER_THICK_RESIZEMARK, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kSetRectData(area->x1, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y2, &markArea);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y1, markArea.x1 + WINDOWMANAGER_THICK_RESIZEMARK, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
 
 		// 오른쪽 아래
-		setRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x2, area->y2, &markArea);
-		inDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
-		inDrawRect(&(win->area), win->memAddr, markArea.x2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.y1, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kSetRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x2, area->y2, &markArea);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x1, markArea.y2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
+		kInDrawRect(&(win->area), win->memAddr, markArea.x2 - WINDOWMANAGER_THICK_RESIZEMARK, markArea.y1, markArea.x2, markArea.y2, WINDOWMANAGER_COLOR_RESIZEMARK, TRUE);
 	} else {
 		// 윈도우 크기 변경 아이콘 삭제 시
 		// 왼쪽 위
-		setRectData(area->x1, area->y1, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
-		updateWinArea(&markArea, WINDOW_INVALID_ID);
+		kSetRectData(area->x1, area->y1, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
+		kUpdateWinArea(&markArea, WINDOW_INVALID_ID);
 
 		// 오른쪽 위
-		setRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y1, area->x2, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
-		updateWinArea(&markArea, WINDOW_INVALID_ID);
+		kSetRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y1, area->x2, area->y1 + WINDOWMANAGER_RESIZEMARKSIZE, &markArea);
+		kUpdateWinArea(&markArea, WINDOW_INVALID_ID);
 
 		// 왼쪽 아래
-		setRectData(area->x1, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y2, &markArea);
-		updateWinArea(&markArea, WINDOW_INVALID_ID);
+		kSetRectData(area->x1, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x1 + WINDOWMANAGER_RESIZEMARKSIZE, area->y2, &markArea);
+		kUpdateWinArea(&markArea, WINDOW_INVALID_ID);
 
 		// 오른쪽 아래
-		setRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x2, area->y2, &markArea);
-		updateWinArea(&markArea, WINDOW_INVALID_ID);
+		kSetRectData(area->x2 - WINDOWMANAGER_RESIZEMARKSIZE, area->y2 - WINDOWMANAGER_RESIZEMARKSIZE, area->x2, area->y2, &markArea);
+		kUpdateWinArea(&markArea, WINDOW_INVALID_ID);
 	}
 }

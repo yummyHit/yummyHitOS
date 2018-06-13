@@ -64,7 +64,7 @@ typedef struct {
 } JPEG;
 
 // 함수
-BOOL jpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize);
-BOOL jpgDecode(JPEG *jpg, COLOR *outBuf);
+BOOL kJpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize);
+BOOL kJpgDecode(JPEG *jpg, COLOR *outBuf);
 
 #endif /*__JPEG_H__*/

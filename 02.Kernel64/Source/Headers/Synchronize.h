@@ -50,11 +50,11 @@ typedef struct spinLock {
 BOOL lockData(void);
 void unlockData(BOOL interruptFlag);
 #endif
-void initMutex(MUTEX *mut);
-void _lock(MUTEX *mut);
-void _unlock(MUTEX *mut);
-void initSpinLock(SPINLOCK *spinLock);
-void lock_spinLock(SPINLOCK *spinLock);
-void unlock_spinLock(SPINLOCK *spinLock);
+void kInitMutex(MUTEX *mut);
+void kLock(MUTEX *mut);
+void kUnlock(MUTEX *mut);
+void kInitSpinLock(SPINLOCK *spinLock);
+void kLock_spinLock(SPINLOCK *spinLock);
+void kUnlock_spinLock(SPINLOCK *spinLock);
 
 #endif /*__SYNCHRONIZE_H__*/

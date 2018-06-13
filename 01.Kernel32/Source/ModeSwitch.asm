@@ -8,12 +8,12 @@
 [BITS 32]			; 이하의 코드는 32비트 코드로 설정
 
 ; C 언어에서 호출할 수 있도록 이름을 노출함(Export)
-global ReadCPUID, SwitchNExecKernel
+global kReadCPUID, kSwitchNExecKernel
 
 SECTION .text		; text 섹션(세그먼트)을 정의
 
 ; CPUID를 반환(PARAM: DWORD ax, DWORD *eax, *ebx, *ecx, *edx)
-ReadCPUID:
+kReadCPUID:
 	push ebp		; 베이스 포인터 레지스터(EBP)를 스택에 삽입
 	mov ebp, esp	; 베이스 포인터 레지스터에 스택 포인터 레지스터(ESP)의 값을 설정
 	push eax		; 함수에서 임시로 사용하는 레지스터로 함수의 마지막 부분에서
@@ -50,7 +50,7 @@ ReadCPUID:
 	ret				; 함수를 호출한 다음 코드의 위치로 복귀
 
 ; IA-32e 모드로 전환하고 64비트 커널을 수행
-SwitchNExecKernel:
+kSwitchNExecKernel:
 	; CR4 컨트롤 레지스터의 PAE 비트를 1로 설정, OSXMMEXCPT 비트, OSFXSR 비트를 1로 설정
 	mov eax, cr4		; CR4 컨트롤 레지스터의 값을 EAX 레지스터에 저장
 	or eax, 0x620		; PAE 비트(비트 5)를 1로 설정
@@ -74,4 +74,4 @@ SwitchNExecKernel:
 	xor eax, 0x60000004	; NW 비트(비트 29), CD 비트(비트 30), EM 비트(비트 2)를 XOR하여 0으로 설정
 	mov cr0, eax		; 각 설정한 값을 다시 CR0 컨트롤 레지스터에 저장
 
-	jmp 0x08: 0x200000	; CS 세그먼트 셀렉터를 IA-32e 모드용 코드 세그먼트 디스크립터로 교체하고 0x200000(2MB) 어드레스로 이동
+	jmp 0x08:0x200000	; CS 세그먼트 셀렉터를 IA-32e 모드용 코드 세그먼트 디스크립터로 교체하고 0x200000(2MB) 어드레스로 이동

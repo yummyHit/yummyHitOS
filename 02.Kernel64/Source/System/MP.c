@@ -17,24 +17,24 @@ volatile int g_awakeAPCnt = 0;
 volatile QWORD g_APICIDAddr = 0;
 
 // 로컬 APIC 활성화 후 AP(Application Processor) 활성화
-BOOL startUpAP(void) {
+BOOL kStartUpAP(void) {
 	// MP 설정 테이블 분석
-	if(analysisMPConfig() == FALSE) return FALSE;
+	if(kAnalysisMPConfig() == FALSE) return FALSE;
 
 	// 모든 프로세서에서 로컬 APIC 사용토록 활성화
-	onLocalAPIC();
+	kOnLocalAPIC();
 
 	// BSP(Bootstrap Processor)의 로컬 APIC 활성화
-	onSWLocalAPIC();
+	kOnSWLocalAPIC();
 
 	// AP 깨움
-	if(awakeAP() == FALSE) return FALSE;
+	if(kAwakeAP() == FALSE) return FALSE;
 
 	return TRUE;
 }
 
 // AP(Application Processor) 활성화
-static BOOL awakeAP(void) {
+static BOOL kAwakeAP(void) {
 	MPCONFIGMANAGER *manager;
 	MPCONFIGHEADER *head;
 	QWORD localAddr;
@@ -42,10 +42,10 @@ static BOOL awakeAP(void) {
 	int i;
 
 	// 인터럽트 불가로 설정
-	interruptFlag = setInterruptFlag(FALSE);
+	interruptFlag = kSetInterruptFlag(FALSE);
 
 	// MP 설정 테이블 헤더에 저장된 로컬 APIC 메모리 맵 IO 어드레스 사용
-	manager = getMPConfigManager();
+	manager = kGetMPConfigManager();
 	head = manager->tblHeader;
 	localAddr = head->localAPICAddr;
 
@@ -59,15 +59,15 @@ static BOOL awakeAP(void) {
 	*(DWORD*)(localAddr + APIC_REG_LOWICR) = APIC_DESTABBR_ALLEXCLUDINGSELF | APIC_TRIGGERMODE_EDGE | APIC_LVL_ASSERT | APIC_DESTMODE_PHYSICAL | APIC_DELIVERYMODE_INIT;
 
 	// PIT를 직접 제어해 10ms 대기
-	waitPIT(MSTOCNT(10));
+	kWaitPIT(MSTOCNT(10));
 
 	// 하위 인터럽트 커맨드 레지스터에서 전달 상태 비트(비트 12)를 확인해 성공 여부 판별
 	if(*(DWORD*)(localAddr + APIC_REG_LOWICR) & APIC_DELIVERYSTAT_PENDING) {
 		// 타이머 인터럽트가 1초에 1000번 발생하도록 재설정
-		initPIT(MSTOCNT(1), TRUE);
+		kInitPIT(MSTOCNT(1), TRUE);
 
 		// 인터럽트 플래그 복원
-		setInterruptFlag(interruptFlag);
+		kSetInterruptFlag(interruptFlag);
 		return FALSE;
 	}
 
@@ -79,40 +79,40 @@ static BOOL awakeAP(void) {
 		*(DWORD*)(localAddr + APIC_REG_LOWICR) = APIC_DESTABBR_ALLEXCLUDINGSELF | APIC_TRIGGERMODE_EDGE | APIC_LVL_ASSERT | APIC_DESTMODE_PHYSICAL | APIC_DELIVERYMODE_STARTUP | 0x10;
 
 		// PIT를 직접 제어해 200us 동안 대기
-		waitPIT(USTOCNT(200));
+		kWaitPIT(USTOCNT(200));
 
 		// 하위 인터럽트 커맨드 레지스터에서 전달 상태 비트(비트 12)를 확인해 성공 여부 판별
 		if(*(DWORD*)(localAddr + APIC_REG_LOWICR) & APIC_DELIVERYSTAT_PENDING) {
 			// 타이머 인터럽트가 1초에 1000번 발생하도록 설정
-			initPIT(MSTOCNT(1), TRUE);
+			kInitPIT(MSTOCNT(1), TRUE);
 
 			// 인터럽트 플래그 복원
-			setInterruptFlag(interruptFlag);
+			kSetInterruptFlag(interruptFlag);
 			return FALSE;
 		}
 	}
 
 	// 타이머 인터럽트가 1초에 1000번 발생하도록 설정
-	initPIT(MSTOCNT(1), TRUE);
+	kInitPIT(MSTOCNT(1), TRUE);
 
 	// 인터럽트 플래그 복원
-	setInterruptFlag(interruptFlag);
+	kSetInterruptFlag(interruptFlag);
 
 	// AP가 모두 깨어날 때까지 대기
-	while(g_awakeAPCnt < (manager->procCnt - 1)) _sleep(50);
+	while(g_awakeAPCnt < (manager->procCnt - 1)) kSleep(50);
 
 	return TRUE;
 }
 
 // APIC ID 레지스터에서 APIC ID 반환
-BYTE getAPICID(void) {
+BYTE kGetAPICID(void) {
 	MPCONFIGHEADER *head;
 	QWORD localAddr;
 
 	// APIC ID 어드레스 값이 설정되지 않았으면 MP 설정 테이블에서 값 읽어 설정
 	if(g_APICIDAddr == 0) {
 		// MP 설정 테이블 헤더에 저장된 로컬 APIC 메모리 맵 IO 어드레스 사용
-		head = getMPConfigManager()->tblHeader;
+		head = kGetMPConfigManager()->tblHeader;
 		if(head == NULL) return 0;
 
 		// APIC ID 레지스터 어드레스(0xFEE00020)를 저장해 자신의 APIC ID를 읽을 수 있게 함

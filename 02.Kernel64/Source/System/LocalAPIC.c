@@ -9,54 +9,54 @@
 #include <MPConfig.h>
 
 // 로컬 APIC의 메모리 맵 IO 어드레스 반환
-QWORD getLocalAPICAddr(void) {
+QWORD kGetLocalAPICAddr(void) {
 	MPCONFIGHEADER *head;
 
 	// MP 설정 테이블 헤더에 저장된 로컬 APIC의 메모리 맵 IO 어드레스 사용
-	head = getMPConfigManager()->tblHeader;
+	head = kGetMPConfigManager()->tblHeader;
 	return head->localAPICAddr;
 }
 
 // 의사 인터럽트 벡터 레지스터(Spurious Interrupt Vector Register)에 있는 APIC 소프트웨어 활성/비활성 필드를 1로 설정해 로컬 APIC 활성화
-void onSWLocalAPIC(void) {
+void kOnSWLocalAPIC(void) {
 	QWORD localAddr;
 
 	// MP 설정 테이블 헤더에 저장된 로컬 APIC 메모리 맵 IO 어드레스 사용
-	localAddr = getLocalAPICAddr();
+	localAddr = kGetLocalAPICAddr();
 
 	// 의사 인터럽트 벡터 레지스터(0xFEE000F0)의 APIC 소프트웨어 활성/비활성 필드(비트 8)를 1로 설정해 로컬 APIC 활성화
 	*(DWORD*)(localAddr + APIC_REG_SVR) |= 0x100;
 }
 
 // 로컬 APIC에 EOI(End of Interrupt) 전송
-void sendEOI_LocalAPIC(void) {
+void kSendEOI_LocalAPIC(void) {
 	QWORD addr;
 
 	// MP 설정 테이블 헤더에 저장된 로컬 APIC 메모리 맵 IO 어드레스 사용
-	addr = getLocalAPICAddr();
+	addr = kGetLocalAPICAddr();
 
 	// EOI 레지스터(0xFEE000B0)에 0x00을 출력해 EOI 전송
 	*(DWORD*)(addr + APIC_REG_EOI) = 0;
 }
 
 // 태스크 우선순위 레지스터 설정
-void setTaskPriority(BYTE priority) {
+void kSetTaskPriority(BYTE priority) {
 	QWORD addr;
 
 	// MP 설정 테이블 헤더에 저장된 로컬 APIC 메모리 맵 IO 어드레스 사용
-	addr = getLocalAPICAddr();
+	addr = kGetLocalAPICAddr();
 
 	// 태스크 우선순위 레지스터(0xFEE00080)에 우선순위 값 전송
 	*(DWORD*)(addr + APIC_REG_TASKPRIORITY) = priority;
 }
 
 // 로컬 벡터 테이블 초기화
-void initLocalVecTbl(void) {
+void kInitLocalVecTbl(void) {
 	QWORD addr;
 	DWORD tmp;
 
 	// MP 설정 테이블 헤더에 저장된 로컬 APIC 메모리 맵 IO 어드레스 사용
-	addr = getLocalAPICAddr();
+	addr = kGetLocalAPICAddr();
 
 	// 타이머 인터럽트가 발생하지 않도록 기존 값에 마스크 값을 더해 LVT 타이머 레지스터(0xFEE00320)에 저장
 	*(DWORD*)(addr + APIC_REG_TIMER) |= APIC_INTERRUPT_MASK;

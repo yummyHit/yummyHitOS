@@ -17,8 +17,8 @@
 // 지원 가능한 최대 프로세서 또는 코어 개수
 #define MAXPROCESSORCNT	16
 
-BOOL startUpAP(void);
-BYTE getAPICID(void);
-static BOOL awakeAP(void);
+BOOL kStartUpAP(void);
+BYTE kGetAPICID(void);
+static BOOL kAwakeAP(void);
 
 #endif /*__MP_H__*/

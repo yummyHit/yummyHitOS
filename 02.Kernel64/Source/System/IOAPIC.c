@@ -13,13 +13,13 @@
 static IOAPICMANAGER gs_ioAPICManager;
 
 // ISA 버스가 연결된 IO APIC의 기준 주소 반환
-QWORD getIO_APICAddr(void) {
+QWORD kGetIO_APICAddr(void) {
 	MPCONFIGMANAGER *manager;
 	IOAPICENTRY *entry;
 
 	// IO APIC의 주소가 저장되어 있지 않으면 엔트리 찾아 저장
 	if(gs_ioAPICManager.ioAPICAddr == NULL) {
-		entry = findIO_APICEntry();
+		entry = kFindIO_APICEntry();
 		if(entry != NULL) gs_ioAPICManager.ioAPICAddr = entry->memAddr & 0xFFFFFFFF;
 	}
 
@@ -28,8 +28,8 @@ QWORD getIO_APICAddr(void) {
 }
 
 // IO 리다이렉션 테이블 자료구조에 값 설정
-void setIO_APICRedirect(IOREDIRECTTBL *entry, BYTE id, BYTE interruptMask, BYTE mode, BYTE vec) {
-	memSet(entry, 0, sizeof(IOREDIRECTTBL));
+void kSetIO_APICRedirect(IOREDIRECTTBL *entry, BYTE id, BYTE interruptMask, BYTE mode, BYTE vec) {
+	kMemSet(entry, 0, sizeof(IOREDIRECTTBL));
 
 	entry->dest = id;
 	entry->mode = mode;
@@ -38,11 +38,11 @@ void setIO_APICRedirect(IOREDIRECTTBL *entry, BYTE id, BYTE interruptMask, BYTE 
 }
 
 // 인터럽트 입력  핀에 해당하는 IO 리다이렉션 테이블에서 값 읽음
-void readIO_APICRedirect(int intin, IOREDIRECTTBL *entry) {
+void kReadIO_APICRedirect(int intin, IOREDIRECTTBL *entry) {
 	QWORD *data, baseAddr;
 
 	// ISA 버스가 연결된 IO APIC 메모리 맵 IO 어드레스
-	baseAddr = getIO_APICAddr();
+	baseAddr = kGetIO_APICAddr();
 
 	// IO 리다이렉션 테이블은 8바이트. 형변환 처리
 	data = (QWORD*)entry;
@@ -61,11 +61,11 @@ void readIO_APICRedirect(int intin, IOREDIRECTTBL *entry) {
 }
 
 // 인터럽트 입력 핀에 해당하는 IO 리다이렉션 테이블에 값 씀
-void writeIO_APICRedirect(int intin, IOREDIRECTTBL *entry) {
+void kWriteIO_APICRedirect(int intin, IOREDIRECTTBL *entry) {
 	QWORD *data, baseAddr;
 
 	// ISA 버스가 연결된 IO APIC 메모리 맵 IO 어드레스
-	baseAddr = getIO_APICAddr();
+	baseAddr = kGetIO_APICAddr();
 
 	// IO 리다이렉션 테이블은 8바이트. 형변환 처리
 	data = (QWORD*)entry;
@@ -83,21 +83,21 @@ void writeIO_APICRedirect(int intin, IOREDIRECTTBL *entry) {
 }
 
 // IO APIC에 연결된 모든 인터럽트 핀을 마스크해 인터럽트가 전달되지 않게 함
-void maskInterruptIO_APIC(void) {
+void kMaskInterruptIO_APIC(void) {
 	IOREDIRECTTBL entry;
 	int i;
 
 	// 모든 인터럽트 비활성화
 	for(i = 0; i < IO_APIC_MAXREDIRECT_TBLCNT; i++) {
 		// IO 리다이렉션 테이블을 읽어 인터럽트 마스크 필드(비트 0)를 1로 설정해 저장
-		readIO_APICRedirect(i, &entry);
+		kReadIO_APICRedirect(i, &entry);
 		entry.interruptMask = IO_APIC_INTERRUPT_MASK;
-		writeIO_APICRedirect(i, &entry);
+		kWriteIO_APICRedirect(i, &entry);
 	}
 }
 
 // IO APIC의 IO 리다이렉션 테이블 초기화
-void initIORedirect(void) {
+void kInitIORedirect(void) {
 	MPCONFIGMANAGER *manager;
 	MPCONFIGHEADER *head;
 	IOINTERRUPTENTRY *ioInterruptEntry;
@@ -107,21 +107,21 @@ void initIORedirect(void) {
 	int i;
 
 	// IO APIC 자료구조 초기화
-	memSet(&gs_ioAPICManager, 0, sizeof(gs_ioAPICManager));
+	kMemSet(&gs_ioAPICManager, 0, sizeof(gs_ioAPICManager));
 
 	// IO APIC 메모리 맵 IO 어드레스 저장, 내부적 처리
-	getIO_APICAddr();
+	kGetIO_APICAddr();
 
 	// IRQ를 IO APIC의 INTIN 핀과 연결한 테이블 초기화
 	for(i = 0; i < IO_APIC_MAXIRQ_MAPCNT; i++) gs_ioAPICManager.irqMap[i] = 0xFF;
 
 	// IO APIC를 마스크해 인터럽트가 발생하지 않도록 하고 IO 리다이렉션 테이블 초기화
 	// 먼저 IO APIC의 인터럽트 마스크해 인터럽트 발생하지 않도록 함
-	maskInterruptIO_APIC();
+	kMaskInterruptIO_APIC();
 
 	// IO 인터럽트 지정 엔트리 중 ISA 버스와 관련된 인터럽트만 IO 리다이렉션 테이블에 설정
 	// MP 설정 테이블 헤더의 시작 주소와 엔트리 시작 주소 저장
-	manager = getMPConfigManager();
+	manager = kGetMPConfigManager();
 	head = manager->tblHeader;
 	addr = manager->startAddr;
 
@@ -139,10 +139,10 @@ void initIORedirect(void) {
 
 				// ISQ 버스는 엣지 트리거와 1일 때 Active High 사용, 목적지 모드는 물리 모드, 전달 모드는 고정
 				// 인터럽트 벡터는 PIC 컨트롤러의 벡터와 같이 0x20 + IRQ로 설정
-				setIO_APICRedirect(&redirectEntry, dest, 0x00, IO_APIC_TRIGGERMODE_EDGE | IO_APIC_POLARITY_ACTIVEHIGH | IO_APIC_DESTMODE_PHYSICAL | IO_APIC_DELIVERYMODE_FIXED, PIC_IRQ_STARTVEC + ioInterruptEntry->srcIRQ);
+				kSetIO_APICRedirect(&redirectEntry, dest, 0x00, IO_APIC_TRIGGERMODE_EDGE | IO_APIC_POLARITY_ACTIVEHIGH | IO_APIC_DESTMODE_PHYSICAL | IO_APIC_DELIVERYMODE_FIXED, PIC_IRQ_STARTVEC + ioInterruptEntry->srcIRQ);
 
 				// ISA 버스에서 전달된 IRQ는 IO APIC의 INTIN 핀에 있으므로 INTIN 값 이용해 처리
-				writeIO_APICRedirect(ioInterruptEntry->destINTIN, &redirectEntry);
+				kWriteIO_APICRedirect(ioInterruptEntry->destINTIN, &redirectEntry);
 
 				// IRQ와 인터럽트 입력 핀(INTIN)의 관계 저장(IRQ->INTIN 매핑 테이블 구성)
 				gs_ioAPICManager.irqMap[ioInterruptEntry->srcIRQ] = ioInterruptEntry->destINTIN;
@@ -164,16 +164,16 @@ void initIORedirect(void) {
 }
 
 // IRQ와 IO APIC의 인터럽트 핀 간 매핑 관계 출력
-void printIRQMap(void) {
+void kPrintIRQMap(void) {
 	int i;
 
-	printF("   =========== IRQ to I/O APIC INT IN Mapping Table ===========\n");
+	kPrintF("   =========== IRQ to I/O APIC INT IN Mapping Table ===========\n");
 
-	for(i = 0; i < IO_APIC_MAXIRQ_MAPCNT; i++) printF("IRQ[%d] -> INTIN [%d]\n", i, gs_ioAPICManager.irqMap[i]);
+	for(i = 0; i < IO_APIC_MAXIRQ_MAPCNT; i++) kPrintF("IRQ[%d] -> INTIN [%d]\n", i, gs_ioAPICManager.irqMap[i]);
 }
 
 // IRQ를 로컬 APIC ID로 전달하도록 변경
-void routingIRQ(int irq, BYTE id) {
+void kRoutingIRQ(int irq, BYTE id) {
 	int i;
 	IOREDIRECTTBL entry;
 
@@ -181,7 +181,7 @@ void routingIRQ(int irq, BYTE id) {
 	if(irq > IO_APIC_MAXIRQ_MAPCNT) return;
 
 	// 설정된 IO 리다이렉션 테이블을 읽어 목적지 필드만 수정
-	readIO_APICRedirect(gs_ioAPICManager.irqMap[irq], &entry);
+	kReadIO_APICRedirect(gs_ioAPICManager.irqMap[irq], &entry);
 	entry.dest = id;
-	writeIO_APICRedirect(gs_ioAPICManager.irqMap[irq], &entry);
+	kWriteIO_APICRedirect(gs_ioAPICManager.irqMap[irq], &entry);
 }

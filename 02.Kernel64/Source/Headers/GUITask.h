@@ -30,22 +30,22 @@
 // 막대 색
 #define SYSMON_BAR_COLOR		RGB(102, 0, 255)
 
-void baseGUITask(void);
-void firstGUITask(void);
-void exitGUITask(void);
+void kBaseGUITask(void);
+void kFirstGUITask(void);
+void kExitGUITask(void);
 
 // 시스템 모니터 태스크 함수
-void sysMonTask(void); 
-static void drawProcInfo(QWORD winID, int x, int y, BYTE id);
-static void drawMemInfo(QWORD winID, int y, int winWidth);
+void kSysMonTask(void); 
+static void kDrawProcInfo(QWORD winID, int x, int y, BYTE id);
+static void kDrawMemInfo(QWORD winID, int y, int winWidth);
 
 // GUI 콘솔 셸 태스크 함수
-void GUIShell(void);
-static void procConsoleBuf(QWORD winID);
+void kGUIShell(void);
+static void kProcConsoleBuf(QWORD winID);
 
 // 이미지 뷰어 태스크 함수
-void imgViewTask(void);
-static void drawFileName(QWORD winID, RECT *area, char *fileName, int len);
-static BOOL createImgOnWinExe(QWORD mainWinID, const char *fileName);
+void kImgViewTask(void);
+static void kDrawFileName(QWORD winID, RECT *area, char *fileName, int len);
+static BOOL kCreateImgOnWinExe(QWORD mainWinID, const char *fileName);
 
 #endif /*__GUITASK_H__*/

@@ -21,10 +21,10 @@
 // 윈도우 크기 변경 아이콘 두께
 #define WINDOWMANAGER_THICK_RESIZEMARK	4
 
-void startWinManager(void);
-BOOL procMouseData(void);
-BOOL procKeyData(void);
-BOOL procEventData(void);
-void drawResizeMark(const RECT *area, BOOL showMark);
+void kStartWinManager(void);
+BOOL kProcMouseData(void);
+BOOL kProcKeyData(void);
+BOOL kProcEventData(void);
+void kDrawResizeMark(const RECT *area, BOOL showMark);
 
 #endif /*__WINMANAGER_H__*/

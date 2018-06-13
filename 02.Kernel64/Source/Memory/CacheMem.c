@@ -13,11 +13,11 @@
 static CACHEMEM gs_cacheMem;
 
 // 파일 시스템 캐시 초기화
-BOOL initCacheMem(void) {
+BOOL kInitCacheMem(void) {
 	int i;
 
 	// 자료구조 초기화
-	memSet(&gs_cacheMem, 0, sizeof(gs_cacheMem));
+	kMemSet(&gs_cacheMem, 0, sizeof(gs_cacheMem));
 
 	// 접근 시간 초기화
 	gs_cacheMem.accessTime[CACHE_CLUSTER_AREA] = 0;
@@ -28,7 +28,7 @@ BOOL initCacheMem(void) {
 	gs_cacheMem.maxCnt[CACHE_DATA_AREA] = CACHE_MAXDATA_AREACNT;
 
 	// 클러스터 링크 테이블 영역용 메모리 할당, 클러스터 링크 테이블은 512바이트로 관리
-	gs_cacheMem.buf[CACHE_CLUSTER_AREA] = (BYTE*)allocMem(CACHE_MAXCLUSTER_AREACNT * 512);
+	gs_cacheMem.buf[CACHE_CLUSTER_AREA] = (BYTE*)kAllocMem(CACHE_MAXCLUSTER_AREACNT * 512);
 	if(gs_cacheMem.buf[CACHE_CLUSTER_AREA] == NULL) return FALSE;
 
 	// 할당받은 메모리 영역을 나누어 캐시 버퍼에 등록
@@ -41,10 +41,10 @@ BOOL initCacheMem(void) {
 	}
 
 	// 데이터 영역용 메모리 할당, 데이터 영역은 클러스터 단위(4KB)로 관리
-	gs_cacheMem.buf[CACHE_DATA_AREA] = (BYTE*)allocMem(CACHE_MAXDATA_AREACNT * FILESYSTEM_CLUSTER_SIZE);
+	gs_cacheMem.buf[CACHE_DATA_AREA] = (BYTE*)kAllocMem(CACHE_MAXDATA_AREACNT * FILESYSTEM_CLUSTER_SIZE);
 	if(gs_cacheMem.buf[CACHE_DATA_AREA] == NULL) {
 		// 실패하면 이전 할당 메모리 해제
-		freeMem(gs_cacheMem.buf[CACHE_CLUSTER_AREA]);
+		kFreeMem(gs_cacheMem.buf[CACHE_CLUSTER_AREA]);
 		return FALSE;
 	}
 
@@ -61,7 +61,7 @@ BOOL initCacheMem(void) {
 }
 
 // 캐시 버퍼에서 빈 것 찾아 반환
-CACHEBUF *allocCacheBuf(int idx) {
+CACHEBUF *kAllocCacheBuf(int idx) {
 	CACHEBUF *buf;
 	int i;
 
@@ -69,7 +69,7 @@ CACHEBUF *allocCacheBuf(int idx) {
 	if(idx > CACHE_MAXCACHE_IDX) return FALSE;
 
 	// 접근 시간 필드가 최댓값까지 가면 전체 접근 시간 낮춤
-	downAccessTime(idx);
+	kDownAccessTime(idx);
 
 	// 최대 개수만큼 검색해 빈 것 반환
 	buf = gs_cacheMem.cacheBuf[idx];
@@ -86,7 +86,7 @@ CACHEBUF *allocCacheBuf(int idx) {
 }
 
 // 캐시 버퍼에서 태그가 일치하는 것 찾아 반환
-CACHEBUF *findCacheBuf(int idx, DWORD tag) {
+CACHEBUF *kFindCacheBuf(int idx, DWORD tag) {
 	CACHEBUF *buf;
 	int i;
 
@@ -94,7 +94,7 @@ CACHEBUF *findCacheBuf(int idx, DWORD tag) {
 	if(idx > CACHE_MAXCACHE_IDX) return FALSE;
 
 	// 접근 시간 필드가 최댓값까지 증가하면 전체 접근 시간 낮춤
-	downAccessTime(idx);
+	kDownAccessTime(idx);
 
 	// 최대 개수만큼 검색해 빈 것 반환
 	buf = gs_cacheMem.cacheBuf[idx];
@@ -108,7 +108,7 @@ CACHEBUF *findCacheBuf(int idx, DWORD tag) {
 }
 
 // 접근한 시간 전체적으로 낮춤
-static void downAccessTime(int idx) {
+static void kDownAccessTime(int idx) {
 	CACHEBUF tmp, *buf;
 	BOOL sorted;
 	int i, j;
@@ -128,9 +128,9 @@ static void downAccessTime(int idx) {
 			sorted = FALSE;
 
 			// i번째 캐시와 i+1번째 캐시 교환
-			memCpy(&tmp, &(buf[i]), sizeof(CACHEBUF));
-			memCpy(&(buf[i]), &(buf[i + 1]), sizeof(CACHEBUF));
-			memCpy(&(buf[i + 1]), &tmp, sizeof(CACHEBUF));
+			kMemCpy(&tmp, &(buf[i]), sizeof(CACHEBUF));
+			kMemCpy(&(buf[i]), &(buf[i + 1]), sizeof(CACHEBUF));
+			kMemCpy(&(buf[i + 1]), &tmp, sizeof(CACHEBUF));
 		}
 
 		// 다 정렬되었으면 루프 종료
@@ -145,7 +145,7 @@ static void downAccessTime(int idx) {
 }
 
 // 캐시 버퍼에서 내보낼 것 찾음
-CACHEBUF *getTargetCacheBuf(int idx) {
+CACHEBUF *kGetTargetCacheBuf(int idx) {
 	DWORD oldTime;
 	CACHEBUF *buf;
 	int oldIdx, i;
@@ -175,7 +175,7 @@ CACHEBUF *getTargetCacheBuf(int idx) {
 
 	// 캐시 버퍼를 찾지 못하면 문제 발생
 	if(oldIdx == -1) {
-		printF("Find Cache Buffer Error...\n");
+		kPrintF("Find Cache Buffer Error...\n");
 		return NULL;
 	}
 
@@ -185,7 +185,7 @@ CACHEBUF *getTargetCacheBuf(int idx) {
 }
 
 // 캐시 버퍼 내용 모두 비움
-void clearCacheBuf(int idx) {
+void kClearCacheBuf(int idx) {
 	CACHEBUF *buf;
 	int i;
 
@@ -198,7 +198,7 @@ void clearCacheBuf(int idx) {
 }
 
 // 캐시 버퍼 포인터와 최대 개수 반환
-BOOL getCacheBufCnt(int idx, CACHEBUF **buf, int *maxCnt) {
+BOOL kGetCacheBufCnt(int idx, CACHEBUF **buf, int *maxCnt) {
 	// 캐시 테이블 최대 개수 넘으면 실패
 	if(idx > CACHE_MAXCACHE_IDX) return FALSE;
 

@@ -34,9 +34,9 @@ typedef struct rddManager {
 
 #pragma pack(pop)
 
-BOOL initRDD(DWORD sectorCnt);
-BOOL readRDDInfo(BOOL pri, BOOL master, HDDINFO *hddInfo);
-int readRDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
-int writeRDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
+BOOL kInitRDD(DWORD sectorCnt);
+BOOL kReadRDDInfo(BOOL pri, BOOL master, HDDINFO *hddInfo);
+int kReadRDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
+int kWriteRDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
 
 #endif /*__RAMDISK_H__*/

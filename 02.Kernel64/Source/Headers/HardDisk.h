@@ -111,18 +111,18 @@ typedef struct HDDManager {
 	HDDINFO hddInfo;
 } HDDMANAGER;
 
-BOOL initHDD(void);
-BOOL readHDDInfo(BOOL pri, BOOL master, HDDINFO *hddInfo);
-int readHDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
-int writeHDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
-void setHDDInterruptFlag(BOOL pri, BOOL flag);
+BOOL kInitHDD(void);
+BOOL kReadHDDInfo(BOOL pri, BOOL master, HDDINFO *hddInfo);
+int kReadHDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
+int kWriteHDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
+void kSetHDDInterruptFlag(BOOL pri, BOOL flag);
 
-static void swapByte(WORD *data, int cnt);
-static BYTE readHDDStat(BOOL pri);
-static BOOL isHDDBusy(BOOL pri);
-static BOOL isHDDReady(BOOL pri);
-static BOOL waitHDDBusy(BOOL pri);
-static BOOL waitHDDReady(BOOL pri);
-static BOOL waitHDDInterrupt(BOOL pri);
+static void kSwapByte(WORD *data, int cnt);
+static BYTE kReadHDDStat(BOOL pri);
+static BOOL kIsHDDBusy(BOOL pri);
+static BOOL kIsHDDReady(BOOL pri);
+static BOOL kWaitHDDBusy(BOOL pri);
+static BOOL kWaitHDDReady(BOOL pri);
+static BOOL kWaitHDDInterrupt(BOOL pri);
 
 #endif /*__HARDDISK_H__*/

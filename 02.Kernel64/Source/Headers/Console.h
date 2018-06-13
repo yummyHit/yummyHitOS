@@ -79,19 +79,19 @@ typedef struct csManager {
 
 #pragma pack(pop)
 
-void initConsole(int x, int y);
-void setCursor(int x, int y);
-void getCursor(int *x, int *y);
-int printF(const char *format, ...);
-int csPrint(const char *buf);
-void clearMonitor(void);
-void clearMatrix(void);
-BYTE getCh(void);
-void printXY(int x, int y, BYTE color, const char *str);
-CONSOLEMANAGER *getConsoleManager(void);
-BOOL rmGUIKeyQ(KEYDATA *data);
-BOOL addGUIKeyQ(KEYDATA *data);
-void setShellExitFlag(BOOL flag);
+void kInitConsole(int x, int y);
+void kSetCursor(int x, int y);
+void kGetCursor(int *x, int *y);
+int kPrintF(const char *format, ...);
+int kCSPrint(const char *buf);
+void kClearMonitor(void);
+void kClearMatrix(void);
+BYTE kGetCh(void);
+void kPrintXY(int x, int y, BYTE color, const char *str);
+CONSOLEMANAGER *kGetConsoleManager(void);
+BOOL kRmGUIKeyQ(KEYDATA *data);
+BOOL kAddGUIKeyQ(KEYDATA *data);
+void kSetShellExitFlag(BOOL flag);
 
 void yummy_ascii_art(const char *buf);
 

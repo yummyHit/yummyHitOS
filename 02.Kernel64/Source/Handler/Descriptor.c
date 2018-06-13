@@ -11,7 +11,7 @@
 #include <MP.h>
 
 // GDT 테이블 초기화
-void initGDTNTSS(void) {
+void kInitGDTNTSS(void) {
 	GDTR *gdtr;
 	GDTENTRY8 *entry;
 	TSS *tss;
@@ -26,20 +26,23 @@ void initGDTNTSS(void) {
 	tss = (TSS*)((QWORD)entry + GDT_TABLESIZE);
 
 	// NULL, 64bit Code & Data, TSS를 위해 총 3 + 16개의 세그먼트 생성
-	setGDTEntry8(&(entry[0]), 0, 0, 0, 0, 0);
-	setGDTEntry8(&(entry[1]), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE);
-	setGDTEntry8(&(entry[2]), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA);
+	kSetGDTEntry8(&(entry[0]), 0, 0, 0, 0, 0);
+	kSetGDTEntry8(&(entry[1]), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE);
+	kSetGDTEntry8(&(entry[2]), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA);
+	// Make to User Level Code & Data Descriptor
+	kSetGDTEntry8(&(entry[3]), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_USERDATA, GDT_TYPE_DATA);
+	kSetGDTEntry8(&(entry[4]), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_USERCODE, GDT_TYPE_CODE);
 
 	// 16개 코어 지원을 위해 16개 TSS 디스크립터 생성
 	// TSS는 16바이트이므로 setGDTEntry16() 함수 사용, entry는 8바이트이므로 2개를 합쳐 하나로 사용
-	for(i = 0; i < MAXPROCESSORCNT; i++) setGDTEntry16((GDTENTRY16*)&(entry[GDT_MAXENTRY8CNT + (i * 2)]), (QWORD)tss + (i * sizeof(TSS)), sizeof(TSS) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
+	for(i = 0; i < MAXPROCESSORCNT; i++) kSetGDTEntry16((GDTENTRY16*)&(entry[GDT_MAXENTRY8CNT + (i * 2)]), (QWORD)tss + (i * sizeof(TSS)), sizeof(TSS) - 1, GDT_FLAGS_UPPER_TSS, GDT_FLAGS_LOWER_TSS, GDT_TYPE_TSS);
 
 	// TSS 초기화 GDT 이하 영역 사용
-	initTSS(tss);
+	kInitTSS(tss);
 }
 
 // 8byte 크기의 GDT 엔트리에 값 설정, 코드와 데이터 세그먼트 디스크립터를 설정하는데 사용
-void setGDTEntry8(GDTENTRY8 *entry, DWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type) {
+void kSetGDTEntry8(GDTENTRY8 *entry, DWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type) {
 	entry->lowLimit = limit & 0xFFFF;
 	entry->lowBaseAddr = baseAddr & 0xFFFF;
 	entry->highBaseAddr_A = (baseAddr >> 16) & 0xFF;
@@ -49,7 +52,7 @@ void setGDTEntry8(GDTENTRY8 *entry, DWORD baseAddr, DWORD limit, BYTE highFlag, 
 }
 
 // 16byte 크기의 GDT 엔트리에 값 설정, TSS 세그먼트 디스크립터 설정하는데 사용
-void setGDTEntry16(GDTENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type) {
+void kSetGDTEntry16(GDTENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag, BYTE lowFlag, BYTE type) {
 	entry->lowLimit = limit & 0xFFFF;
 	entry->lowBaseAddr = baseAddr & 0xFFFF;
 	entry->midBaseAddr_A = (baseAddr >> 16) & 0xFF;
@@ -61,13 +64,13 @@ void setGDTEntry16(GDTENTRY16 *entry, QWORD baseAddr, DWORD limit, BYTE highFlag
 }
 
 // TSS 세그먼트 정보 초기화
-void initTSS(TSS *tss) {
+void kInitTSS(TSS *tss) {
 	int i;
 
 	// 최대 프로세서 또는 코어 수만큼 루프를 돌며 생성
 	for(i = 0; i < MAXPROCESSORCNT; i++) {
 		// 0으로 초기화
-		memSet(tss, 0, sizeof(TSS));
+		kMemSet(tss, 0, sizeof(TSS));
 
 		// IST의 뒤에서부터 잘라서 할당(주의 : IST는 16바이트 단위로 정렬해야 함)
 		tss->ist[0] = IST_STARTADDR + IST_SIZE - (IST_SIZE / MAXPROCESSORCNT * i);
@@ -81,7 +84,7 @@ void initTSS(TSS *tss) {
 }
 
 // IDT 테이블 초기화
-void initIDT(void) {
+void kInitIDT(void) {
 	IDTR *idtr;
 	IDTENTRY *entry;
 	int i;
@@ -94,52 +97,52 @@ void initIDT(void) {
 	idtr->limit = IDT_TABLESIZE - 1;
 
 	// 예외 ISR 등록
-	setIDTEntry(&(entry[0]), ISRDivErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[1]), ISRDebug, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[2]), ISRNMI, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[3]), ISRBP, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[4]), ISROF, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[5]), ISRExceed, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[6]), ISROPErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[7]), ISRDevErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[8]), ISRDoubleErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[9]), ISRSegmentOverrun, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[10]), ISRTSSErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[11]), ISRSegmentErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[12]), ISRStackErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[13]), ISRProtectErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[14]), ISRPageErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[15]), ISR15, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[16]), ISRFPUErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[17]), ISRAlignChk, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[18]), ISRMachChk, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[19]), ISRSIMDErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[0]), kISRDivErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[1]), kISRDebug, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[2]), kISRNMI, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[3]), kISRBP, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[4]), kISROF, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[5]), kISRExceed, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[6]), kISROPErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[7]), kISRDevErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[8]), kISRDoubleErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[9]), kISRSegmentOverrun, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[10]), kISRTSSErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[11]), kISRSegmentErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[12]), kISRStackErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[13]), kISRProtectErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[14]), kISRPageErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[15]), kISR15, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[16]), kISRFPUErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[17]), kISRAlignChk, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[18]), kISRMachChk, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[19]), kISRSIMDErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 
-	for(i = 20; i < 32; i++) setIDTEntry(&(entry[i]), ISRETCErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	for(i = 20; i < 32; i++) kSetIDTEntry(&(entry[i]), kISRETCErr, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 
 	// 인터럽트 ISR 등록
-	setIDTEntry(&(entry[32]), ISRTimer, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[33]), ISRKeyboard, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[34]), ISRSlavePIC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[35]), ISRSerial2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[36]), ISRSerial1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[37]), ISRParallel2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[38]), ISRFloppy, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[39]), ISRParallel1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[40]), ISRRTC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[41]), ISRReserved, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[42]), ISRNotUsed1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[43]), ISRNotUsed2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[44]), ISRMouse, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[45]), ISRCoprocessor, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[46]), ISRHDD1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
-	setIDTEntry(&(entry[47]), ISRHDD2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[32]), kISRTimer, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[33]), kISRKeyboard, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[34]), kISRSlavePIC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[35]), kISRSerial2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[36]), kISRSerial1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[37]), kISRParallel2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[38]), kISRFloppy, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[39]), kISRParallel1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[40]), kISRRTC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[41]), kISRReserved, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[42]), kISRNotUsed1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[43]), kISRNotUsed2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[44]), kISRMouse, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[45]), kISRCoprocessor, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[46]), kISRHDD1, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	kSetIDTEntry(&(entry[47]), kISRHDD2, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 
-	for(i = 48; i < IDT_MAXENTRYCNT; i++) setIDTEntry(&(entry[i]), ISRETC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
+	for(i = 48; i < IDT_MAXENTRYCNT; i++) kSetIDTEntry(&(entry[i]), kISRETC, 0x08, IDT_FLAGS_IST1, IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
 }
 
 // IDT 게이트 디스크립터에 값 설정
-void setIDTEntry(IDTENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BYTE type) {
+void kSetIDTEntry(IDTENTRY *entry, void *handle, WORD selector, BYTE ist, BYTE flag, BYTE type) {
 	entry->lowBaseAddr = (QWORD)handle & 0xFFFF;
 	entry->selector = selector;
 	entry->ist = ist & 0x3;

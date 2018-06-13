@@ -104,23 +104,23 @@ typedef struct keyData {
 #pragma pack(pop)
 
 // 함수
-BOOL outputBufChk(void);
-BOOL inputBufChk(void);
-BOOL ackForQ(void);
-BOOL activeKeyboard(void);
-BOOL getCode(void);
-BOOL alterLED(BOOL caps, BOOL num, BOOL scroll);
-void onA20Gate(void);
-void reBoot(void);
-void shutDown(void);
-BOOL isEngScanCode(BYTE scanCode);
-BOOL isNumScanCode(BYTE scanCode);
-BOOL isPadScanCode(BYTE scanCode);
-BOOL isCombineCode(BYTE scanCode);
-void updateKeyNLED(BYTE scanCode);
-BOOL convertCode(BYTE scanCode, BYTE *ascii, BOOL *flag);
-BOOL initKeyboard(void);
-BOOL convertNPutCode(BYTE scanCode);
-BOOL getKeyData(KEYDATA *data);
+BOOL kOutputBufChk(void);
+BOOL kInputBufChk(void);
+BOOL kAckForQ(void);
+BOOL kActiveKeyboard(void);
+BOOL kGetCode(void);
+BOOL kAlterLED(BOOL caps, BOOL num, BOOL scroll);
+void kOnA20Gate(void);
+void kReBoot(void);
+void kShutDown(void);
+BOOL kIsEngScanCode(BYTE scanCode);
+BOOL kIsNumScanCode(BYTE scanCode);
+BOOL kIsPadScanCode(BYTE scanCode);
+BOOL kIsCombineCode(BYTE scanCode);
+void kUpdateKeyNLED(BYTE scanCode);
+BOOL kConvertCode(BYTE scanCode, BYTE *ascii, BOOL *flag);
+BOOL kInitKeyboard(void);
+BOOL kConvertNPutCode(BYTE scanCode);
+BOOL kGetKeyData(KEYDATA *data);
 
 #endif /*__KEYBOARD_H__*/

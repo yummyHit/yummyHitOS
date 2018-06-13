@@ -14,7 +14,7 @@
 #pragma once
 
 // 매크로. 동적 메모리 영역의 시작 어드레스, 1MB 단위로 정렬
-#define DYNMEM_START_ADDR	((TASK_STACKPOOLADDR + (TASK_STACKSIZE * TASK_MAXCNT) + 0xfffff) & 0xffffffffff00000)
+#define DYNMEM_START_ADDR	((TASK_STACKPOOLADDR + 0x1fffff) & 0xfffffffffe00000)
 // 버디 블록 최소 크기, 1KB
 #define DYNMEM_MIN_SIZE		(1 * 1024)
 
@@ -47,20 +47,20 @@ typedef struct dynmemManager {
 	BITMAP *bitmapLv;
 } DYNMEM;
 
-void initDynMem(void);
-void *allocMem(QWORD size);
-BOOL freeMem(void *addr);
-void getDynMemInfo(QWORD *dynmemStartAddr, QWORD *dynmemTotalSize, QWORD *metaDataSize, QWORD *usedMemSize);
-DYNMEM *getDynMemManager(void);
+void kInitDynMem(void);
+void *kAllocMem(QWORD size);
+BOOL kFreeMem(void *addr);
+void kGetDynMemInfo(QWORD *dynmemStartAddr, QWORD *dynmemTotalSize, QWORD *metaDataSize, QWORD *usedMemSize);
+DYNMEM *kGetDynMemManager(void);
 
-static QWORD calcDynMemSize(void);
-static int calcMetaBlockCnt(QWORD memSize);
-static int allocBuddyBlock(QWORD alignSize);
-static QWORD getBuddyBlockSize(QWORD size);
-static int getMatchSizeIdx(QWORD alignSize);
-static int findFreeBlock(int blockIdx);
-static void setFlagBitmap(int blockIdx, int offset, BYTE flag);
-static BOOL freeBuddyBlock(int blockIdx, int offset);
-static BYTE getFlagBitmap(int blockIdx, int offset);
+static QWORD kCalcDynMemSize(void);
+static int kCalcMetaBlockCnt(QWORD memSize);
+static int kAllocBuddyBlock(QWORD alignSize);
+static QWORD kGetBuddyBlockSize(QWORD size);
+static int kGetMatchSizeIdx(QWORD alignSize);
+static int kFindFreeBlock(int blockIdx);
+static void kSetFlagBitmap(int blockIdx, int offset, BYTE flag);
+static BOOL kFreeBuddyBlock(int blockIdx, int offset);
+static BYTE kGetFlagBitmap(int blockIdx, int offset);
 
 #endif /*__DYNMEM_H__*/

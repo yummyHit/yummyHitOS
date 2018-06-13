@@ -20,8 +20,8 @@
 // IDT 테이블에서 인터럽트 벡터가 시작되는 위치
 #define PIC_IRQ_STARTVEC	0x20
 
-void initPIC(void);
-void maskPIC(WORD mask);
-void sendEOI_PIC(int num);
+void kInitPIC(void);
+void kMaskPIC(WORD mask);
+void kSendEOI_PIC(int num);
 
 #endif /*__PIC_H__*/

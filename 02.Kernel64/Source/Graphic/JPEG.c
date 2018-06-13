@@ -24,7 +24,7 @@ int zigzag_tbl[] = {
 };
 
 // 버퍼에서 데이터를 반환하는 함수
-unsigned char get_byte(JPEG *jpg) {
+unsigned char kGet_byte(JPEG *jpg) {
 	unsigned char c;
 
 	c = jpg->data[jpg->data_idx];
@@ -33,16 +33,16 @@ unsigned char get_byte(JPEG *jpg) {
 	return c;
 }
 
-int get_word(JPEG *jpg) {
+int kGet_word(JPEG *jpg) {
 	unsigned char h, l;
 
-	h = get_byte(jpg);
-	l = get_byte(jpg);
+	h = kGet_byte(jpg);
+	l = kGet_byte(jpg);
 
 	return (h << 8) | l;
 }
 
-unsigned short get_bits(JPEG *jpg, int bit) {
+unsigned short kGet_bits(JPEG *jpg, int bit) {
 	unsigned char c;
 	unsigned short ret;
 	unsigned long buf;
@@ -52,8 +52,8 @@ unsigned short get_bits(JPEG *jpg, int bit) {
 	remain = jpg->bit_remain;
 
 	while(remain <= 16) {
-		c = get_byte(jpg);
-		if(c == 0xFF) get_byte(jpg);
+		c = kGet_byte(jpg);
+		if(c == 0xFF) kGet_byte(jpg);
 		buf = (buf << 8) | c;
 		remain += 8;
 	}
@@ -68,30 +68,30 @@ unsigned short get_bits(JPEG *jpg, int bit) {
 }
 
 // 지원하지 않는 것은 버퍼에서 제외
-void jpg_skip(JPEG *jpg) {
+void kJpg_skip(JPEG *jpg) {
 	unsigned w;
-	w = get_word(jpg) - 2;
+	w = kGet_word(jpg) - 2;
 	jpg->data_idx += w;
 }
 
 // start of frame
-int jpg_sof(JPEG *jpg) {
+int kJpg_sof(JPEG *jpg) {
 	unsigned char c, n;
 	int i, h, v;
 
-	c = get_word(jpg);
+	c = kGet_word(jpg);
 
-	c = get_byte(jpg);	// bpp
-	jpg->height = get_word(jpg);
-	jpg->width = get_word(jpg);
+	c = kGet_byte(jpg);	// bpp
+	jpg->height = kGet_word(jpg);
+	jpg->width = kGet_word(jpg);
 
-	n = get_byte(jpg);		// Num of compo
+	n = kGet_byte(jpg);		// Num of compo
 	jpg->compo_cnt = n;		// nf
 
 	for(i = 0; i < n; i++) {
-		jpg->compo_id[i] = get_byte(jpg);
+		jpg->compo_id[i] = kGet_byte(jpg);
 
-		c = get_byte(jpg);
+		c = kGet_byte(jpg);
 		jpg->compo_sample[i] = c;
 		h = (c >> 4) & 0x0F;
 		v = c & 0x0F;
@@ -102,27 +102,27 @@ int jpg_sof(JPEG *jpg) {
 		jpg->compo_h[i] = (c >> 4) & 0x0F;
 		jpg->compo_v[i] = c & 0x0F;
 
-		jpg->compo_qt[i] = get_byte(jpg);
+		jpg->compo_qt[i] = kGet_byte(jpg);
 	}
 
 	return 0;
 }
 
 // data restart interval
-void jpg_dri(JPEG *jpg) {
-	get_word(jpg);
-	jpg->interval = get_word(jpg);
+void kJpg_dri(JPEG *jpg) {
+	kGet_word(jpg);
+	jpg->interval = kGet_word(jpg);
 }
 
 // define quantize table
-int jpg_dqt(JPEG *jpg) {
+int kJpg_dqt(JPEG *jpg) {
 	unsigned char c;
 	int i, j, v, size;
 
-	size = get_word(jpg) - 2;
+	size = kGet_word(jpg) - 2;
 
 	while(size > 0) {
-		c = get_byte(jpg);
+		c = kGet_byte(jpg);
 		size--;
 		j = c & 7;
 		if(j > jpg->n_dqt) jpg->n_dqt = j;
@@ -130,14 +130,14 @@ int jpg_dqt(JPEG *jpg) {
 		if(c >> 3) {
 			// 16 bit DQT
 			for(i = 0; i < 64; i++) {
-				v = get_word(jpg);
+				v = kGet_word(jpg);
 				size -= 2;
 				jpg->dqt[j][i] = v >> 8;
 			}
 		} else {
 			// 8 bit DQT
 			for(i = 0; i < 64; i++) {
-				v = get_byte(jpg);
+				v = kGet_byte(jpg);
 				size--;
 				jpg->dqt[j][i] = v;
 			}
@@ -148,17 +148,17 @@ int jpg_dqt(JPEG *jpg) {
 }
 
 // define huffman table
-int jpg_dht(JPEG *jpg) {
+int kJpg_dht(JPEG *jpg) {
 	unsigned tc, th;
 	unsigned code = 0;
 	unsigned char val;
 	int i, j, k, num, len, Li[17];
 	HUFF *tbl;
 
-	len = get_word(jpg) - 2;
+	len = kGet_word(jpg) - 2;
 
 	while(len > 0) {
-		val = get_byte(jpg);
+		val = kGet_byte(jpg);
 
 		tc = (val >> 4) & 0x0F;		// Table class(DC/AC)
 		th = val & 0x0F;		// Table Header(How index plain it is)
@@ -167,7 +167,7 @@ int jpg_dht(JPEG *jpg) {
 		num = 0;
 
 		for(i = 1; i <= 16; i++) {
-			Li[i] = get_byte(jpg);
+			Li[i] = kGet_byte(jpg);
 			num += Li[i];
 		}
 		tbl->elem = num;
@@ -189,7 +189,7 @@ int jpg_dht(JPEG *jpg) {
 			} while(tbl->size[k] != i);
 		}
 
-		for(k = 0; k < num; k++) tbl->value[k] = get_byte(jpg);
+		for(k = 0; k < num; k++) tbl->value[k] = kGet_byte(jpg);
 
 		len = len - 18 - num;
 	}
@@ -198,40 +198,40 @@ int jpg_dht(JPEG *jpg) {
 }
 
 // start of scan
-void jpg_sos(JPEG *jpg) {
+void kJpg_sos(JPEG *jpg) {
 	int i;
 	unsigned char c;
 
-	get_word(jpg);
+	kGet_word(jpg);
 
-	jpg->scan_cnt = get_byte(jpg);
+	jpg->scan_cnt = kGet_byte(jpg);
 
 	for(i = 0; i < jpg->scan_cnt; i++) {
-		c = get_byte(jpg);
+		c = kGet_byte(jpg);
 		// printF(" id :%d\n", c);
 		jpg->scan_id[i] = c;
 
-		c = get_byte(jpg);
+		c = kGet_byte(jpg);
 		jpg->scan_dc[i] = c >> 4;		// DC Huffman Table
 		jpg->scan_ac[i] = c & 0x0F;		// AC Huffman Table
 	}
 	// 3 bytes skip
-	get_byte(jpg);
-	get_byte(jpg);
-	get_byte(jpg);
+	kGet_byte(jpg);
+	kGet_byte(jpg);
+	kGet_byte(jpg);
 }
 
-void jpg_idct_init(void);
+void kJpg_idct_init(void);
 
 /*
  *  JPEG 이미지 파일의 전체가 담긴 파일 버퍼와 크기를 이용해서 JPEG 자료구조를 초기화
  *  파일 버퍼의 내용을 분석하여 이미지 전체의 크기와 기타 정보를 JPEG 자료구조에 삽입 
  */
-BOOL jpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize) {
+BOOL kJpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize) {
 	int i;
 	unsigned char c;
 
-	jpg_idct_init();
+	kJpg_idct_init();
 
 	for(i = 0; i < 3; i++) jpg->mcu_preDC[i] = 0;
 
@@ -252,15 +252,15 @@ BOOL jpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize) {
 //	return 0;
 //}
 //
-//int jpg_header(JPEG *jpg) {
+//int kJpg_header(JPEG *jpg) {
 //	unsigned char c;
 
 	while(1) {
 		if(jpg->data_idx > jpg->data_size) return FALSE;
-		c = get_byte(jpg);
+		c = kGet_byte(jpg);
 
 		if(jpg->data_idx > jpg->data_size) return FALSE;
-		c = get_byte(jpg);
+		c = kGet_byte(jpg);
 
 		switch(c) {
 			case 0xD8:
@@ -271,22 +271,22 @@ BOOL jpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize) {
 				return FALSE;
 				break;
 			case 0xC0:
-				jpg_sof(jpg);
+				kJpg_sof(jpg);
 				break;
 			case 0xC4:
-				jpg_dht(jpg);
+				kJpg_dht(jpg);
 				break;
 			case 0xDB:
-				jpg_dqt(jpg);
+				kJpg_dqt(jpg);
 				break;
 			case 0xDD:
-				jpg_dri(jpg);
+				kJpg_dri(jpg);
 				break;
 			case 0xDA:
-				jpg_sos(jpg);
+				kJpg_sos(jpg);
 				return TRUE;
 			default:
-				jpg_skip(jpg);
+				kJpg_skip(jpg);
 				break;
 		}
 	}
@@ -295,7 +295,7 @@ BOOL jpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize) {
 }
 
 // MCU Decode
-int jpg_dec_init(JPEG *jpg) {
+int kJpg_dec_init(JPEG *jpg) {
 	int i, j;
 
 	for(i = 0; i < jpg->scan_cnt; i++) {
@@ -325,13 +325,13 @@ int jpg_dec_init(JPEG *jpg) {
 }
 
 // Huffman code decoding
-int jpg_huff_dec(JPEG *jpg, int tc, int th) {
+int kJpg_huff_dec(JPEG *jpg, int tc, int th) {
 	HUFF *h = &(jpg->huff[tc][th]);
 	int code = 0, size = 0, k = 0, v = 0;
 
 	while(size < 16) {
 		size++;
-		v = get_bits(jpg, 1);
+		v = kGet_bits(jpg, 1);
 		if(v < 0) return v;
 		code = (code << 1) | v;
 
@@ -347,7 +347,7 @@ int jpg_huff_dec(JPEG *jpg, int tc, int th) {
 // reverse DCT
 int base_img[64][64];
 
-void jpg_idct_init(void) {
+void kJpg_idct_init(void) {
 	int u, v, m, n;
 	int tmpm[8], tmpn[8], cost[32];
 
@@ -393,7 +393,7 @@ void jpg_idct_init(void) {
 	return;
 }
 
-void jpg_idct(int *block, int *dst) {
+void kJpg_idct(int *block, int *dst) {
 	int i, j, k;
 
 	for(i = 0; i < 64; i++) dst[i] = 0;
@@ -410,12 +410,12 @@ void jpg_idct(int *block, int *dst) {
 }
 
 // 디코딩 된 숫자 반환
-int jpg_get_value(JPEG *jpg, int size) {
+int kJpg_get_value(JPEG *jpg, int size) {
 	int val = 0;
 
 	if(size == 0) val = 0;
 	else {
-		val = get_bits(jpg, size);
+		val = kGet_bits(jpg, size);
 		if(!(val & (1 << (size - 1)))) val = val - (1 << size) + 1;
 	}
 
@@ -423,21 +423,21 @@ int jpg_get_value(JPEG *jpg, int size) {
 }
 
 // 허프만 디코딩 + 역 양자화 + 역 지그재그
-int jpg_dec_huff(JPEG *jpg, int scan, int *block) {
+int kJpg_dec_huff(JPEG *jpg, int scan, int *block) {
 	int size, val, run, idx;
 	int *pQt = (int *)(jpg->dqt[jpg->scan_qt[scan]]);
 
 	// DC decode
-	size = jpg_huff_dec(jpg, 0, jpg->scan_dc[scan]);
+	size = kJpg_huff_dec(jpg, 0, jpg->scan_dc[scan]);
 	if(size < 0) return 0;
-	val = jpg_get_value(jpg, size);
+	val = kJpg_get_value(jpg, size);
 	jpg->mcu_preDC[scan] += val;
 	block[0] = jpg->mcu_preDC[scan] * pQt[0];
 
 	// AC decode
 	idx = 1;
 	while(idx < 64) {
-		size = jpg_huff_dec(jpg, 1, jpg->scan_ac[scan]);
+		size = kJpg_huff_dec(jpg, 1, jpg->scan_ac[scan]);
 		if(size < 0) break;
 
 		// EOB
@@ -447,7 +447,7 @@ int jpg_dec_huff(JPEG *jpg, int scan, int *block) {
 		run = (size >> 4) & 0xF;
 		size = size & 0x0F;
 
-		val = jpg_get_value(jpg, size);
+		val = kJpg_get_value(jpg, size);
 		if(val >= 0x10000) return val;	// 마커 발견
 
 		// ZRL
@@ -462,7 +462,7 @@ int jpg_dec_huff(JPEG *jpg, int scan, int *block) {
 }
 
 // resampling(복원)
-void jpg_mcu_bitblt(int *src, int *dst, int width, int x0, int y0, int x1, int y1) {
+void kJpg_mcu_bitblt(int *src, int *dst, int width, int x0, int y0, int x1, int y1) {
 	int w, h, x, y, x2, y2;
 	w = x1 - x0;
 	h = y1 - y0;
@@ -478,7 +478,7 @@ void jpg_mcu_bitblt(int *src, int *dst, int width, int x0, int y0, int x1, int y
 }
 
 // one of MCU convert
-int jpg_dec_mcu(JPEG *jpg) {
+int kJpg_dec_mcu(JPEG *jpg) {
 	int scan, val, h, v, *p, hh, vv, block[64], dst[64];
 
 	// mcu_width * mcu_height 크기 블록 변환
@@ -488,16 +488,16 @@ int jpg_dec_mcu(JPEG *jpg) {
 		for(v = 0; v < vv; v++) {
 			for(h = 0; h < hh; h++) {
 				// block (8*8) decode
-				val = jpg_dec_huff(jpg, scan, block);
+				val = kJpg_dec_huff(jpg, scan, block);
 
 				// reverse DCT
-				jpg_idct(block, dst);
+				kJpg_idct(block, dst);
 
 				// resampling, writable buffer
 				p = jpg->mcu_buf + (scan * 32 * 32);
 
 				// expandable send
-				jpg_mcu_bitblt(dst, p, 
+				kJpg_mcu_bitblt(dst, p, 
 								jpg->mcu_width,
 								jpg->mcu_width * h / hh,
 								jpg->mcu_height * v / vv,
@@ -511,7 +511,7 @@ int jpg_dec_mcu(JPEG *jpg) {
 }
 
 // YCrCb -> RGB convert
-int jpg_dec_yuv(JPEG *jpg, int h, int v, COLOR *rgb) {
+int kJpg_dec_yuv(JPEG *jpg, int h, int v, COLOR *rgb) {
 	int x, y, x0, y0, x1, y1, Y, U, V, k, R, G, B, mw, mh, w;
 	int *py, *pu, *pv;
 
@@ -557,11 +557,11 @@ int jpg_dec_yuv(JPEG *jpg, int h, int v, COLOR *rgb) {
 }
 
 // JPEG 자료구조에 저장된 정보를 이용해 디코딩 한 결과 출력 버퍼에 저장
-BOOL jpgDecode(JPEG *jpg, COLOR *outBuf) {
+BOOL kJpgDecode(JPEG *jpg, COLOR *outBuf) {
 	int h_unit, v_unit, mcu_cnt, h, v;
 
 	// MCU 크기 계산
-	if(jpg_dec_init(jpg)) return FALSE;		// Error
+	if(kJpg_dec_init(jpg)) return FALSE;		// Error
 
 	h_unit = jpg->width / jpg->mcu_width;
 	v_unit = jpg->height / jpg->mcu_height;
@@ -573,8 +573,8 @@ BOOL jpgDecode(JPEG *jpg, COLOR *outBuf) {
 	for(v = 0; v < v_unit; v++) {
 		for(h = 0; h < h_unit; h++) {
 			mcu_cnt++;
-			jpg_dec_mcu(jpg);
-			jpg_dec_yuv(jpg, h, v, outBuf);
+			kJpg_dec_mcu(jpg);
+			kJpg_dec_yuv(jpg, h, v, outBuf);
 
 			if(jpg->interval > 0 && mcu_cnt >= jpg->interval) {
 				// RST 마커 제외(FF hoge), hoge 뒤 FF 또한 제외

@@ -45,21 +45,21 @@
 #define FILESYSTEM_SEEK_END		2
 
 // 하드 디스크 제어에 관련된 함수 포인터 타입 정의
-typedef BOOL (*_readHDDInfo)(BOOL pri, BOOL master, HDDINFO *hddInfo);
-typedef int (*_readHDDSector)(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
-typedef int (*_writeHDDSector)(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
+typedef BOOL (*_kReadHDDInfo)(BOOL pri, BOOL master, HDDINFO *hddInfo);
+typedef int (*_kReadHDDSector)(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
+typedef int (*_kWriteHDDSector)(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
 
 // 파일 시스템 함수를 표준 입출력 함수 이름으로 재정의
-#define fopen		fileOpen
-#define fread		fileRead
-#define fwrite		fileWrite
-#define fseek		fileSeek
-#define fclose		fileClose
-#define fremove		removeFile
-#define dopen		dirOpen
-#define dread		dirRead
-#define drewind		dirRewind
-#define dclose		dirClose
+#define fopen		kFileOpen
+#define fread		kFileRead
+#define fwrite		kFileWrite
+#define fseek		kFileSeek
+#define fclose		kFileClose
+#define fremove		kRemoveFile
+#define dopen		kDirOpen
+#define dread		kDirRead
+#define drewind		kDirRewind
+#define dclose		kDirClose
 
 // 파일 시스템 매크로를 표준 입출력 매크로로 재정의
 #define SEEK_SET	FILESYSTEM_SEEK_SET
@@ -186,53 +186,53 @@ typedef struct fileSystemManager {
 
 #pragma pack(pop)
 
-BOOL initFileSystem(void);
-BOOL _mount(void);
-BOOL _format(void);
-BOOL getHDDInfo(HDDINFO *info);
+BOOL kInitFileSystem(void);
+BOOL kMount(void);
+BOOL kFormat(void);
+BOOL kGetHDDInfo(HDDINFO *info);
 // Low Level Function
-static BOOL readClusterLink(DWORD offset, BYTE *buf);
-static BOOL writeClusterLink(DWORD offset, BYTE *buf);
-static BOOL readDataArea(DWORD offset, BYTE *buf);
-static BOOL writeDataArea(DWORD offset, BYTE *buf);
-static DWORD findFreeCluster(void);
-static BOOL setClusterLink(DWORD idx, DWORD data);
-static BOOL getClusterLink(DWORD idx, DWORD *data);
-static int findFreeDirEntry(void);
-static BOOL setDirEntry(int idx, DIRENTRY *entry);
-static BOOL getDirEntry(int idx, DIRENTRY *entry);
-static int findDirEntry(const char *name, DIRENTRY *entry);
-void getFileSystemInfo(FILESYSTEMMANAGER *manager);
+static BOOL kReadClusterLink(DWORD offset, BYTE *buf);
+static BOOL kWriteClusterLink(DWORD offset, BYTE *buf);
+static BOOL kReadDataArea(DWORD offset, BYTE *buf);
+static BOOL kWriteDataArea(DWORD offset, BYTE *buf);
+static DWORD kFindFreeCluster(void);
+static BOOL kSetClusterLink(DWORD idx, DWORD data);
+static BOOL kGetClusterLink(DWORD idx, DWORD *data);
+static int kFindFreeDirEntry(void);
+static BOOL kSetDirEntry(int idx, DIRENTRY *entry);
+static BOOL kGetDirEntry(int idx, DIRENTRY *entry);
+static int kFindDirEntry(const char *name, DIRENTRY *entry);
+void kGetFileSystemInfo(FILESYSTEMMANAGER *manager);
 
 // High Level Function
-FILE *fileOpen(const char *name, const char *mode);
-DWORD fileRead(void *buf, DWORD size, DWORD cnt, FILE *file);
-DWORD fileWrite(const void *buf, DWORD size, DWORD cnt, FILE *file);
-int fileSeek(FILE *file, int offset, int point);
-int fileClose(FILE *file);
-int removeFile(const char *name);
-DIR *dirOpen(const char *name);
-struct directoryEntry *dirRead(DIR *dir);
-void dirRewind(DIR *dir);
-int dirClose(DIR *dir);
-BOOL filePadding(FILE *file, DWORD cnt);
-BOOL isFileOpen(const DIRENTRY *entry);
+FILE *kFileOpen(const char *name, const char *mode);
+DWORD kFileRead(void *buf, DWORD size, DWORD cnt, FILE *file);
+DWORD kFileWrite(const void *buf, DWORD size, DWORD cnt, FILE *file);
+int kFileSeek(FILE *file, int offset, int point);
+int kFileClose(FILE *file);
+int kRemoveFile(const char *name);
+DIR *kDirOpen(const char *name);
+struct kDirectoryEntry *dirRead(DIR *dir);
+void kDirRewind(DIR *dir);
+int kDirClose(DIR *dir);
+BOOL kFilePadding(FILE *file, DWORD cnt);
+BOOL kIsFileOpen(const DIRENTRY *entry);
 
-static void *allocFileDirHandle(void);
-static void freeFileDirHandle(FILE *file);
-static BOOL makeFile(const char *name, DIRENTRY *entry, int *dirEntryIdx);
-static BOOL freeClusterAll(DWORD idx);
-static BOOL updateDirEntry(FILEHANDLE *handle);
+static void *kAllocFileDirHandle(void);
+static void kFreeFileDirHandle(FILE *file);
+static BOOL kMakeFile(const char *name, DIRENTRY *entry, int *dirEntryIdx);
+static BOOL kFreeClusterAll(DWORD idx);
+static BOOL kUpdateDirEntry(FILEHANDLE *handle);
 
-static BOOL inReadClusterNonCache(DWORD offset, BYTE *buf);
-static BOOL inReadClusterOnCache(DWORD offset, BYTE *buf);
-static BOOL inWriteClusterNonCache(DWORD offset, BYTE *buf);
-static BOOL inWriteClusterOnCache(DWORD offset, BYTE *buf);
-static BOOL inReadDataNonCache(DWORD offset, BYTE *buf);
-static BOOL inReadDataOnCache(DWORD offset, BYTE *buf);
-static BOOL inWriteDataNonCache(DWORD offset, BYTE *buf);
-static BOOL inWriteDataOnCache(DWORD offset, BYTE *buf);
-static CACHEBUF *allocCacheBufOnFlush(int idx);
-BOOL flushFileSystemCache(void);
+static BOOL kInReadClusterNonCache(DWORD offset, BYTE *buf);
+static BOOL kInReadClusterOnCache(DWORD offset, BYTE *buf);
+static BOOL kInWriteClusterNonCache(DWORD offset, BYTE *buf);
+static BOOL kInWriteClusterOnCache(DWORD offset, BYTE *buf);
+static BOOL kInReadDataNonCache(DWORD offset, BYTE *buf);
+static BOOL kInReadDataOnCache(DWORD offset, BYTE *buf);
+static BOOL kInWriteDataNonCache(DWORD offset, BYTE *buf);
+static BOOL kInWriteDataOnCache(DWORD offset, BYTE *buf);
+static CACHEBUF *kAllocCacheBufOnFlush(int idx);
+BOOL kFlushFileSystemCache(void);
 
 #endif /*__FILESYSTEM_H__*/

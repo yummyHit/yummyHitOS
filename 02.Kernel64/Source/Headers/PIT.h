@@ -39,8 +39,8 @@
 #define PIT_COUNTER_ZERO_TERM		(PIT_CTRL_COUNTER_ZERO | PIT_CTRL_LSBMSBRW | PIT_CTRL_MODE_TWO | PIT_CTRL_BINARYCOUNTER)
 #define PIT_COUNTER_ZERO_LATCH		(PIT_CTRL_COUNTER_ZERO | PIT_CTRL_LATCH)
 
-void initPIT(WORD cnt, BOOL term);
-WORD readCntZero(void);
-void waitPIT(WORD cnt);
+void kInitPIT(WORD cnt, BOOL term);
+WORD kReadCntZero(void);
+void kWaitPIT(WORD cnt);
 
 #endif /*__PIT_H__*/

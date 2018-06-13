@@ -87,12 +87,12 @@ typedef struct serialPortManager {
 	MUTEX lock;
 } SERIALMANAGER;
 
-void initSerial(void);
-void sendSerialData(BYTE *buf, int size);
-int recvSerialData(BYTE *buf, int size);
-void clearSerialFIFO(void);
+void kInitSerial(void);
+void kSendSerialData(BYTE *buf, int size);
+int kRecvSerialData(BYTE *buf, int size);
+void kClearSerialFIFO(void);
 
-static BOOL isSerialTBE(void);
-static BOOL isSerialRxBF(void);
+static BOOL kIsSerialTBE(void);
+static BOOL kIsSerialRxBF(void);
 
 #endif /*__SERIALPORT_H__*/

@@ -49,7 +49,7 @@
 
 // 스택 풀과 스택 크기
 #define TASK_STACKPOOLADDR	(TASK_TCBPOOLADDR + sizeof(TCB) * TASK_MAXCNT)
-#define TASK_STACKSIZE		8192
+#define TASK_STACKSIZE		(64 * 1024)
 
 // 유효하지 않은 태스크 ID
 #define TASK_INVALID_ID		0xFFFFFFFFFFFFFFFF
@@ -185,41 +185,41 @@ typedef struct scheduler {
 
 #pragma pack(pop)
 
-static void initTBPool(void);
-static TCB *allocTCB(void);
-static void freeTCB(QWORD id);
-TCB *createTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr, BYTE affinity);
-static void setTask(TCB *tcb, QWORD flag, QWORD epAddr, void *stackAddr, QWORD stackSize);
+static void kInitTBPool(void);
+static TCB *kAllocTCB(void);
+static void kFreeTCB(QWORD id);
+TCB *kCreateTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr, BYTE affinity);
+static void kSetTask(TCB *tcb, QWORD flag, QWORD epAddr, void *stackAddr, QWORD stackSize);
 
-void initScheduler(void);
-void setRunningTask(BYTE _id, TCB *task);
-TCB *getRunningTask(BYTE _id);
-static TCB *getNextTask(BYTE _id);
-static BOOL addReadyList(BYTE _id, TCB *task);
-BOOL schedule(void);
-BOOL scheduleInterrupt(void);
-void decProcTime(BYTE _id);
-BOOL isProcTime(BYTE _id);
-static TCB *delReadyList(BYTE _id, QWORD id);
-static BOOL findSchedulerLock(QWORD id, BYTE *_id);
-BOOL alterPriority(QWORD id, BYTE priority);
-BOOL taskFin(QWORD id);
-void taskExit(void);
-int getReadyCnt(BYTE _id);
-int getTaskCnt(BYTE _id);
-TCB *getTCB(int offset);
-BOOL isTaskExist(QWORD id);
-QWORD getProcLoad(BYTE _id);
-static TCB *getProcThread(TCB *thread);
-void addTaskLoadBalancing(TCB *task);
-static BYTE findSchedulerCnt(const TCB *task);
-BYTE setTaskLoadBalancing(BYTE _id, BOOL isLoadbalancing);
-BOOL alterAffinity(QWORD id, BYTE affinity);
+void kInitScheduler(void);
+void kSetRunningTask(BYTE _id, TCB *task);
+TCB *kGetRunningTask(BYTE _id);
+static TCB *kGetNextTask(BYTE _id);
+static BOOL kAddReadyList(BYTE _id, TCB *task);
+BOOL kSchedule(void);
+BOOL kScheduleInterrupt(void);
+void kDecProcTime(BYTE _id);
+BOOL kIsProcTime(BYTE _id);
+static TCB *kDelReadyList(BYTE _id, QWORD id);
+static BOOL kFindSchedulerLock(QWORD id, BYTE *_id);
+BOOL kAlterPriority(QWORD id, BYTE priority);
+BOOL kTaskFin(QWORD id);
+void kTaskExit(void);
+int kGetReadyCnt(BYTE _id);
+int kGetTaskCnt(BYTE _id);
+TCB *kGetTCB(int offset);
+BOOL kIsTaskExist(QWORD id);
+QWORD kGetProcLoad(BYTE _id);
+static TCB *kGetProcThread(TCB *thread);
+void kAddTaskLoadBalancing(TCB *task);
+static BYTE kFindSchedulerCnt(const TCB *task);
+BYTE kSetTaskLoadBalancing(BYTE _id, BOOL isLoadbalancing);
+BOOL kAlterAffinity(QWORD id, BYTE affinity);
 
-void idleTask(void);
-void haltProc(BYTE _id);
+void kIdleTask(void);
+void kHaltProc(BYTE _id);
 
-QWORD getLastFPU(BYTE _id);
-void setLastFPU(BYTE _id, QWORD id);
+QWORD kGetLastFPU(BYTE _id);
+void kSetLastFPU(BYTE _id, QWORD id);
 
 #endif /*__CLITASK_H__*/

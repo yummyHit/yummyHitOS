@@ -192,11 +192,11 @@ typedef struct mpConfigManager {
 	BYTE isaBusID;
 } MPCONFIGMANAGER;
 
-BOOL findFloatingAddress(QWORD *addr);
-BOOL analysisMPConfig(void);
-MPCONFIGMANAGER *getMPConfigManager(void);
-void printMPConfig(void);
-int getProcCnt(void);
-IOAPICENTRY *findIO_APICEntry(void);
+BOOL kFindFloatingAddress(QWORD *addr);
+BOOL kAnalysisMPConfig(void);
+MPCONFIGMANAGER *kGetMPConfigManager(void);
+void kPrintMPConfig(void);
+int kGetProcCnt(void);
+IOAPICENTRY *kFindIO_APICEntry(void);
 
 #endif /*__MPCONFIG_H__*/

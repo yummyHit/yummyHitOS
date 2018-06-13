@@ -63,15 +63,15 @@ typedef struct appEntry {
 	void *entryPoint;
 } APPENTRY;
 
-void appPanelGUITask(void);
+void kAppPanelGUITask(void);
 
-static void drawClockInAppPanel(QWORD panelID);
-static BOOL createAppPanelWin(void);
-static void drawDigitClock(QWORD id);
-static BOOL createAppListWin(void);
-static void drawAppListItem(int idx, BOOL select);
-static BOOL procAppPanelWinEvent(void);
-static BOOL procAppListWinEvent(void);
-static int getMouseItemIdx(int y);
+static void kDrawClockInAppPanel(QWORD panelID);
+static BOOL kCreateAppPanelWin(void);
+static void kDrawDigitClock(QWORD id);
+static BOOL kCreateAppListWin(void);
+static void kDrawAppListItem(int idx, BOOL select);
+static BOOL kProcAppPanelWinEvent(void);
+static BOOL kProcAppListWinEvent(void);
+static int kGetMouseItemIdx(int y);
 
 #endif /*__APPPANELTASK_H__*/

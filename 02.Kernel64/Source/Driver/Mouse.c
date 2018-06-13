@@ -18,80 +18,80 @@ static QUEUE gs_mouseQ;
 static MOUSEDATA gs_mouseQBuf[MOUSE_MAXQUEUECNT];
 
 // 마우스 초기화
-BOOL initMouse(void) {
+BOOL kInitMouse(void) {
 	// 큐 초기화
-	initQueue(&gs_mouseQ, gs_mouseQBuf, MOUSE_MAXQUEUECNT, sizeof(MOUSEDATA));
+	kInitQueue(&gs_mouseQ, gs_mouseQBuf, MOUSE_MAXQUEUECNT, sizeof(MOUSEDATA));
 
 	// 스핀락 초기화
-	initSpinLock(&(gs_mouseManager.spinLock));
+	kInitSpinLock(&(gs_mouseManager.spinLock));
 
 	// 마우스 활성화
-	if(activeMouse() == TRUE) {
+	if(kActiveMouse() == TRUE) {
 		// 마우스 인터럽트 활성화
-		onMouseInterrupt();
+		kOnMouseInterrupt();
 		return TRUE;
 	}
 	return FALSE;
 }
 
 // 마우스 활성화
-BOOL activeMouse(void) {
+BOOL kActiveMouse(void) {
 	int i, j;
 	BOOL preInterrupt, res;
 
 	// 인터럽트 불가
-	preInterrupt = setInterruptFlag(FALSE);
+	preInterrupt = kSetInterruptFlag(FALSE);
 
 	// 컨트롤 레지스터(포트 0x64)에 마우스 활성화 커맨드(0xA8)를 전달해 마우스 디바이스 활성화
-	outByte(0x64, 0xA8);
+	kOutByte(0x64, 0xA8);
 
 	// 컨트롤 레지스터(포트 0x64)에 마우스로 데이터 전송하는 커맨드(0xD4)를 전달해 입력 버퍼(포트 0x60)로 전달된 데이터 마우스로 전송
-	outByte(0x64, 0xD4);
+	kOutByte(0x64, 0xD4);
 
 	// 입력 버퍼(포트 0x60)가 비어있으면 마우스에 활성화 커맨드 전송. 0xFFFF만큼 루프 수행하면 충분. 루프를 수행한 후에도 입력 버퍼가 차있으면 무시하고 전송
-	for(i = 0; i < 0xFFFF; i++) if(inputBufChk() == FALSE) break;
+	for(i = 0; i < 0xFFFF; i++) if(kInputBufChk() == FALSE) break;
 
 	// 입력 버퍼(포트 0x60)로 마우스 활성화(0xF4) 커맨드 전달해 마우스로 전송
-	outByte(0x60, 0xF4);
+	kOutByte(0x60, 0xF4);
 
 	// ACK가 올 때까지 대기
-	res = ackForQ();
+	res = kAckForQ();
 
 	// 이전 인터럽트 상태 복원
-	setInterruptFlag(preInterrupt);
+	kSetInterruptFlag(preInterrupt);
 
 	return res;
 }
 
 // 마우스 인터럽트 활성화
-void onMouseInterrupt(void) {
+void kOnMouseInterrupt(void) {
 	BYTE portData;
 	int i;
 
 	// 커맨드 바이트 읽기. 컨트롤 레지스터(포트 0x64)에 키보드 컨트롤러 커맨드 바이트 읽는 커맨드(0x20) 전송
-	outByte(0x64, 0x20);
+	kOutByte(0x64, 0x20);
 
 	// 출력 포트 데이터를 기다렸다가 읽음
-	for(i = 0; i < 0xFFFF; i++) if(outputBufChk() == TRUE) break;
+	for(i = 0; i < 0xFFFF; i++) if(kOutputBufChk() == TRUE) break;
 
 	// 출력 포트(포트 0x60)에 수신된 커맨드 바이트 값 읽음
-	portData = inByte(0x60);
+	portData = kInByte(0x60);
 
 	// 마우스 인터럽트 비트 활성화 후 커맨드 바이트 전송.(비트 1 설정)
 	portData |= 0x02;
 
 	// 커맨드 레지스터(0x64)에 커맨드 바이트를 쓰는 커맨드(0x60) 전달
-	outByte(0x64, 0x60);
+	kOutByte(0x64, 0x60);
 
 	// 입력 버퍼(포트 0x60)에 데이터가 비어있으면 출력 포트에 값을 쓰는 커맨드와 커맨드 바이트 전송
-	for(i = 0; i < 0xFFFF; i++) if(inputBufChk() == FALSE) break;
+	for(i = 0; i < 0xFFFF; i++) if(kInputBufChk() == FALSE) break;
 
 	// 입력 버퍼(0x60)에 마우스 인터럽트 비트가 1로 설정된 값 전달
-	outByte(0x60, portData);
+	kOutByte(0x60, portData);
 }
 
 // 마우스 데이터를 모아 큐에 삽입
-BOOL gatherMouseData(BYTE data) {
+BOOL kGatherMouseData(BYTE data) {
 	BOOL res;
 
 	// 수신된 바이트 수에 따라 마우스 데이터 설정
@@ -120,12 +120,12 @@ BOOL gatherMouseData(BYTE data) {
 	// 3바이트 모두 수신되면 마우스 큐에 삽입 후 수신 횟수 초기화
 	if(gs_mouseManager.byteCnt >= 3) {
 		// 임계 영역 시작
-		lock_spinLock(&(gs_mouseManager.spinLock));
+		kLock_spinLock(&(gs_mouseManager.spinLock));
 
 		// 마우스 큐에 마우스 데이터 삽입
-		res = addQData(&gs_mouseQ, &gs_mouseManager.nowData);
+		res = kAddQData(&gs_mouseQ, &gs_mouseManager.nowData);
 		// 임계 영역 끝
-		unlock_spinLock(&(gs_mouseManager.spinLock));
+		kUnlock_spinLock(&(gs_mouseManager.spinLock));
 		// 수신된 바이트 수 초기화
 		gs_mouseManager.byteCnt = 0;
 	}
@@ -134,19 +134,19 @@ BOOL gatherMouseData(BYTE data) {
 }
 
 // 마우스 큐에서 마우스 데이터 꺼냄
-BOOL rmMouseData(BYTE *stat, int *x, int *y) {
+BOOL kRmMouseData(BYTE *stat, int *x, int *y) {
 	MOUSEDATA data;
 	BOOL res;
 
 	// 큐가 비어있으면 데이터 못 꺼냄
-	if(isQEmpty(&(gs_mouseQ)) == TRUE) return FALSE;
+	if(kIsQEmpty(&(gs_mouseQ)) == TRUE) return FALSE;
 
 	// 임계 영역 시작
-	lock_spinLock(&(gs_mouseManager.spinLock));
+	kLock_spinLock(&(gs_mouseManager.spinLock));
 	// 큐에서 데이터 꺼냄
-	res = rmQData(&(gs_mouseQ), &data);
+	res = kRmQData(&(gs_mouseQ), &data);
 	// 임계 영역 끝
-	unlock_spinLock(&(gs_mouseManager.spinLock));
+	kUnlock_spinLock(&(gs_mouseManager.spinLock));
 
 	// 데이터 꺼내지 못하면 실패
 	if(res == FALSE) return FALSE;
@@ -170,8 +170,8 @@ BOOL rmMouseData(BYTE *stat, int *x, int *y) {
 }
 
 // 마우스 데이터가 출력 버퍼에 있는지 반환
-BOOL isMouseData(void) {
+BOOL kIsMouseData(void) {
 	// 출력 버퍼(포트 0x60)를 읽기 전 상태 레지스터(포트 0x64)를 읽어 마우스 데이터인가 확인. 마우스 데이터는 AUXB 비트(비트 5)가 1로 설정됨
-	if(inByte(0x64) & 0x20) return TRUE;
+	if(kInByte(0x64) & 0x20) return TRUE;
 	return FALSE;
 }

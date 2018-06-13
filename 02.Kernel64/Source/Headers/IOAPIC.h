@@ -92,13 +92,13 @@ typedef struct IOAPICManager {
 	BYTE irqMap[IO_APIC_MAXIRQ_MAPCNT];
 } IOAPICMANAGER;
 
-QWORD getIO_APICAddr(void);
-void setIO_APICRedirect(IOREDIRECTTBL *entry, BYTE id, BYTE interruptMask, BYTE mode, BYTE vec);
-void readIO_APICRedirect(int intin, IOREDIRECTTBL *entry);
-void writeIO_APICRedirect(int intin, IOREDIRECTTBL *entry);
-void maskInterruptIO_APIC(void);
-void initIORedirect(void);
-void printIRQMap(void);
-void routingIRQ(int irq, BYTE id);
+QWORD kGetIO_APICAddr(void);
+void kSetIO_APICRedirect(IOREDIRECTTBL *entry, BYTE id, BYTE interruptMask, BYTE mode, BYTE vec);
+void kReadIO_APICRedirect(int intin, IOREDIRECTTBL *entry);
+void kWriteIO_APICRedirect(int intin, IOREDIRECTTBL *entry);
+void kMaskInterruptIO_APIC(void);
+void kInitIORedirect(void);
+void kPrintIRQMap(void);
+void kRoutingIRQ(int irq, BYTE id);
 
 #endif /*__IOAPIC_H__*/

@@ -56,12 +56,12 @@ typedef struct cacheManager {
 	DWORD maxCnt[CACHE_MAXCACHE_IDX];
 } CACHEMEM;
 
-BOOL initCacheMem(void);
-CACHEBUF *allocCacheBuf(int idx);
-CACHEBUF *findCacheBuf(int idx, DWORD tag);
-CACHEBUF *getTargetCacheBuf(int idx);
-void clearCacheBuf(int idx);
-BOOL getCacheBufCnt(int idx, CACHEBUF **buf, int *maxCnt);
-static void downAccessTime(int idx);
+BOOL kInitCacheMem(void);
+CACHEBUF *kAllocCacheBuf(int idx);
+CACHEBUF *kFindCacheBuf(int idx, DWORD tag);
+CACHEBUF *kGetTargetCacheBuf(int idx);
+void kClearCacheBuf(int idx);
+BOOL kGetCacheBufCnt(int idx, CACHEBUF **buf, int *maxCnt);
+static void kDownAccessTime(int idx);
 
 #endif /*__CACHEMEM_H__*/

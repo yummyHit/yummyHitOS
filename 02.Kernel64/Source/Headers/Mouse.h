@@ -46,11 +46,11 @@ typedef struct mouseManager {
 	MOUSEDATA nowData;
 } MOUSEMANAGER;
 
-BOOL initMouse(void);
-BOOL gatherMouseData(BYTE data);
-BOOL activeMouse(void);
-void onMouseInterrupt(void);
-BOOL isMouseData(void);
-BOOL rmMouseData(BYTE *stat, int *x, int *y);
+BOOL kInitMouse(void);
+BOOL kGatherMouseData(BYTE data);
+BOOL kActiveMouse(void);
+void kOnMouseInterrupt(void);
+BOOL kIsMouseData(void);
+BOOL kRmMouseData(BYTE *stat, int *x, int *y);
 
 #endif /*__MOUSE_H__*/

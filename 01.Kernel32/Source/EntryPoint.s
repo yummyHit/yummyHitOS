@@ -61,12 +61,12 @@ PROTECTEDMODE:
 
 	; 스택을 0x00000000~0x0000FFFF 영역에 64KB 크기로 생성
 	mov ss, ax		; SS 세그먼트 셀렉터에 설정
-	mov esp, 0xFFFE		; ESP 레지스터의 어드레스를 0xFFFE로 설정
-	mov ebp, 0xFFFE		; EBP 레지스터의 어드레스를 0xFFFE로 설정
+	mov esp, 0xFFFF		; ESP 레지스터의 어드레스를 0xFFFE로 설정
+	mov ebp, 0xFFFF		; EBP 레지스터의 어드레스를 0xFFFE로 설정
 
 	; AP면 아래 과정 모두 뛰어넘어 C언어 커널 엔트리 포인트로 이동
 	cmp byte [ 0x7C09 ], 0x00
-	je .APSTARTPOINT
+	je .ENTRYSTARTPOINT
 
 	; 화면에 보호 모드로 전환되었다는 메시지 표시
 	push ( SWITCHMSG - $$ + 0x10000 )	; 출력할 메시지의 어드레스를 스택에 삽입
@@ -86,7 +86,7 @@ PROTECTEDMODE:
 	; 수정 : 170706 / CS세그먼트 셀렉터를 커널 코드 디스크립터(0x08)로 변경하며 0x10200 어드레스(C언어 커널 주소)로 이동
 	; 수정 : 170718 / IA-32e 보호모드로 진입하기 위해 0x08에서 0x18로 위치 수정
 
-.APSTARTPOINT:
+.ENTRYSTARTPOINT:
 	jmp dword 0x18: 0x10200 ; C언어 커널이 존재하는 주소로 이동해 C언어 커널 수행
 
 ; 메시지 출력 함수

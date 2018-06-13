@@ -27,8 +27,8 @@
 // BCD 포맷을 Binary로 변환하는 매크로
 #define RTC_BCDTOBINARY( x )	(((( x ) >> 4) * 10) + (( x ) & 0x0F))
 
-void readTime(BYTE *hour, BYTE *min, BYTE *sec);
-void readDate(WORD *year, BYTE *month, BYTE *day, BYTE *week);
-char *convertWeek(BYTE week);
+void kReadTime(BYTE *hour, BYTE *min, BYTE *sec);
+void kReadDate(WORD *year, BYTE *month, BYTE *day, BYTE *week);
+char *kConvertWeek(BYTE week);
 
 #endif /*__RTC_H__*/

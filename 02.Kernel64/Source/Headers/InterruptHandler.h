@@ -30,19 +30,19 @@ typedef struct interruptManager {
 	BOOL mode;
 } INTERRUPTMANAGER;
 
-void setSymmetricIOMode(BOOL mode);
-void setInterruptLoadBalancing(BOOL isLoadBalancing);
-void incInterruptCnt(int irq);
-void sendEOI(int irq);
-INTERRUPTMANAGER *getInterruptManager(void);
-void procLoadBalancing(int irq);
+void kSetSymmetricIOMode(BOOL mode);
+void kSetInterruptLoadBalancing(BOOL isLoadBalancing);
+void kIncInterruptCnt(int irq);
+void kSendEOI(int irq);
+INTERRUPTMANAGER *kGetInterruptManager(void);
+void kProcLoadBalancing(int irq);
 
-void exceptionHandler(int vecNum, QWORD errCode);
-void interruptHandler(int vecNum);
-void keyboardHandler(int vecNum);
-void timerHandler(int verNum);
-void devFPUHandler(int vecNum);
-void hardDiskHandler(int vecNum);
-void mouseHandler(int vecNum);
+void kExceptionHandler(int vecNum, QWORD errCode);
+void kInterruptHandler(int vecNum);
+void kKeyboardHandler(int vecNum);
+void kTimerHandler(int verNum);
+void kDevFPUHandler(int vecNum);
+void kHardDiskHandler(int vecNum);
+void kMouseHandler(int vecNum);
 
 #endif /*__INTERRUPTHANDLER_H__*/

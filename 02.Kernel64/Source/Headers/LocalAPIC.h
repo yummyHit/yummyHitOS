@@ -68,10 +68,10 @@
 #define APIC_POLARITY_ACTIVELOW		0x002000
 #define APIC_POLARITY_ACTIVEHIGH	0x000000
 
-QWORD getLocalAPICAddr(void);
-void onSWLocalAPIC(void);
-void sendEOI_LocalAPIC(void);
-void setTaskPriority(BYTE priority);
-void initLocalVecTbl(void);
+QWORD kGetLocalAPICAddr(void);
+void kOnSWLocalAPIC(void);
+void kSendEOI_LocalAPIC(void);
+void kSetTaskPriority(BYTE priority);
+void kInitLocalVecTbl(void);
 
 #endif /*__LOCALAPIC_H__*/
