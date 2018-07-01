@@ -68,7 +68,7 @@
 #pragma pack(push, 1)
 
 // 스캔 코드 테이블을 구성하는 항목
-typedef struct keyMapEntry {
+typedef struct kKeyMapEntry {
 	// Shift 키나 Caps Lock 키와 조합되지 않는 ASCII
 	BYTE normCode;
 	// Shift 키나 Caps Lock 키와 조합된 ASCII
@@ -76,7 +76,7 @@ typedef struct keyMapEntry {
 } KEYMAPPINGENTRY;
 
 // 키보드 상태 관리 자료구조
-typedef struct keyboardManager {
+typedef struct kKeyboardManager {
 	// 자료구조 동기화를 위한 스핀락
 	SPINLOCK spinLock;
 
@@ -92,7 +92,7 @@ typedef struct keyboardManager {
 } KEYBOARDMANAGER;
 
 // 키 큐에 삽입할 데이터 구조체
-typedef struct keyData {
+typedef struct kKeyData {
 	// 키보드에서 전달된 스캔 코드
 	BYTE scanCode;
 	// 스캔 코드를 변환한 ASCII 코드

@@ -15,7 +15,7 @@
 #pragma pack(push, 1)
 
 // 큐 구조체
-typedef struct queueManager {
+typedef struct kQueueManager {
 	// 큐 구성 데이터 하나의 크기 및 최대 갯수
 	int size;
 	int maxCnt;

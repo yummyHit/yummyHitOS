@@ -94,7 +94,7 @@
 #pragma pack(push, 1)
 
 // GDTR, IDTR 구조체
-typedef struct GDTR {
+typedef struct kGDTR {
 	WORD limit;
 	QWORD baseAddr;
 	WORD padding_W;
@@ -102,7 +102,7 @@ typedef struct GDTR {
 } GDTR, IDTR;
 
 // 8byte 크기 GDT 엔트리 구조
-typedef struct GDTEntry8 {
+typedef struct kGDTEntry8 {
 	WORD lowLimit;
 	WORD lowBaseAddr;
 	BYTE highBaseAddr_A;
@@ -114,7 +114,7 @@ typedef struct GDTEntry8 {
 } GDTENTRY8;
 
 // 16byte 크기 GDT 엔트리 구조
-typedef struct GDTEntry16 {
+typedef struct kGDTEntry16 {
 	WORD lowLimit;
 	WORD lowBaseAddr;
 	BYTE midBaseAddr_A;
@@ -128,7 +128,7 @@ typedef struct GDTEntry16 {
 } GDTENTRY16;
 
 // TSS Data 구조체
-typedef struct TSSData {
+typedef struct kTSSData {
 	DWORD reserved_A;
 	QWORD rsp[3];
 	QWORD reserved_B;
@@ -139,7 +139,7 @@ typedef struct TSSData {
 } TSS;
 
 // IDT 게이트 디스크립터 구조체
-typedef struct IDTEntry {
+typedef struct kIDTEntry {
 	WORD lowBaseAddr;
 	WORD selector;
 	// 3bit IST, 5bit 0

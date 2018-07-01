@@ -40,5 +40,7 @@ void kSetTS(void);
 void kClearTS(void);
 
 void kOnLocalAPIC(void);
+void kReadMSR(QWORD MSRAddr, QWORD *rdx, QWORD *rax);
+void kWriteMSR(QWORD MSRAddr, QWORD rdx, QWORD rax);
 
 #endif /*__ASMUTIL_H__*/

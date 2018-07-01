@@ -64,7 +64,7 @@
 #pragma pack(push, 1)
 
 // IO 리다이렉션 테이블 자료구조
-typedef struct ioRedirectTable {
+typedef struct kIORedirectTable {
 	// 인터럽트 벡터
 	BYTE vec;
 
@@ -81,16 +81,16 @@ typedef struct ioRedirectTable {
 	BYTE dest;
 } IOREDIRECTTBL;
 
-#pragma pack(pop)
-
 // IO APIC 관리 자료구조
-typedef struct IOAPICManager {
+typedef struct kIOAPICManager {
 	// ISA 버스가 연결된 IO APIC 메모리 맵 어드레스
 	QWORD ioAPICAddr;
 
 	// IRQ와 IO APIC의 인터럽트 입력 핀 간 연결 관계 저장 테이블
 	BYTE irqMap[IO_APIC_MAXIRQ_MAPCNT];
 } IOAPICMANAGER;
+
+#pragma pack(pop)
 
 QWORD kGetIO_APICAddr(void);
 void kSetIO_APICRedirect(IOREDIRECTTBL *entry, BYTE id, BYTE interruptMask, BYTE mode, BYTE vec);

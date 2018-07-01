@@ -859,7 +859,7 @@ void kIdleTask(void) {
 				kFreeMem(task->stackAddr);
 				kFreeTCB(id);
 
-				kPrintF("### IDLE: Task ID[0x%q] is Completely Finished.\n", task->link.id);
+				kPrintF("### IDLE: Task ID[0x%q] is Completely Finished.\n", id);
 			}
 		}
 	kSchedule();

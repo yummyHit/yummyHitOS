@@ -22,7 +22,7 @@ typedef void (*CMDFunc)(const char *param);
 #pragma pack(push, 1)
 
 // 셸 커맨드 저장하는 자료구조
-typedef struct shellEntry {
+typedef struct kShellEntry {
 	// 커맨드 문자열
 	char *cmd;
 	// 커맨드 도움말
@@ -32,7 +32,7 @@ typedef struct shellEntry {
 } SHELLENTRY;
 
 // 파라미터 처리를 위해 정보 저장하는 자료구조
-typedef struct paramList {
+typedef struct kParamList {
 	// 파라미터 버퍼 어드레스
 	const char *buf;
 	// 파라미터 길이
@@ -98,5 +98,6 @@ static void kCSInterruptLoadBalancing(const char *buf);
 static void kCSTaskLoadBalancing(const char *buf);
 static void kCSChangeAffinity(const char *buf);
 static void kCSVBEModeInfo(const char *buf);
+static void kCSSysCall(const char *buf);
 
 #endif /*__SHELL_H__*/

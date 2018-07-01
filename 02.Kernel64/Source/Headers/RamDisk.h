@@ -21,7 +21,7 @@
 #pragma pack(push, 1)
 
 // 램 디스크 자료구조 구조체
-typedef struct rddManager {
+typedef struct kRddManager {
 	// 램 디스크용으로 할당받은 메모리 영역
 	BYTE *buf;
 

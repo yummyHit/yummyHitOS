@@ -81,11 +81,15 @@
 // FIFO 최대 크기
 #define SERIAL_FIFO_MAXSIZE		16
 
+#pragma pack(push, 1)
+
 // 구조체, 시리얼 포트 담당 자료구조
-typedef struct serialPortManager {
+typedef struct kSerialPortManager {
 	// 동기화 객체
 	MUTEX lock;
 } SERIALMANAGER;
+
+#pragma pack(pop)
 
 void kInitSerial(void);
 void kSendSerialData(BYTE *buf, int size);

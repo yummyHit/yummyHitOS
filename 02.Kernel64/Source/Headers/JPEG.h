@@ -17,9 +17,10 @@
  #include <BaseGraph.h>
 
  #pragma once
+ #pragma pack(push, 1)
 
- // 허프만 테이블
- typedef struct {
+// 허프만 테이블
+typedef struct {
  	int elem;	// 요소 갯수
 	unsigned short code[256];
 	unsigned char size[256];
@@ -62,6 +63,8 @@ typedef struct {
 	unsigned long bit_buf;
 	int bit_remain;
 } JPEG;
+
+#pragma pack(pop)
 
 // 함수
 BOOL kJpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize);

@@ -15,7 +15,7 @@
 #pragma pack(push, 1)
 
 // 뮤텍스 자료구조
-typedef struct mutex {
+typedef struct kMutex {
 	// 태스크 ID와 잠금 수행 횟수
 	volatile QWORD id;
 	volatile DWORD cnt;
@@ -28,7 +28,7 @@ typedef struct mutex {
 } MUTEX;
 
 // 스핀락 자료구조
-typedef struct spinLock {
+typedef struct kSpinLock {
 	// 로컬 APIC ID와 잠금 수행 횟수
 	volatile DWORD lockCnt;
 	volatile BYTE id;

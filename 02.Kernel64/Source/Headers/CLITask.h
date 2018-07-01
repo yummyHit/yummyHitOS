@@ -91,12 +91,12 @@
 #pragma pack(push, 1)
 
 // 콘텍스트에 관련된 자료구조
-typedef struct context{
+typedef struct kContext{
 	QWORD reg[TASK_REGCNT];
 } CONTEXT;
 
 // 태스크(프로세스와 쓰레드) 상태 관리 자료구조. FPU 콘텍스트 때문에 자료구조 크기를 16 배수로 정렬
-typedef struct taskControlBlock {
+typedef struct kTaskControlBlock {
 	// 다음 데이터의 위치와 ID
 	LISTLINK link;
 
@@ -137,7 +137,7 @@ typedef struct taskControlBlock {
 } TCB;
 
 // TCB 풀 상태 관리 자료구조
-typedef struct tcbPoolManager {
+typedef struct kTcbPoolManager {
 	// 자료구조 동기화를 위한 스핀락
 	SPINLOCK *spinLock;
 
@@ -151,7 +151,7 @@ typedef struct tcbPoolManager {
 } TCBPOOLMANAGER;
 
 // 스케줄러 상태 관리 자료구조
-typedef struct scheduler {
+typedef struct kScheduler {
 	// 자료구조 동기화를 위한 스핀락
 	SPINLOCK spinLock;
 

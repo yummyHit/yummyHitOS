@@ -24,6 +24,7 @@
 #include <IOAPIC.h>
 #include <InterruptHandler.h>
 #include <VBE.h>
+#include <SysCall.h>
 
 // 커맨드 테이블 정의
 SHELLENTRY gs_cmdTable[] = {
@@ -75,6 +76,7 @@ SHELLENTRY gs_cmdTable[] = {
 	{"taskLoadBalancing", "### Start Task Load Balancing ###", kCSTaskLoadBalancing},
 	{"changeAffinity", "### Change Task Affinity. ex)changeAffinity 1(ID) 0xFF(Affinity)", kCSChangeAffinity},
 	{"vbeModeInfo", "### Show VBE Mode Information ###", kCSVBEModeInfo},
+	{"syscallTest", "### System Call Test ###", kCSSysCall},
 };
 
 // 셸 메인 루프
@@ -723,7 +725,7 @@ static void kCSThreadTest(const char *buf) {
 static volatile QWORD gs_matrixValue = 0;
 
 // 임의의 난수 반환
-QWORD _rand(void) {
+QWORD kRand(void) {
 	gs_matrixValue = (gs_matrixValue * 412153 + 5571031) >> 16;
 	return gs_matrixValue;
 }
@@ -733,11 +735,11 @@ static void dropMatrixChar(void) {
 	int x, y, i;
 	char txt[2] = {0,};
 
-	x = _rand() % CONSOLE_WIDTH;
+	x = kRand() % CONSOLE_WIDTH;
 
 	while(1) {
-		kSleep(_rand() % 20);
-		if((_rand() % 20) < 15) {
+		kSleep(kRand() % 20);
+		if((kRand() % 20) < 16) {
 			txt[0] = ' ';
 			for(i = 0; i < CONSOLE_HEIGHT - 1; i++) {
 				kPrintXY(x, i, 0x0A, txt);
@@ -745,7 +747,7 @@ static void dropMatrixChar(void) {
 			}
 		} else {
 			for(i = 0; i < CONSOLE_HEIGHT - 1; i++) {
-				txt[0] = (i + _rand()) % 128;
+				txt[0] = (i + kRand()) % 128;
 				kPrintXY(x, i, 0x0A, txt);
 				kSleep(50);
 			}
@@ -758,8 +760,8 @@ static void matrixProc(void) {
 	int i;
 
 	for(i = 0; i < 300; i++) {
-		if(kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)dropMatrixChar, TASK_LOADBALANCING_ID) == NULL) break;
-		kSleep(_rand() % 5 + 5);
+		if(kCreateTask(TASK_FLAGS_THREAD | TASK_FLAGS_LOW, 0, 0, (QWORD)dropMatrixChar, TASK_LOADBALANCING_ID) == NULL) break;
+		kSleep(kRand() % 5 + 5);
 	}
 	kGetCh();
 }
@@ -768,7 +770,7 @@ static void matrixProc(void) {
 static void kCSMatrix(const char *buf) {
 	TCB *proc;
 
-	proc = kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_PROC, (void*)0xE00000, 0xE00000, (QWORD)matrixProc, TASK_LOADBALANCING_ID);
+	proc = kCreateTask(TASK_FLAGS_PROC | TASK_FLAGS_LOW, (void*)0xE00000, 0xE00000, (QWORD)matrixProc, TASK_LOADBALANCING_ID);
 
 	if(proc != NULL) {
 		kClearMatrix();
@@ -799,13 +801,13 @@ static void fpuTest(void) {
 		dV2 = 1;
 		// 테스트를 위해 동일 계산 2번 반복 실행
 		for(i = 0; i < 100; i++) {
-			randValue = _rand();
+			randValue = kRand();
 			dV1 *= (double)randValue;
 			dV2 *= (double)randValue;
 
 			kSleep(1);
 
-			randValue = _rand();
+			randValue = kRand();
 			dV1 /= (double)randValue;
 			dV2 /= (double)randValue;
 		}
@@ -910,7 +912,7 @@ static void randAllocTask(void) {
 
 	for(j = 0; j < 10; j++) { // 1KB ~ 32M까지 할당
 		do {
-			memSize = ((_rand() % (32 * 1024)) + 1) * 1024;
+			memSize = ((kRand() % (32 * 1024)) + 1) * 1024;
 			allocBuf = kAllocMem(memSize);
 
 			// 만일 버퍼를 할당받지 못하면 다른 태스크가 메모리를 사용할 수 있으니 잠시 대기 후 재시도
@@ -926,7 +928,7 @@ static void randAllocTask(void) {
 		kSprintF(_buf, "|Address: [0x%Q] Size: [0x%Q] Data Write...     ", allocBuf, memSize);
 		kPrintXY(12, y, CONSOLE_DEFAULTTEXTCOLOR, _buf);
 		for(i = 0; i < memSize / 2; i++) {
-			allocBuf[i] = _rand() & 0xFF;
+			allocBuf[i] = kRand() & 0xFF;
 			allocBuf[i + (memSize / 2)] = allocBuf[i];
 		}
 		kSleep(200);
@@ -1423,8 +1425,8 @@ static void kCSFileIOTest(const char *buf) {
 
 	// 임의의 위치로 옮기며 데이터를 파일과 버퍼에 씀
 	for(i = 0; i < 100; i ++) {
-		byteCnt = (_rand() % (sizeof(_tmpBuf) - 1)) + 1;
-		randOffset = _rand() % (maxSize - byteCnt);
+		byteCnt = (kRand() % (sizeof(_tmpBuf) - 1)) + 1;
+		randOffset = kRand() % (maxSize - byteCnt);
 		kPrintF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
 
 		// 파일 포인터 이동
@@ -1449,8 +1451,8 @@ static void kCSFileIOTest(const char *buf) {
 	kPrintF("6. Random Read And Verify Test .....\n");
 	// 임의의 위치로 옮기며 파일에서 데이터를 읽어 버퍼 내용과 비교
 	for(i = 0; i < 100; i++) {
-		byteCnt = (_rand() % (sizeof(_tmpBuf) -  1)) + 1;
-		randOffset = _rand() % ((maxSize) - byteCnt);
+		byteCnt = (kRand() % (sizeof(_tmpBuf) -  1)) + 1;
+		randOffset = kRand() % ((maxSize) - byteCnt);
 		kPrintF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
 
 		// 파일 포인터 이동
@@ -1931,4 +1933,19 @@ static void kCSVBEModeInfo(const char *buf) {
 	kPrintF("Linear Red Mask Size: %d, Field Position: %d\n", mode->linearRedMaskSize, mode->linearRedPosition);
 	kPrintF("Linear Green Mask Size: %d, Field Position: %d\n", mode->linearGreenMaskSize, mode->linearGreenPosition);
 	kPrintF("Linear Blue Mask Size: %d, Field Position: %d\n", mode->linearBlueMaskSize, mode->linearBluePosition);
+}
+
+// 시스템 콜 테스트 유저 레벨 태스크 생성
+static void kCSSysCall(const char *buf) {
+	BYTE *userMem;
+
+	// 동적 할당 영역에 4Kbyte 메모리 할당받아 유저 레벨 태스크를 생성할 준비
+	userMem = kAllocMem(0x1000);
+	if(userMem == NULL) return ;
+
+	// 유저 레벨 태스크로 사용할 kSysCallTaskTest() 함수 코드를 할당받은 메모리에 복사
+	kMemCpy(userMem, kSysCallTaskTest, 0x1000);
+
+	// 유저 레벨 프로세스 생성
+	kCreateTask(TASK_FLAGS_USERLV | TASK_FLAGS_PROC, userMem, 0x1000, (QWORD)userMem, TASK_LOADBALANCING_ID);
 }

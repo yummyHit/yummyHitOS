@@ -16,6 +16,7 @@ global kOnInterrupt, kOffInterrupt, kReadRFLAGS, kReadTSC
 global kSwitchContext, kHlt, kTestNSet, kPause;, kShutdown
 global kInitFPU, kSaveFPU, kLoadFPU, kSetTS, kClearTS
 global kOnLocalAPIC
+global kReadMSR, kWriteMSR
 
 ; 포트로부터 1바이트 읽음(PARAM: 포트 번호)
 kInByte:
@@ -211,8 +212,7 @@ kHlt:
 	hlt
 	ret
 
-; 테스트와 설정을 하나의 명령으로 처리. dest와 cmp를 비교해 같으면 dest에 src값 삽입
-; PARAM: 값 저장할 어드레스(dest, rdi), 비교할 값(cmp, rsi), 설정할 값(src, rdx)
+; 테스트와 설정을 하나의 명령으로 처리. dest와 cmp를 비교해 같으면 dest에 src값 삽입(PARAM: 값 저장할 어드레스(dest, rdi), 비교할 값(cmp, rsi), 설정할 값(src, rdx))
 kTestNSet:
 	mov rax, rsi	; 두 번째 파라미터인 cmp를 RAX 레지스터에 저장
 
@@ -220,11 +220,11 @@ kTestNSet:
 	lock cmpxchg byte [ rdi ], dl
 	je .EQUAL
 
-.DIFFER			; dest와 cmp가 다른 경우
+.DIFFER:			; dest와 cmp가 다른 경우
 	mov rax, 0x00
 	ret
 
-.EQUAL			; dest와 cmp가 같은 경우
+.EQUAL:			; dest와 cmp가 같은 경우
 	mov rax, 0x01
 	ret
 
@@ -250,14 +250,12 @@ kInitFPU:
 	finit
 	ret
 
-; FPU 관련 레지스터를 콘텍스트 버퍼에 저장
-; PARAM: Buffer Address
+; FPU 관련 레지스터를 콘텍스트 버퍼에 저장(PARAM: Buffer Address)
 kSaveFPU:
 	fxsave [ rdi ]	; 첫 번째 파라미터로 전달된 버퍼에 FPU 레지스터를 저장
 	ret
 
-; FPU 관련 레지스터를 콘텍스트 버퍼에서 복원
-; PARAM: Buffer Address
+; FPU 관련 레지스터를 콘텍스트 버퍼에서 복원(PARAM: Buffer Address)
 kLoadFPU:
 	fxrstor [ rdi ]	; 첫 번째 파라미터로 전달된 버퍼에서 FPU 레지스터를 복원
 	ret
@@ -293,4 +291,41 @@ kOnLocalAPIC:
 	pop rdx
 	pop rcx
 	pop rax
+	ret
+
+; MSR 레지스터에서 값 읽음(PARAM: MSR 주소, *rdx, *rax)
+kReadMSR:
+	push rdx		; RDX 레지스터부터 RBX 레지스터까지 값 스택에 보관
+	push rax
+	push rcx
+	push rbx
+
+	mov rbx, rdx	; 세 번째 파라미터의 *rax 값을 RBX 레지스터에 임시 보관
+
+	mov rcx, rdi	; 첫 번째 파라미터에 저장된 MSR 주소를 RCX 레지스터에 값 저장
+	rdmsr			; RCX 레지스터에 저장된 MSR의 값을 읽어 RDX 레지스터(상위 32bit)와 RAX 레지스터(하위 32bit)에 나눠 저장
+
+	mov qword [ rsi ], rdx	; 두 번째 파라미터의 *rdx에 RDX 레지스터 값 저장
+	mov qword [ rbx ], rax	; 세 번째 파라미터의 *rax에 RAX 레지스터 값 저장
+
+	pop rbx			; RDX 레지스터부터 RBX 레지스터 값 스택에서 복원
+	pop rcx
+	pop rax
+	pop rdx
+	ret
+
+; MSR 레지스터에 값 씀(PARAM: MSR 주소, rdx, rax)
+kWriteMSR:
+	push rdx		; RDX 레지스터부터 RCX 레지스터까지 값 스택에 보관
+	push rax
+	push rcx
+
+	mov rcx, rdi	; 첫 번째 파라미터의 MSR 주소를 RCX 레지스터에 저장
+	mov rax, rdx	; 세 번째 파라미터의 rax 값을 RAX 레지스터에 저장
+	mov rdx, rsi	; 두 번째 파라미터의 rdx 값을 RDX 레지스터에 저장
+	wrmsr			; RCX 레지스터에 저장된 MSR에 RDX 레지스터(상위 32bit)와 RAX 레지스터(하위 32bit)를 저장
+
+	pop rcx			; RDX 레지스터부터 RCX 레지스터 값 스택에서 복원
+	pop rax
+	pop rdx
 	ret

@@ -26,8 +26,10 @@
 // 데이터 영역 인덱스
 #define CACHE_DATA_AREA			1
 
+#pragma pack(push, 1)
+
 // 구조체, 파일 시스템 캐시를 구성하는 캐시 버퍼 구조체
-typedef struct cacheBuf {
+typedef struct kCacheBuf {
 	// 캐시와 대응하는 클러스터 링크 테이블 영역이나 데이터 영역 인덱스
 	DWORD tag;
 
@@ -42,7 +44,7 @@ typedef struct cacheBuf {
 } CACHEBUF;
 
 // 파일 시스템 캐시 관리하는 캐시 매니저 구조체
-typedef struct cacheManager {
+typedef struct kCacheManager {
 	// 클러스터 링크 테이블 영역과 데이터 영역 접근 시간 필드
 	DWORD accessTime[CACHE_MAXCACHE_IDX];
 
@@ -55,6 +57,8 @@ typedef struct cacheManager {
 	// 캐시 버퍼 최대값 저장
 	DWORD maxCnt[CACHE_MAXCACHE_IDX];
 } CACHEMEM;
+
+#pragma pack(pop)
 
 BOOL kInitCacheMem(void);
 CACHEBUF *kAllocCacheBuf(int idx);

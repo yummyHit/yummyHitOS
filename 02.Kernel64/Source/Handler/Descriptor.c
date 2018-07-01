@@ -25,7 +25,7 @@ void kInitGDTNTSS(void) {
 	// TSS 영역 설정, GDT 테이블 뒤쪽에 위치
 	tss = (TSS*)((QWORD)entry + GDT_TABLESIZE);
 
-	// NULL, 64bit Code & Data, TSS를 위해 총 3 + 16개의 세그먼트 생성
+	// NULL, Kernel Code & Data, User Code & Data, TSS를 위해 총 5 + 16개의 세그먼트 생성
 	kSetGDTEntry8(&(entry[0]), 0, 0, 0, 0, 0);
 	kSetGDTEntry8(&(entry[1]), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE);
 	kSetGDTEntry8(&(entry[2]), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA);

@@ -25,10 +25,10 @@
 #include <BaseGraph.h>
 #include <Mouse.h>
 #include <WinManager.h>
+#include <SysCall.h>
 
 void kForAP(void);
 BOOL kMultiCoreMode(void);
-//void startGUI();
 
 // BSP용 C언어 커널 엔트리 포인트, 아래 함수는 C언어 커널 시작 부분
 void Main(void) {
@@ -49,11 +49,11 @@ void Main(void) {
 	kInitGDTNTSS();
 	kLoadGDTR(GDTR_STARTADDR);
 	kPrintXY(57, 6, 0x1A, "[  Hit  ]");
-//
+
 	kPrintXY(7, 6, 0x1F, "TSS Segment Load .................................");
 	kLoadTSS(GDT_TSS_SEGMENT);
 	kPrintXY(57, 6, 0x1A, "[  Hit  ]");
-//
+
 	kPrintXY(7, 6, 0x1F, "IDT Initialize ...................................");
 	kInitIDT();
 	kLoadIDTR(IDTR_STARTADDR);
@@ -112,6 +112,10 @@ void Main(void) {
 	if(kMultiCoreMode() == TRUE) kPrintXY(57, 8, 0x1A, "[  Hit  ]");
 	else kPrintXY(57, 8, 0x1C, "[  Err  ]");
 
+	// 시스템 콜 관련 MSR 초기화
+	kPrintXY(7, 8, 0x1F, "System Call MSR Initialize........................");
+	kInitSysCall();
+
 	kClearMonitor();
 	kSetCursor(0, 1);
 	yummy_ascii_art("yummy_ascii.txt");
@@ -154,6 +158,9 @@ void kForAP(void) {
 
 	// 인터럽트 활성화
 	kOnInterrupt();
+
+	// 시스템 콜 관련 MSR 초기화
+	kInitSysCall();
 
 	// 유휴 태스크 실행
 	kIdleTask();

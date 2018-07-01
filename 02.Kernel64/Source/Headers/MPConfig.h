@@ -51,7 +51,7 @@
 #pragma pack(push, 1)
 
 // MP 플로팅 포인터 자료구조
-typedef struct mpFloatingPointer {
+typedef struct kMPFloatingPointer {
 	// 시그너처, _MP_
 	char sign[4];
 	// MP 설정 테이블 위치 주소
@@ -67,7 +67,7 @@ typedef struct mpFloatingPointer {
 } MPFLOATINGPTR;
 
 // MP 설정 테이블 헤더 자료구조
-typedef struct mpConfigHeader {
+typedef struct kMPConfigHeader {
 	// 시그너처, PCMP
 	char sign[4];
 	// 기본 테이블 길이
@@ -97,7 +97,7 @@ typedef struct mpConfigHeader {
 } MPCONFIGHEADER;
 
 // 프로세서 엔트리 자료구조
-typedef struct procEntry {
+typedef struct kProcEntry {
 	// 엔트리 타입 코드, 0
 	BYTE entryType;
 	// 프로세서에 포함된 로컬 APIC ID
@@ -115,7 +115,7 @@ typedef struct procEntry {
 } PROCESSORENTRY;
 
 // 버스 엔트리 자료구조
-typedef struct busEntry {
+typedef struct kBusEntry {
 	// 엔트리 타입 코드, 1
 	BYTE entryType;
 	// 버스 ID
@@ -125,7 +125,7 @@ typedef struct busEntry {
 } BUSENTRY;
 
 // IO APIC 엔트리 자료구조
-typedef struct ioAPICEntry {
+typedef struct kIOAPICEntry {
 	// 엔트리 타입 코드
 	BYTE entryType;
 	// IO APIC ID
@@ -139,7 +139,7 @@ typedef struct ioAPICEntry {
 } IOAPICENTRY;
 
 // IO 인터럽트 지정 엔트리 자료구조
-typedef struct ioInterruptEntry {
+typedef struct kIOInterruptEntry {
 	// 엔트리 타입 코드, 3
 	BYTE entryType;
 	// 인터럽트 타입
@@ -157,7 +157,7 @@ typedef struct ioInterruptEntry {
 } IOINTERRUPTENTRY;
 
 // 로컬 인터럽트 지정 엔트리 자료구조
-typedef struct localInterruptEntry {
+typedef struct kLocalInterruptEntry {
 	// 엔트리 타입 코드, 4
 	BYTE entryType;
 	// 인터럽트 타입
@@ -174,10 +174,8 @@ typedef struct localInterruptEntry {
 	BYTE destLINTIN;
 } LOCALINTERRUPTENTRY;
 
-#pragma pack(pop)
-
 // MP 설정 테이블 관리 자료구조
-typedef struct mpConfigManager {
+typedef struct kMPConfigManager {
 	// MP 플로팅 테이블
 	MPFLOATINGPTR *floatingPtr;
 	// MP 설정 테이블 헤더
@@ -191,6 +189,8 @@ typedef struct mpConfigManager {
 	// ISA 버스 ID
 	BYTE isaBusID;
 } MPCONFIGMANAGER;
+
+#pragma pack(pop)
 
 BOOL kFindFloatingAddress(QWORD *addr);
 BOOL kAnalysisMPConfig(void);

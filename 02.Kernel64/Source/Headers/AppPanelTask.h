@@ -34,7 +34,7 @@
 #define APP_PANEL_COLOR_ACTIVE		RGB(229, 229, 229)
 
 // 애플리케이션 패널이 사용하는 정보 저장 자료구조
-typedef struct appPanelData {
+typedef struct kAppPanelData {
 	// 애플리케이션 패널 윈도우 ID
 	QWORD panelID;
 
@@ -55,7 +55,7 @@ typedef struct appPanelData {
 } APPPANELDATA;
 
 // GUI 태스크 정보 저장 자료구조
-typedef struct appEntry {
+typedef struct kAppEntry {
 	// GUI 태스크 이름
 	char *name;
 

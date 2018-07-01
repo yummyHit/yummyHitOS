@@ -1125,7 +1125,7 @@ DIR *kDirOpen(const char *name) {
 }
 
 // 디렉터리 엔트리를 반환하고 다음으로 이동
-struct directoryEntry *kDirRead(DIR *dir) {
+struct kDirectoryEntry *kDirRead(DIR *dir) {
 	DIRHANDLE *handle;
 	DIRENTRY *entry;
 

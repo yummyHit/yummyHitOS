@@ -22,14 +22,16 @@
 #define DYNMEM_EXIST		0x01
 #define DYNMEM_EMPTY		0x00
 
+#pragma pack(push, 1)
+
 // 구조체. 비트맵 관리 자료구조
-typedef struct bitmap {
+typedef struct kBitmap {
 	BYTE *bitmap;
 	QWORD bitCnt;
 } BITMAP;
 
 // 버디 블록 관리 자료구조
-typedef struct dynmemManager {
+typedef struct kDynmemManager {
 	// 자료구조 동기화를 위한 스핀락
 	SPINLOCK spinLock;
 
@@ -46,6 +48,8 @@ typedef struct dynmemManager {
 	BYTE *allocBlockIdx;
 	BITMAP *bitmapLv;
 } DYNMEM;
+
+#pragma pack(pop)
 
 void kInitDynMem(void);
 void *kAllocMem(QWORD size);

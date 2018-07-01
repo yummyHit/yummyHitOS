@@ -18,8 +18,10 @@ typedef WORD		COLOR;
 // 0 ~ 255 범위의 R, G, B를 16비트 색 형식으로 변환. 0 ~ 31, 0 ~ 63으로 낮추어 사용하니 각 8과 4로 나눠야 함. Shift 연산으로 사용 가능
 #define RGB(r, g, b)	(((BYTE)(r) >> 3) << 11 | ((BYTE)(g) >> 2) << 5 | ((BYTE)(b) >> 3))
 
+#pragma pack(push, 1)
+
 // 구조체. 사각형의 정보를 담는 자료구조
-typedef struct rect {
+typedef struct kRect {
 	// 왼쪽 위(시작점) X좌표
 	int x1;
 	// 왼쪽 위(시작점) Y좌표
@@ -32,11 +34,13 @@ typedef struct rect {
 } RECT;
 
 // 점의 정보 담는 자료구조
-typedef struct point {
+typedef struct kPoint {
 	// X와 Y 좌표
 	int x;
 	int y;
 } POINT;
+
+#pragma pack(pop)
 
 inline void kInDrawPixel(const RECT *area, COLOR *addr, int x, int y, COLOR color);
 void kInDrawLine(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, COLOR color);

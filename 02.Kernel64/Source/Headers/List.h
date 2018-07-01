@@ -15,13 +15,13 @@
 #pragma pack(push, 1)
 
 // 데이터 연결 자료구조. 반드시 데이터 가장 앞부분에 위치해야 함.
-typedef struct listLink {
+typedef struct kListLink {
 	void *next;
 	QWORD id;
 } LISTLINK;
 
 // 리스트 관리 자료구조
-typedef struct listManager {
+typedef struct kListManager {
 	// 리스트 데이터 수
 	int itemCnt;
 	// 리스트 첫 번째와 마지막 데이터 주소

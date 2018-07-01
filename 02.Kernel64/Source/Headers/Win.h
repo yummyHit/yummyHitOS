@@ -105,8 +105,10 @@
 // 화면에 업데이트할 때 이전에 업데이트한 영역을 저장해둘 개수
 #define WINDOW_CROSSAREA_LOGMAXCNT	20
 
+#pragma pack(push, 1)
+
 // 구조체. 마우스 이벤트 자료구조
-typedef struct mouseEvnet {
+typedef struct kMouseEvnet {
 	// 윈도우 ID
 	QWORD id;
 
@@ -116,7 +118,7 @@ typedef struct mouseEvnet {
 } MOUSEEVENT;
 
 // 키 이벤트 자료구조
-typedef struct keyEvent {
+typedef struct kKeyEvent {
 	// 윈도우 ID
 	QWORD id;
 
@@ -129,7 +131,7 @@ typedef struct keyEvent {
 } KEYEVENT;
 
 // 윈도우 이벤트 자료구조
-typedef struct windowEvent {
+typedef struct kWindowEvent {
 	// 윈도우 ID
 	QWORD id;
 
@@ -138,7 +140,7 @@ typedef struct windowEvent {
 } WINDOWEVENT;
 
 // 이벤트 자료구조
-typedef struct event {
+typedef struct kEvent {
 	// 이벤트 타입
 	QWORD type;
 
@@ -159,7 +161,7 @@ typedef struct event {
 } EVENT;
 
 // 윈도우 정보 저장하는 자료구조
-typedef struct window {
+typedef struct kWindow {
 	// 다음 데이터 위치와 현재 윈도우 ID
 	LISTLINK link;
 
@@ -187,7 +189,7 @@ typedef struct window {
 } WINDOW;
 
 // 윈도우 풀 상태 관리하는 자료구조
-typedef struct windowPoolManager {
+typedef struct kWindowPoolManager {
 	// 자료구조 동기화 뮤텍스
 	MUTEX lock;
 
@@ -201,7 +203,7 @@ typedef struct windowPoolManager {
 } WINDOWPOOLMANAGER;
 
 // 윈도우 매니저 자료구조
-typedef struct windowManager {
+typedef struct kWindowManager {
 	// 자료구조 동기화 뮤텍스
 	MUTEX lock;
 
@@ -242,12 +244,14 @@ typedef struct windowManager {
 } WINDOWMANAGER;
 
 // 화면에 업데이트할 영역의 비트맵 정보 저장하는 자료구조
-typedef struct drawBitmap {
+typedef struct kDrawBitmap {
 	// 업데이트할 화면 영역
 	RECT area;
 	// 화면 영역 정보가 저장된 비트맵 어드레스
 	BYTE *bitmap;
 } DRAWBITMAP;
+
+#pragma pack(pop)
 
 static void kInitWinPool(void);
 static WINDOW *kAllocWin(void);

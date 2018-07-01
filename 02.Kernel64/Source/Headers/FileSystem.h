@@ -68,14 +68,14 @@ typedef int (*_kWriteHDDSector)(BOOL pri, BOOL master, DWORD lba, int sectorCnt,
 
 // 파일 시스템 타입과 필드를 표준 입출력 타입으로 재정의
 #define size_t		DWORD
-#define dirent		directoryEntry
+#define dirent		kDirectoryEntry
 #define d_name		fileName
 
 // 구조체. 1바이트로 정렬
 #pragma pack(push, 1)
 
 // 파티션 자료구조
-typedef struct partition {
+typedef struct kPartition {
 	// 부팅 가능 플래그. 0x80이면 부팅 가능 / 0x00이면 부팅 불가
 	BYTE bootFlag;
 	// 파티션 시작 주소. 현재 거의 사용 안함
@@ -91,7 +91,7 @@ typedef struct partition {
 } PARTITION;
 
 // MBR 자료구조
-typedef struct mbr {
+typedef struct kMBR {
 	// 부트 로더 코드 위치
 	BYTE bootCode[430];
 
@@ -112,7 +112,7 @@ typedef struct mbr {
 } MBR;
 
 // 디렉터리 엔트리 자료구조
-typedef struct directoryEntry {
+typedef struct kDirectoryEntry {
 	// 파일 이름
 	char fileName[FILESYSTEM_FILENAME_MAXLEN];
 	// 파일 실제 크기
@@ -122,7 +122,7 @@ typedef struct directoryEntry {
 } DIRENTRY;
 
 // 파일 관리하는 파일 핸들 자료구조
-typedef struct fileHandle {
+typedef struct kFileHandle {
 	// 파일이 존재하는 디렉터리 엔트리 오프셋
 	int dirEntryOffset;
 	// 파일 크기
@@ -138,7 +138,7 @@ typedef struct fileHandle {
 } FILEHANDLE;
 
 // 디렉터리 관리하는 디렉터리 핸들 자료구조
-typedef struct directoryHandle {
+typedef struct kDirectoryHandle {
 	// 루트 디렉터리 저장해둔 버퍼
 	DIRENTRY *dirBuf;
 	// 디렉터리 포인터의 현재 위치
@@ -146,7 +146,7 @@ typedef struct directoryHandle {
 } DIRHANDLE;
 
 // 파일과 디렉터리에 대한 정보가 들어있는 자료구조
-typedef struct fileDirHandle {
+typedef struct kFileDirHandle {
 	// 자료구조 타입 설정. 파일 핸들이나 디렉터리 핸들 또는 빈 핸들 타입 지정 가능
 	BYTE type;
 	// type 값에 따라 파일이나 디렉터리로 사용
@@ -159,7 +159,7 @@ typedef struct fileDirHandle {
 } FILE, DIR;
 
 // 파일 시스템 관리
-typedef struct fileSystemManager {
+typedef struct kFileSystemManager {
 	// 파일 시스템이 정상적으로 인식되었는지 여부
 	BOOL mnt;
 

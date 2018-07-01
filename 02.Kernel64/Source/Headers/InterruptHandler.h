@@ -18,8 +18,10 @@
 // 인터럽트 부하 분산 수행하는 시점. 인터럽트 처리 횟수가 10의 배수가 되는 시점
 #define INTERRUPT_LOADBALANCING_DIV	10
 
+#pragma pack(push, 1)
+
 // 구조체, 인터럽트에 관련된 정보를 저장하는 자료구조
-typedef struct interruptManager {
+typedef struct kInterruptManager {
 	// 코어 별 인터럽트 처리 횟수, 최대 코어 개수 * 최대 인터럽트 벡터 개수로 정의된 2차원 배열
 	QWORD coreInterruptCnt[MAXPROCESSORCNT][INTERRUPT_MAX_VECCNT];
 
@@ -29,6 +31,8 @@ typedef struct interruptManager {
 	// 대칭 IO 모드 사용 여부
 	BOOL mode;
 } INTERRUPTMANAGER;
+
+#pragma pack(pop)
 
 void kSetSymmetricIOMode(BOOL mode);
 void kSetInterruptLoadBalancing(BOOL isLoadBalancing);

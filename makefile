@@ -7,7 +7,7 @@
 
 BINFILES = BinFiles
 
-all: BootLoader Kernel32 Kernel64 Utility Disk.img
+all: BootLoader Kernel32 Kernel64 Application Utility Disk.img
 
 BootLoader:
 	@echo
@@ -41,6 +41,18 @@ Kernel64:
 	@echo
 	@echo =============== Build Complete ===============
 	@echo
+
+Application:
+	@echo 
+	@echo =========== Application Build Start ===========
+	@echo 
+
+	make -C 03.Application
+
+	@echo 
+	@echo =========== Application Build Complete ===========
+	@echo 
+
 
 Utility: 
 	@echo 

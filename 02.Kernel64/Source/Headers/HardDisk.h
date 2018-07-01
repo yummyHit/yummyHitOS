@@ -59,7 +59,7 @@
 // 구조체. 1바이트로 정렬
 #pragma pack(push, 1)
 
-typedef struct HDDInformation {
+typedef struct kHDDInformation {
 	// 설정 값
 	WORD config;
 
@@ -94,10 +94,8 @@ typedef struct HDDInformation {
 	WORD reserved_C[196];
 } HDDINFO;
 
-#pragma pack(pop)
-
 // 하드 디스크 관리 구조체
-typedef struct HDDManager {
+typedef struct kHDDManager {
 	// HDD 존재 여부와 쓰기 수행 여부
 	BOOL hddDetect;
 	BOOL isWrite;
@@ -110,6 +108,8 @@ typedef struct HDDManager {
 	// HDD 정보
 	HDDINFO hddInfo;
 } HDDMANAGER;
+
+#pragma pack(pop)
 
 BOOL kInitHDD(void);
 BOOL kReadHDDInfo(BOOL pri, BOOL master, HDDINFO *hddInfo);
