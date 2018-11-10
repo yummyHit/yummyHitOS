@@ -69,7 +69,7 @@
 #define IDT_FLAGS_DPL1		0x20
 #define IDT_FLAGS_DPL2		0x40
 #define IDT_FLAGS_DPL3		0x60
-#define IDT_FLAGS_P		0x80
+#define IDT_FLAGS_P			0x80
 #define IDT_FLAGS_IST0		0
 #define IDT_FLAGS_IST1		1
 
@@ -88,7 +88,7 @@
 // IST 시작 어드레스
 #define IST_STARTADDR		0x700000
 // IST 크기
-#define IST_SIZE		0x100000
+#define IST_SIZE			0x100000
 
 // 구조체, 1바이트로 정렬
 #pragma pack(push, 1)

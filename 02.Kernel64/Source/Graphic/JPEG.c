@@ -208,7 +208,7 @@ void kJpg_sos(JPEG *jpg) {
 
 	for(i = 0; i < jpg->scan_cnt; i++) {
 		c = kGet_byte(jpg);
-		// printF(" id :%d\n", c);
+		// kPrintf(" id :%d\n", c);
 		jpg->scan_id[i] = c;
 
 		c = kGet_byte(jpg);
@@ -264,10 +264,10 @@ BOOL kJpgInit(JPEG *jpg, BYTE *fileBuf, DWORD fileSize) {
 
 		switch(c) {
 			case 0xD8:
-				// printF("SOI\n");
+				// kPrintf("SOI\n");
 				break;
 			case 0xD9:
-				// printF("EOI\n");
+				// kPrintf("EOI\n");
 				return FALSE;
 				break;
 			case 0xC0:
@@ -303,7 +303,7 @@ int kJpg_dec_init(JPEG *jpg) {
 		for(j = 0; j < jpg->compo_cnt; j++) {
 			// j is frame
 			if(jpg->scan_id[i] == jpg->compo_id[j]) {
-				// printF("scan %d is frame %d\n", i, j);
+				// kPrintf("scan %d is frame %d\n", i, j);
 				jpg->scan_h[i] = jpg->compo_h[j];
 				jpg->scan_v[i] = jpg->compo_v[j];
 				jpg->scan_qt[i] = jpg->compo_qt[j];

@@ -77,6 +77,7 @@ SHELLENTRY gs_cmdTable[] = {
 	{"changeAffinity", "### Change Task Affinity. ex)changeAffinity 1(ID) 0xFF(Affinity)", kCSChangeAffinity},
 	{"vbeModeInfo", "### Show VBE Mode Information ###", kCSVBEModeInfo},
 	{"syscallTest", "### System Call Test ###", kCSSysCall},
+	{"exec", "### Execute Application Program, ex)exec a.elf argument", kCSExecAppProg },
 };
 
 // 셸 메인 루프
@@ -91,7 +92,7 @@ void kStartShell(void) {
 	csManager = kGetConsoleManager();
 
 	// 프롬프트 출력
-	kPrintF(SHELL_PROMPTMSG);
+	kPrintf(SHELL_PROMPTMSG);
 
 	// 콘솔 셸 종료 플래그가 TRUE 일 때 까지 반복
 	while(1) {
@@ -110,7 +111,7 @@ void kStartShell(void) {
 				bufIdx--;
 			}
 		} else if(key == KEY_ENTER) {
-			kPrintF("\n");
+			kPrintf("\n");
 			if(bufIdx > 0) {
 				// 커맨드 버퍼에 있는 명령 실행
 				buf[bufIdx] = '\0';
@@ -118,7 +119,7 @@ void kStartShell(void) {
 			}
 
 			// 프롬프트 출력 및 커맨드 버퍼 초기화
-			kPrintF("%s", SHELL_PROMPTMSG);
+			kPrintf("%s", SHELL_PROMPTMSG);
 			kMemSet(buf, '\0', SHELL_MAXCMDBUFCNT);
 			bufIdx = 0;
 		} else if((key == KEY_LSHIFT) || (key == KEY_RSHIFT) || (key == KEY_CAPSLOCK) || (key == KEY_NUMLOCK) || (key == KEY_SCROLLLOCK)) {
@@ -130,7 +131,7 @@ void kStartShell(void) {
 			// 버퍼에 공간이 남아있을 때만 가능
 			if(bufIdx < SHELL_MAXCMDBUFCNT) {
 				buf[bufIdx++] = key;
-				kPrintF("%c", key);
+				kPrintf("%c", key);
 			}
 		}
 	}
@@ -156,7 +157,7 @@ void kExecCMD(const char *buf) {
 	}
 
 	// 리스트에서 못 찾으면 에러 출력
-	if(i >= cnt) kPrintF("'%s' is not found.\n", buf);
+	if(i >= cnt) kPrintf("'%s' is not found.\n", buf);
 }
 
 // 파라미터 자료구조 초기화
@@ -190,9 +191,9 @@ int kGetNextParam(PARAMLIST *list, char *param) {
 static void kCSHelp(const char *buf) {
 	int i, cnt, x, y, len, maxLen = 0;
 
-	kPrintF("   ============================================================\n");
-	kPrintF("   |                    YummyHitOS Shell Help                 |\n");
-	kPrintF("   ============================================================\n");
+	kPrintf("   ============================================================\n");
+	kPrintf("   |                    YummyHitOS Shell Help                 |\n");
+	kPrintf("   ============================================================\n");
 	
 	cnt = sizeof(gs_cmdTable) / sizeof(SHELLENTRY);
 
@@ -204,19 +205,19 @@ static void kCSHelp(const char *buf) {
 
 	// 도움말 출력
 	for(i = 0; i < cnt; i++) {
-		kPrintF("%s", gs_cmdTable[i].cmd);
+		kPrintf("%s", gs_cmdTable[i].cmd);
 		kGetCursor(&x, &y);
 		kSetCursor(maxLen, y);
-		kPrintF("  - %s\n", gs_cmdTable[i].help);
+		kPrintf("  - %s\n", gs_cmdTable[i].help);
 
 		// 목록이 많을 경우 나눠서 보여중
 		if((i != 0) && ((i % 20) == 0)) {
-			kPrintF("Press any key to continue... ('q' is exit) : ");
+			kPrintf("Press any key to continue... ('q' is exit) : ");
 			if(kGetCh() == 'q') {
-				kPrintF("\n");
+				kPrintf("\n");
 				break;
 			}
-			kPrintF("\n");
+			kPrintf("\n");
 		}
 	}
 }
@@ -230,7 +231,7 @@ static void kCSClear(const char *buf) {
 
 // 총 메모리 크기 출력
 static void kCSFree(const char *buf) {
-	kPrintF("    %d MB\n", kGetTotalMemSize());
+	kPrintf("    %d MB\n", kGetTotalMemSize());
 }
 
 // 문자열로 된 숫자를 숫자로 변환해 출력
@@ -249,15 +250,15 @@ static void kCSStrConvert(const char *buf) {
 		if(len == 0) break;
 
 		// 파라미터에 대한 정보 출력 후 16진수|10진수 판단해 변환하여 출력
-		kPrintF("Parameter %d = '%s', Length = %d, ", cnt + 1, param, len);
+		kPrintf("Parameter %d = '%s', Length = %d, ", cnt + 1, param, len);
 
 		// 0x로 시작하면 16진수, 그 외에는 10진수로 판단
 		if(kMemCmp(param, "0x", 2) == 0) {
 			v = kAtoI(param + 2, 16);
-			kPrintF("HexaDecimale Value = %q\n", v);
+			kPrintf("HexaDecimale Value = %q\n", v);
 		} else {
 			v = kAtoI(param, 10);
-			kPrintF("Decimal Value = %d\n", v);
+			kPrintf("Decimal Value = %d\n", v);
 		}
 		cnt++;
 	}
@@ -267,31 +268,31 @@ static void kCSStrConvert(const char *buf) {
 static void kCSExit(const char *buf) {
 	// 그래픽 모드 판단
 	if(kIsGUIMode() == FALSE) {
-		kPrintF("It is GUI Task. You must execute GUI Mode.\n");
+		kPrintf("It is GUI Task. You must execute GUI Mode.\n");
 		return;
 	}
-	kPrintF("Cache Flushing ...");
-	if(kFlushFileSystemCache() == TRUE) kPrintF("[  Hit  ]\n");
-	else kPrintF("[  Err  ]\n");
+	kPrintf("Cache Flushing ...");
+	if(kFlushFileSystemCache() == TRUE) kPrintf("[  Hit  ]\n");
+	else kPrintf("[  Err  ]\n");
 //	setShellExitFlag(TRUE);		// how to exit GUI terminal? not OS only terminal!
 }
 
 // PC 종료
 static void kCSHalt(const char *buf) {
-	kPrintF("Cache Flushing ...");
-	if(kFlushFileSystemCache() == TRUE) kPrintF("[  Hit  ]\n");
-	else kPrintF("[  Err  ]\n");
-	kPrintF("Press any key on your keyboard for shutdown PC !\n");
+	kPrintf("Cache Flushing ...");
+	if(kFlushFileSystemCache() == TRUE) kPrintf("[  Hit  ]\n");
+	else kPrintf("[  Err  ]\n");
+	kPrintf("Press any key on your keyboard for shutdown PC !\n");
 	kGetCh();
 	kShutDown();
 }
 
 // PC 재부팅
 static void kCSReboot(const char *buf) {
-	kPrintF("Cache Flushing ...");
-	if(kFlushFileSystemCache() == TRUE) kPrintF("[  Hit  ]\n");
-	else kPrintF("[  Err  ]\n");
-	kPrintF("Press any key on your keyboard for reboot PC !\n");
+	kPrintf("Cache Flushing ...");
+	if(kFlushFileSystemCache() == TRUE) kPrintf("[  Hit  ]\n");
+	else kPrintf("[  Err  ]\n");
+	kPrintf("Press any key on your keyboard for reboot PC !\n");
 	kGetCh();
 	kReBoot();
 }
@@ -308,20 +309,20 @@ static void kCSSetTime(const char *buf) {
 
 	// milli second 추출
 	if(kGetNextParam(&list, param) == 0) {
-		kPrintF("ex) setTime 10(ms) 1(term)\n");
+		kPrintf("ex) setTime 10(ms) 1(term)\n");
 		return;
 	}
 	v = kAtoI(param, 10);
 
 	// Periodic 추출
 	if(kGetNextParam(&list, param) == 0) {
-		kPrintF("ex) setTime 10(ms) 1(term)\n");
+		kPrintf("ex) setTime 10(ms) 1(term)\n");
 		return;
 	}
 	term = kAtoI(param, 10);
 
 	kInitPIT(MSTOCNT(v), term);
-	kPrintF("Time = %d ms, Term = %d Change Complete\n", v, term);
+	kPrintf("Time = %d ms, Term = %d Change Complete\n", v, term);
 }
 
 // PIT 컨트롤러를 직접 사용해 ms 동안 대기
@@ -334,18 +335,18 @@ static void kCSWait(const char *buf) {
 	// 파라미터 초기화
 	kInitParam(&list, buf);
 	if(kGetNextParam(&list, param) == 0) {
-		kPrintF("ex) wait 100(ms)\n");
+		kPrintf("ex) wait 100(ms)\n");
 		return;
 	}
 	ms = kAtoI(buf, 10);
-	kPrintF("### %d ms Sleep Start... ###\n", ms);
+	kPrintf("### %d ms Sleep Start... ###\n", ms);
 
 	// 인터럽트 비활성화 후 PIT 컨트롤러를 통해 직접 시간 측정
 	kOffInterrupt();
 	for(i = 0; i < ms / 30; i++) kWaitPIT(MSTOCNT(30));
 	kWaitPIT(MSTOCNT(ms % 30));
 	kOnInterrupt();
-	kPrintF("### %d ms Sleep Complete ###\n", ms);
+	kPrintf("### %d ms Sleep Complete ###\n", ms);
 
 	// 타이머 복원
 	kInitPIT(MSTOCNT(1), TRUE);
@@ -356,7 +357,7 @@ static void kCSRTSC(const char *buf) {
 	QWORD TSC;
 	
 	TSC = kReadTSC();
-	kPrintF("Time Stamp Counter = %q\n", TSC);
+	kPrintf("Time Stamp Counter = %q\n", TSC);
 }
 
 // 프로세서 속도 측정
@@ -364,7 +365,7 @@ static void kCSCPUSpeed(const char *buf) {
 	int i;
 	QWORD last, total = 0;
 
-	kPrintF("### Now Measuring.");
+	kPrintf("### Now Measuring.");
 
 	// 10초 동안 변화한 타임 스탬프 카운터를 이용해 프로세서 속도 측정
 	kOffInterrupt();
@@ -372,12 +373,12 @@ static void kCSCPUSpeed(const char *buf) {
 		last = kReadTSC();
 		kWaitPIT(MSTOCNT(50));
 		total += kReadTSC() - last;
-		kPrintF(".");
+		kPrintf(".");
 	}
 	// 타이머 복원
 	kInitPIT(MSTOCNT(1), TRUE);
 	kOnInterrupt();
-	kPrintF("\n### CPU Speed = %d MHz ###\n", total / 10 / 1000 / 1000);
+	kPrintf("\n### CPU Speed = %d MHz ###\n", total / 10 / 1000 / 1000);
 }
 
 // RTC 컨트롤러에 저장된 일자 및 시간 정보 표시
@@ -389,8 +390,8 @@ static void kCSDate(const char *buf) {
 	kReadTime(&hour, &min, &sec);
 	kReadDate(&year, &month, &day, &week);
 
-	kPrintF("Date : %d/%d/%d %s, ", year, month, day, kConvertWeek(week));
-	kPrintF("Time : %d:%d:%d\n", hour, min, sec);
+	kPrintf("Date : %d/%d/%d %s, ", year, month, day, kConvertWeek(week));
+	kPrintf("Time : %d:%d:%d\n", hour, min, sec);
 }
 
 // TCB 자료구조와 스택 정의
@@ -466,14 +467,14 @@ static void kTaskTest3(void) {
 	// 자신의 태스크 자료구조 저장
 	runningTask = kGetRunningTask(kGetAPICID());
 	id = runningTask->link.id;
-	kPrintF("Test Task 3 Started. Task ID = 0x%q, Local APIC ID = 0x%x\n", id, kGetAPICID());
+	kPrintf("Test Task 3 Started. Task ID = 0x%q, Local APIC ID = 0x%x\n", id, kGetAPICID());
 
 	// 현재 수행 중 로컬 APIC ID 저장하고 태스크가 부하 분산되어 다른 코어로 옮겨갔을 때 메시지 출력
 	_id = kGetAPICID();
 	while(1) {
 		// 이전에 수행되었던 코어와 현재 수행하는 코어가 다르면 메시지 출력
 		if(_id != kGetAPICID()) {
-			kPrintF("Core Changed! Task ID = 0x%q, Prev Local APIC ID = 0x%x, Current = 0x%x\n", id, _id, kGetAPICID());
+			kPrintf("Core Changed! Task ID = 0x%q, Prev Local APIC ID = 0x%x, Current = 0x%x\n", id, _id, kGetAPICID());
 
 			// 현재 수행 중인 코어 ID 변경
 			_id = kGetAPICID();
@@ -497,13 +498,13 @@ static void kCSCreateTask(const char *buf) {
 	switch(kAtoI(type, 10)) {
 	case 1:
 		for(i = 0; i < kAtoI(cnt, 10); i++) if(kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kTaskTest1, TASK_LOADBALANCING_ID) == NULL) break;
-		kPrintF("Task Test 1 %d Created.\n", i);
+		kPrintf("Task Test 1 %d Created.\n", i);
 		break;
 
 	case 2:
 	default:
 		for(i = 0; i < kAtoI(cnt, 10); i++) if(kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kTaskTest2, TASK_LOADBALANCING_ID) == NULL) break;
-		kPrintF("Task Test 2 %d Created.\n", i);
+		kPrintf("Task Test 2 %d Created.\n", i);
 		break;
 
 	case 3:
@@ -511,7 +512,7 @@ static void kCSCreateTask(const char *buf) {
 			if(kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kTaskTest3, TASK_LOADBALANCING_ID) == NULL) break;
 			kSchedule();
 		}
-		kPrintF("Task3 %d Created\n", i);
+		kPrintf("Task3 %d Created\n", i);
 		break;
 	}
 }
@@ -534,9 +535,9 @@ static void kCSChangePriority(const char *buf) {
 
 	_priority = kAtoI(priority, 10);
 
-	kPrintF("### Change Task Priority ID [0x%q] Priority[%d] ", _id, _priority);
-	if(kAlterPriority(_id, _priority) == TRUE) kPrintF("Success !!\n");
-	else kPrintF("Fail...\n");
+	kPrintf("### Change Task Priority ID [0x%q] Priority[%d] ", _id, _priority);
+	if(kAlterPriority(_id, _priority) == TRUE) kPrintf("Success !!\n");
+	else kPrintf("Fail...\n");
 }
 
 // 현재 생성된 모든 태스크 정보 출력
@@ -550,28 +551,28 @@ static void kCSTaskList(const char *buf) {
 
 	for(i = 0; i < procCnt; i++) totalCnt += kGetTaskCnt(i);
 
-	kPrintF("   ================== Task Total Count [%d] ===================\n", totalCnt);
+	kPrintf("   ================== Task Total Count [%d] ===================\n", totalCnt);
 
 	// 코어가 두 개 이상이면 각 스케줄러별 개수 출력
 	if(procCnt > 1) {
 		for(i = 0; i < procCnt; i++) {
-			if((i != 0) && ((i % 4) == 0)) kPrintF("\n");
-			kSprintF(_buf, "Core %d : %d", i, kGetTaskCnt(i));
-			kPrintF(_buf);
+			if((i != 0) && ((i % 4) == 0)) kPrintf("\n");
+			kSprintf(_buf, "Core %d : %d", i, kGetTaskCnt(i));
+			kPrintf(_buf);
 
 			// 출력하고 남은 공간 모두 스페이스바로 채움
 			len = 19 - kStrLen(_buf);
 			kMemSet(_buf, ' ', len);
 			_buf[len] = '\0';
-			kPrintF(_buf);
+			kPrintf(_buf);
 		}
 
-		kPrintF("\nPress any key to continue... ('q' is exit) : ");
+		kPrintf("\nPress any key to continue... ('q' is exit) : ");
 		if(kGetCh() == 'q') {
-			kPrintF("\n");
+			kPrintf("\n");
 			return;
 		}
-		kPrintF("\n\n");
+		kPrintf("\n\n");
 	}
 
 	for(i = 0; i < TASK_MAXCNT; i++) {
@@ -580,16 +581,16 @@ static void kCSTaskList(const char *buf) {
 		if((tcb->link.id >> 32) != 0) {
 			// 태스크가 6개 출력될 때마다 태스크 정보 표시할지 여부 확인
 			if((cnt != 0) && ((cnt % 6) == 0)) {
-				kPrintF("Press any key to continue... ('q' is exit) : ");
+				kPrintf("Press any key to continue... ('q' is exit) : ");
 				if(kGetCh() == 'q') {
-					kPrintF("\n");
+					kPrintf("\n");
 					break;
 				}
-				kPrintF("\n");
+				kPrintf("\n");
 			}
-			kPrintF("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + cnt++, tcb->link.id, GETPRIORITY(tcb->flag), tcb->flag, kGetListCnt(&(tcb->childThreadList)));
-			kPrintF("     Core ID[0x%X] CPU Affinity[0x%x]\n", tcb->_id, tcb->affinity);
-			kPrintF("     Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n", tcb->parentProcID, tcb->memAddr, tcb->memSize);
+			kPrintf("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + cnt++, tcb->link.id, GETPRIORITY(tcb->flag), tcb->flag, kGetListCnt(&(tcb->childThreadList)));
+			kPrintf("     Core ID[0x%X] CPU Affinity[0x%x]\n", tcb->_id, tcb->affinity);
+			kPrintf("     Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n", tcb->parentProcID, tcb->memAddr, tcb->memSize);
 		}
 	}
 }
@@ -617,10 +618,10 @@ static void kCSTaskill(const char *buf) {
 
 		// 시스템 테스트는 제외
 		if(((_id >> 32) != 0) && ((tcb->flag & TASK_FLAGS_SYSTEM) == 0x00)) {
-			kPrintF("Kill Task ID [0x%q] ", _id);
-			if(kTaskFin(_id) == TRUE) kPrintF("Success !!\n");
-			else kPrintF("Fail...\n");
-		} else kPrintF("Task does not exist or task is system task.\n");
+			kPrintf("Kill Task ID [0x%q] ", _id);
+			if(kTaskFin(_id) == TRUE) kPrintf("Success !!\n");
+			else kPrintf("Fail...\n");
+		} else kPrintf("Task does not exist or task is system task.\n");
 	} else { // 콘솔 셸과 유후 태스크 제외 모든 태스크 종료
 		for(i = 0; i < TASK_MAXCNT; i++) {
 			tcb = kGetTCB(i);
@@ -628,9 +629,9 @@ static void kCSTaskill(const char *buf) {
 
 			// 시스템 테스트는 삭제 목록에서 제외
 			if(((_id >> 32) != 0) && ((tcb->flag & TASK_FLAGS_SYSTEM) == 0x00)) {
-				kPrintF("Kill Task ID [0x%q] ", _id);
-				if(kTaskFin(_id) == TRUE) kPrintF("Success !!\n");
-				else kPrintF("Fail...\n");
+				kPrintf("Kill Task ID [0x%q] ", _id);
+				if(kTaskFin(_id) == TRUE) kPrintf("Success !!\n");
+				else kPrintf("Fail...\n");
 			}
 		}
 	}
@@ -641,21 +642,21 @@ static void kCSCPULoad(const char *buf) {
 	int i, len;
 	char _buf[50];
 
-	kPrintF("   ====================== Processor Load ======================\n");
+	kPrintf("   ====================== Processor Load ======================\n");
 
 	// 각 코어별 부하 출력
 	for(i = 0; i < kGetProcCnt(); i++) {
-		if((i != 0) && ((i % 4) == 0)) kPrintF("\n");
-		kSprintF(_buf, "Core %d : %d%%", i, kGetProcLoad(i));
-		kPrintF("%s", _buf);
+		if((i != 0) && ((i % 4) == 0)) kPrintf("\n");
+		kSprintf(_buf, "Core %d : %d%%", i, kGetProcLoad(i));
+		kPrintf("%s", _buf);
 
 		// 출력하고 남은 공간 모두 스페이스바로 채움
 		len = 19 - kStrLen(_buf);
 		kMemSet(_buf, ' ', len);
 		_buf[len] = '\0';
-		kPrintF(_buf);
+		kPrintf(_buf);
 	}
-	kPrintF("\n");
+	kPrintf("\n");
 }
 
 // 뮤텍스 테스트용 뮤텍스와 변수
@@ -674,7 +675,7 @@ static void kPrintNumTask(void) {
 	// 루프 돌면서 숫자 출력
 	for(i = 0; i < 5; i++) {
 		kLock(&gs_mut);
-		kPrintF("Task ID [0x%Q] Value[%d]\n", kGetRunningTask(kGetAPICID())->link.id, gs_add);
+		kPrintf("Task ID [0x%Q] Value[%d]\n", kGetRunningTask(kGetAPICID())->link.id, gs_add);
 		gs_add += 1;
 		kUnlock(&gs_mut);
 
@@ -699,7 +700,7 @@ static void kCSMutexTest(const char *buf) {
 	kInitMutex(&gs_mut);
 
 	for(i = 0; i < 3; i++) kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kPrintNumTask, kGetAPICID());
-	kPrintF("Wait Util %d Task Finishing...\n", i);
+	kPrintf("Wait Util %d Task Finishing...\n", i);
 	kGetCh();
 }
 
@@ -717,8 +718,8 @@ static void kCSThreadTest(const char *buf) {
 
 	proc = kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_PROC, (void*)0xEEEEEEEE, 0x1000, (QWORD)kCreateThreadTask, TASK_LOADBALANCING_ID);
 
-	if(proc != NULL) kPrintF("Process [0x%Q] Create Success !\n", proc->link.id);
-	else kPrintF("Process Create Fail...\n");
+	if(proc != NULL) kPrintf("Process [0x%Q] Create Success !\n", proc->link.id);
+	else kPrintf("Process Create Fail...\n");
 }
 
 // 난수 발생을 위한 변수
@@ -813,7 +814,7 @@ static void fpuTest(void) {
 		}
 
 		if(dV1 != dV2) {
-			kPrintF("Value is Different !! [%f] != [%f]\n", dV1, dV2);
+			kPrintf("Value is Different !! [%f] != [%f]\n", dV1, dV2);
 			break;
 		}
 
@@ -829,11 +830,11 @@ static void fpuTest(void) {
 static void kCSGetPIE(const char *buf) {
 	double res;
 	int i;
-	kPrintF("PIE Calculation Test\n");
-	kPrintF("Result: 355 / 113 = ");
+	kPrintf("PIE Calculation Test\n");
+	kPrintf("Result: 355 / 113 = ");
 	res = (double)355 / 113;
 
-	kPrintF("%d.%d%d\n", (QWORD)res, ((QWORD)(res * 10) % 10), ((QWORD)(res * 100) % 10));
+	kPrintf("%d.%d%d\n", (QWORD)res, ((QWORD)(res * 10) % 10), ((QWORD)(res * 100) % 10));
 
 	// 실수를 계산하는 태스크 생성
 	for(i = 0; i < 100; i++) kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)fpuTest, TASK_LOADBALANCING_ID);
@@ -845,11 +846,11 @@ static void kCSDynMemInfo(const char *buf) {
 
 	kGetDynMemInfo(&startAddr, &totalSize, &metaSize, &usedSize);
 
-	kPrintF("   ================ Dynamic Memory Information ================\n");
-	kPrintF("Start Address:	[0x%Q]\n", startAddr);
-	kPrintF("Total Size:	[0x%Q]byte, [%d]MB\n", totalSize, totalSize / 1024 / 1024);
-	kPrintF("Meta Size:	[0x%Q]byte, [%d]KB\n", metaSize, metaSize / 1024);
-	kPrintF("Used Size:	[0x%Q]byte, [%d]KB\n", usedSize, usedSize / 1204);\
+	kPrintf("   ================ Dynamic Memory Information ================\n");
+	kPrintf("Start Address:	[0x%Q]\n", startAddr);
+	kPrintf("Total Size:	[0x%Q]byte, [%d]MB\n", totalSize, totalSize / 1024 / 1024);
+	kPrintf("Meta Size:	[0x%Q]byte, [%d]KB\n", metaSize, metaSize / 1024);
+	kPrintf("Used Size:	[0x%Q]byte, [%d]KB\n", usedSize, usedSize / 1204);\
 }
 
 // 모든 블록 리스트의 블록을 순차적으로 할당하고 해제하는 테스트
@@ -858,18 +859,18 @@ static void kCSSeqAllocTest(const char *buf) {
 	long i, j, k;
 	QWORD *_buf;
 
-	kPrintF("   ================ Dynamic Memory Information ================\n");
+	kPrintf("   ================ Dynamic Memory Information ================\n");
 	mem = kGetDynMemManager();
 
 	for(i = 0; i < mem->maxLvCnt; i++) {
-		kPrintF("Block List [%d] Test Start\n", i);
-		kPrintF("Allocation And Compare: ");
+		kPrintf("Block List [%d] Test Start\n", i);
+		kPrintf("Allocation And Compare: ");
 
 		// 모든 블록을 할당받아 값을 채운 후 검사
 		for(j = 0; j < (mem->smallBlockCnt >> i); j++) {
 			_buf = kAllocMem(DYNMEM_MIN_SIZE << i);
 			if(_buf == NULL) {
-				kPrintF("\nAllocation Fail...\n");
+				kPrintf("\nAllocation Fail...\n");
 				return;
 			}
 
@@ -877,26 +878,26 @@ static void kCSSeqAllocTest(const char *buf) {
 			for(k = 0; k < (DYNMEM_MIN_SIZE << i) / 8; k++) _buf[k] = k;
 
 			for(k = 0; k < (DYNMEM_MIN_SIZE << i) / 8; k++) if(_buf[k] != k) {
-				kPrintF("\nCompare Fail...\n");
+				kPrintf("\nCompare Fail...\n");
 				return;
 			}
 			// 진행 과정을 . 으로 표시
-			kPrintF(".");
+			kPrintf(".");
 		}
 
-		kPrintF("\nFree: ");
+		kPrintf("\nFree: ");
 		// 할당 받은 블록 모두 반환
 		for(j = 0; j < (mem->smallBlockCnt >> i); j++) {
 			if(kFreeMem((void*)(mem->startAddr + (DYNMEM_MIN_SIZE << i) * j)) == FALSE) {
-				kPrintF("\nFree Fail...\n");
+				kPrintf("\nFree Fail...\n");
 				return;
 			}
 			// 진행 과정을 . 으로 표시
-			kPrintF(".");
+			kPrintf(".");
 		}
-		kPrintF("\n");
+		kPrintf("\n");
 	}
-	kPrintF("Sequential Allocation Test is Finished Successfully !!\n");
+	kPrintf("Sequential Allocation Test is Finished Successfully !!\n");
 }
 
 // 임의로 메모리 할당 후 해제하는 것을 반복하는 태스크
@@ -919,13 +920,13 @@ static void randAllocTask(void) {
 			if(allocBuf == 0) kSleep(1);
 		} while(allocBuf == 0);
 
-		kSprintF(_buf, "|Address: [0x%Q] Size: [0x%Q] Allocation Success", allocBuf, memSize);
+		kSprintf(_buf, "|Address: [0x%Q] Size: [0x%Q] Allocation Success", allocBuf, memSize);
 		// 자신의 ID를 Y좌표로 하여 데이터 출력
 		kPrintXY(12, y, CONSOLE_DEFAULTTEXTCOLOR, _buf);
 		kSleep(200);
 
 		// 버퍼를 반으로 나눠 랜덤한 데이터를 똑같이 채움
-		kSprintF(_buf, "|Address: [0x%Q] Size: [0x%Q] Data Write...     ", allocBuf, memSize);
+		kSprintf(_buf, "|Address: [0x%Q] Size: [0x%Q] Data Write...     ", allocBuf, memSize);
 		kPrintXY(12, y, CONSOLE_DEFAULTTEXTCOLOR, _buf);
 		for(i = 0; i < memSize / 2; i++) {
 			allocBuf[i] = kRand() & 0xFF;
@@ -934,10 +935,10 @@ static void randAllocTask(void) {
 		kSleep(200);
 
 		// 채운 데이터가 정상적인지 다시 확인
-		kSprintF(_buf, "|Address: [0x%Q] Size: [0x%Q] Data Verify...    ", allocBuf, memSize);
+		kSprintf(_buf, "|Address: [0x%Q] Size: [0x%Q] Data Verify...    ", allocBuf, memSize);
 		kPrintXY(12, y, CONSOLE_DEFAULTTEXTCOLOR, _buf);
 		for(i = 0; i < memSize / 2; i++) if(allocBuf[i] != allocBuf[i + (memSize / 2)]) {
-			kPrintF("Task ID[0x%Q] Verify Fail...\n", task->link.id);
+			kPrintf("Task ID[0x%Q] Verify Fail...\n", task->link.id);
 			kTaskExit();
 		}
 		kFreeMem(allocBuf);
@@ -960,29 +961,29 @@ static void kCSHDDInfo(const char *buf) {
 
 	// 하드 디스크 정보 읽음
 	if(kGetHDDInfo(&hdd) == FALSE) {
-		kPrintF("HDD Information Read Fail...\n");
+		kPrintf("HDD Information Read Fail...\n");
 		return;
 	}
 
-	kPrintF("   ============== Primary Master HDD Information ==============\n");
+	kPrintf("   ============== Primary Master HDD Information ==============\n");
 
 	// 모델 번호 출력
 	kMemCpy(_buf, hdd.modelNum, sizeof(hdd.modelNum));
 	_buf[sizeof(hdd.modelNum) - 1] = '\0';
-	kPrintF("Model Number:\t %s\n", _buf);
+	kPrintf("Model Number:\t %s\n", _buf);
 
 	// 시리얼 번호 출력
 	kMemCpy(_buf, hdd.serialNum, sizeof(hdd.serialNum));
 	_buf[sizeof(hdd.serialNum) - 1] = '\0';
-	kPrintF("Serial Number:\t %s\n", _buf);
+	kPrintf("Serial Number:\t %s\n", _buf);
 
 	// 헤드, 실린더, 실린더 당 섹터 수 출력
-	kPrintF("Head Count:\t %d\n", hdd.headNum);
-	kPrintF("Cylinder Count:\t %d\n", hdd.cylinderNum);
-	kPrintF("Sector Count:\t %d\n", hdd.perSectorNum);
+	kPrintf("Head Count:\t %d\n", hdd.headNum);
+	kPrintf("Cylinder Count:\t %d\n", hdd.cylinderNum);
+	kPrintf("Sector Count:\t %d\n", hdd.perSectorNum);
 
 	// 총 섹터 수 출력
-	kPrintF("Total Sector:\t %d Secotr, %dMB\n", hdd.totalSector, hdd.totalSector / 2 / 1024);
+	kPrintf("Total Sector:\t %d Secotr, %dMB\n", hdd.totalSector, hdd.totalSector / 2 / 1024);
 }
 
 // 하드 디스크에서 파라미터로 넘어온 LBA 어드레스부터 섹터 수만큼 읽음
@@ -998,7 +999,7 @@ static void kCSReadSector(const char *buf) {
 	// 파라미터 리스트 초기화 후 LBA 어드레스와 섹터 수 추출
 	kInitParam(&list, buf);
 	if((kGetNextParam(&list, lba) == 0) || (kGetNextParam(&list, sectorCnt) == 0)) {
-		kPrintF("ex)readSector 0(LBA) 10(Count)\n");
+		kPrintf("ex)readSector 0(LBA) 10(Count)\n");
 		return;
 	}
 	_lba = kAtoI(lba, 10);
@@ -1007,28 +1008,28 @@ static void kCSReadSector(const char *buf) {
 	// 섹터 수만큼 메모리 할당받아 읽기 수행
 	_buf = kAllocMem(_sectorCnt * 512);
 	if(kReadHDDSector(TRUE, TRUE, _lba, _sectorCnt, _buf) == _sectorCnt) {
-		kPrintF("LBA [%d], [%d] Sector Read Success !!", _lba, _sectorCnt);
+		kPrintf("LBA [%d], [%d] Sector Read Success !!", _lba, _sectorCnt);
 		// 데이터 버퍼 내용 출력
 		for(j = 0; j < _sectorCnt; j++) {
 			for(i = 0; i < 512; i++) {
 				if(!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
-					kPrintF("\nPress any key to continue... ('q' is exit) : ");
+					kPrintf("\nPress any key to continue... ('q' is exit) : ");
 					if(kGetCh() == 'q') {
 						_exit = TRUE;
 						break;
 					}
 				}
-				if((i % 16) == 0) kPrintF("\n[LBA:%d, Offset:%d]\t| ", _lba + j, i);
+				if((i % 16) == 0) kPrintf("\n[LBA:%d, Offset:%d]\t| ", _lba + j, i);
 
 				// 모두 두 자리로 표시하려고 16보다 작은 경우 0추가
 				data = _buf[j * 512 + i] & 0xFF;
-				if(data < 16) kPrintF("0");
-				kPrintF("%X ", data);
+				if(data < 16) kPrintf("0");
+				kPrintf("%X ", data);
 			}
 			if(_exit == TRUE) break;
 		}
-		kPrintF("\n");
-	} else kPrintF("Read Fail...\n");
+		kPrintf("\n");
+	} else kPrintf("Read Fail...\n");
 
 	kFreeMem(_buf);
 }
@@ -1047,7 +1048,7 @@ static void kCSWriteSector(const char *buf) {
 	// 파라미터 리스트를 초기화해 LBA 어드레스와 섹터 수 추출
 	kInitParam(&list, buf);
 	if((kGetNextParam(&list, lba) == 0) || (kGetNextParam(&list, sectorCnt) == 0)) {
-		kPrintF("ex)writeSector 0(LBA) 10(Count)\n");
+		kPrintf("ex)writeSector 0(LBA) 10(Count)\n");
 		return;
 	}
 	_lba = kAtoI(lba, 10);
@@ -1063,50 +1064,50 @@ static void kCSWriteSector(const char *buf) {
 
 	// 쓰기 수행
 	if(kWriteHDDSector(TRUE, TRUE, _lba, _sectorCnt, _buf) != _sectorCnt) {
-		kPrintF("Write Fail...\n");
+		kPrintf("Write Fail...\n");
 		return;
 	}
-	kPrintF("LBA [%d], [%d] Sector Write Success !!\n", _lba, _sectorCnt);
+	kPrintf("LBA [%d], [%d] Sector Write Success !!\n", _lba, _sectorCnt);
 
 	// 데이터 버퍼의 내용 출력
 	for(j = 0; j < _sectorCnt; j++) {
 		for(i = 0; i < 512; i++) {
 			if(!((j == 0) && (i == 0)) && ((i % 256) == 0)) {
-				kPrintF("\nPress any key to continue... ('q' is exit) : ");
+				kPrintf("\nPress any key to continue... ('q' is exit) : ");
 				if(kGetCh() == 'q') {
 					_exit = TRUE;
 					break;
 				}
 			}
-			if((i % 16) == 0) kPrintF("\n[LBA:%d, Offset:%d]\t| ", _lba + j, i);
+			if((i % 16) == 0) kPrintf("\n[LBA:%d, Offset:%d]\t| ", _lba + j, i);
 
 			// 모두 두 자리로 표시하기위해 16보다 작은 경우 0 추가
 			data = _buf[j * 512 + i] & 0xFF;
-			if(data < 16) kPrintF("0");
-			kPrintF("%X ", data);
+			if(data < 16) kPrintf("0");
+			kPrintf("%X ", data);
 		}
 		if(_exit == TRUE) break;
 	}
-	kPrintF("\n");
+	kPrintf("\n");
 	kFreeMem(_buf);
 }
 
 // 하드 디스크 연결
 static void kCSMountHDD(const char *buf) {
 	if(kMount() == FALSE) {
-		kPrintF("HDD Mount Fail...\n");
+		kPrintf("HDD Mount Fail...\n");
 		return;
 	}
-	kPrintF("HDD Mount Success !!\n");
+	kPrintf("HDD Mount Success !!\n");
 }
 
 // 하드 디스크에 파일 시스템 생성(포맷)
 static void kCSFormatHDD(const char *buf) {
 	if(kFormat() == FALSE) {
-		kPrintF("HDD Format Fail...\n");
+		kPrintf("HDD Format Fail...\n");
 		return;
 	}
-	kPrintF("HDD Format Success !!\n");
+	kPrintf("HDD Format Success !!\n");
 }
 
 // 파일 시스템 정보 표시
@@ -1115,13 +1116,13 @@ static void kCSFileSystemInfo(const char *buf) {
 
 	kGetFileSystemInfo(&manager);
 
-	kPrintF("   ================= File System Information ==================\n");
-	kPrintF("Mounted:\t\t\t\t %d\n", manager.mnt);
-	kPrintF("Reserved Sector Count:\t\t\t %d Sector\n", manager.reserved_sectorCnt);
-	kPrintF("Cluster Link Table Start Address:\t %d Sector\n", manager.linkStartAddr);
-	kPrintF("Cluster Link Table Size:\t\t %d Sector\n", manager.linkAreaSize);
-	kPrintF("Data Area Start Address:\t\t %d Sector\n", manager.dataStartAddr);
-	kPrintF("Total Cluster Count:\t\t\t %d Cluster\n", manager.totalClusterCnt);
+	kPrintf("   ================= File System Information ==================\n");
+	kPrintf("Mounted:\t\t\t\t %d\n", manager.mnt);
+	kPrintf("Reserved Sector Count:\t\t\t %d Sector\n", manager.reserved_sectorCnt);
+	kPrintf("Cluster Link Table Start Address:\t %d Sector\n", manager.linkStartAddr);
+	kPrintf("Cluster Link Table Size:\t\t %d Sector\n", manager.linkAreaSize);
+	kPrintf("Data Area Start Address:\t\t %d Sector\n", manager.dataStartAddr);
+	kPrintf("Total Cluster Count:\t\t\t %d Cluster\n", manager.totalClusterCnt);
 }
 
 // 루트 디렉터리에 빈 파일 생성
@@ -1137,17 +1138,17 @@ static void kCSMakeFile(const char *buf) {
 	len = kGetNextParam(&list, name);
 	name[len] = '\0';
 	if((len > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (len == 0)) {
-		kPrintF("Too Long or Too Short File Name\n");
+		kPrintf("Too Long or Too Short File Name\n");
 		return;
 	}
 
 	file = fopen(name, "w");
 	if(file == NULL) {
-		kPrintF("Make File Fail...\n");
+		kPrintf("Make File Fail...\n");
 		return;
 	}
 	fclose(file);
-	kPrintF("Make a File Success !!\n");
+	kPrintf("Make a File Success !!\n");
 }
 
 // 루트 디렉터리에서 파일 삭제
@@ -1162,16 +1163,16 @@ static void kCSRemoveFile(const char *buf) {
 	name[len] = '\0';
 
 	if((len > (FILESYSTEM_FILENAME_MAXLEN -1)) || (len == 0)) {
-		kPrintF("Too Long or Too Short File Name\n");
+		kPrintf("Too Long or Too Short File Name\n");
 		return;
 	}
 
 	if(fremove(name) != 0) {
-		kPrintF("File Not Found or File Opened...\n");
+		kPrintf("File Not Found or File Opened...\n");
 		return;
 	}
 
-	kPrintF("Remove a File Success !!\n");
+	kPrintf("Remove a File Success !!\n");
 }
 
 // 루트 디렉터리 파일 목록 표시
@@ -1190,7 +1191,7 @@ static void kCSRootDir(const char *buf) {
 	// 루트 디렉터리 오픈
 	dir = dopen("/");
 	if(dir == NULL) {
-		kPrintF("Root Directory Open Fail...\n");
+		kPrintf("Root Directory Open Fail...\n");
 		return;
 	}
 
@@ -1223,17 +1224,17 @@ static void kCSRootDir(const char *buf) {
 		// 파일 이름 삽입
 		kMemCpy(_buf, entry->d_name, kStrLen(entry->d_name));
 		// 파일 길이 삽입
-		kSprintF(tmp, "%d Byte", entry->size);
+		kSprintf(tmp, "%d Byte", entry->size);
 		kMemCpy(_buf + 3, tmp, kStrLen(tmp));
 		// 파일 시작 클러스터 삽입
-		kSprintF(tmp, "0x%X Cluster", entry->startClusterIdx);
+		kSprintf(tmp, "0x%X Cluster", entry->startClusterIdx);
 		kMemCpy(_buf + 6, tmp, kStrLen(tmp));
-		kPrintF("    %s\n", _buf);
+		kPrintf("    %s\n", _buf);
 
 		if((cnt != 0) && (cnt % 20) == 0) {
-			kPrintF("Press any key to continue... ('q' is exit) : ");
+			kPrintf("Press any key to continue... ('q' is exit) : ");
 			if(kGetCh() == 'q') {
-				kPrintF("\n");
+				kPrintf("\n");
 				break;
 			}
 		}
@@ -1241,11 +1242,11 @@ static void kCSRootDir(const char *buf) {
 	}
 
 	// 총 파일 개수와 파일 총 크기 출력
-	kPrintF("\t\tTotal File Count: %d\n", totalCnt);
-	kPrintF("\t\tTotal File Size: %d Byte (%d Cluster)\n", totalByte, usedClusterCnt);
+	kPrintf("\t\tTotal File Count: %d\n", totalCnt);
+	kPrintf("\t\tTotal File Size: %d Byte (%d Cluster)\n", totalByte, usedClusterCnt);
 
 	// 남은 클러스터 수를 이용해 여유 공간 출력
-	kPrintF("\t\tFree Space: %d KByte (%d Cluster)\n", (manager.totalClusterCnt - usedClusterCnt) * FILESYSTEM_CLUSTER_SIZE / 1024, manager.totalClusterCnt - usedClusterCnt);
+	kPrintf("\t\tFree Space: %d KByte (%d Cluster)\n", (manager.totalClusterCnt - usedClusterCnt) * FILESYSTEM_CLUSTER_SIZE / 1024, manager.totalClusterCnt - usedClusterCnt);
 
 	// 디렉터리를 닫음
 	dclose(dir);
@@ -1264,14 +1265,14 @@ static void kCSFileWrite(const char *buf) {
 	len = kGetNextParam(&list, name);
 	name[len] = '\0';
 	if((len > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (len == 0)) {
-		kPrintF("Too Long or Too Short File Name\n");
+		kPrintf("Too Long or Too Short File Name\n");
 		return;
 	}
 
 	// 파일 생성
 	fp = fopen(name, "w");
 	if(fp == NULL) {
-		kPrintF("%s File Open Fail...\n", name);
+		kPrintf("%s File Open Fail...\n", name);
 		return;
 	}
 
@@ -1283,14 +1284,14 @@ static void kCSFileWrite(const char *buf) {
 			enterCnt++;
 			if(enterCnt >= 3) break;
 		} else enterCnt = 0;	// 엔터 키가 아니면 엔터 키 입력 횟수 초기화
-		kPrintF("%c", key);
+		kPrintf("%c", key);
 		if(fwrite(&key, 1, 1, fp) != 1) {
-			kPrintF("File Write Fail...\n");
+			kPrintf("File Write Fail...\n");
 			break;
 		}
 	}
 
-	kPrintF("Write File Success !!\n");
+	kPrintf("Write File Success !!\n");
 	fclose(fp);
 }
 
@@ -1307,32 +1308,32 @@ static void kCSFileRead(const char *buf) {
 	len = kGetNextParam(&list, name);
 	name[len] = '\0';
 	if((len > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (len == 0)) {
-		kPrintF("Too Long or Too Short File Name\n");
+		kPrintf("Too Long or Too Short File Name\n");
 		return;
 	}
 
 	// 파일 생성
 	fp = fopen(name, "r");
 	if(fp == NULL) {
-		kPrintF("%s File Open Fail...\n", name);
+		kPrintf("%s File Open Fail...\n", name);
 		return;
 	}
 
 	// 파일 끝까지 출력하는 것 반복
 	while(1) {
 		if(fread(&key, 1, 1, fp) != 1) break;
-		kPrintF("%c", key);
+		kPrintf("%c", key);
 
 		// 만약 엔터 키면 엔터 키 횟수를 증가시키고 20라인까지 출력했으면 더 출력할지 여부 물어봄
 		if(key == KEY_ENTER) {
 			enterCnt++;
 			if((enterCnt != 0) && ((enterCnt % 20) == 0)) {
-				kPrintF("Press any key to continue... ('q' is exit) : ");
+				kPrintf("Press any key to continue... ('q' is exit) : ");
 				if(kGetCh() == 'q') {
-					kPrintF("\n");
+					kPrintf("\n");
 					break;
 				}
-				kPrintF("\n");
+				kPrintf("\n");
 				enterCnt = 0;
 			}
 		}
@@ -1347,52 +1348,52 @@ static void kCSFileIOTest(const char *buf) {
 	int i, j;
 	DWORD randOffset, byteCnt, maxSize;
 
-	kPrintF("   ================== File I/O Function Test ==================\n");
+	kPrintf("   ================== File I/O Function Test ==================\n");
 
 	// 4MB의 버퍼 할당
 	maxSize = 4 * 1024 * 1024;
 	_buf = kAllocMem(maxSize);
 	if(_buf == NULL) {
-		kPrintF("Memory Allocation Fail...\n");
+		kPrintf("Memory Allocation Fail...\n");
 		return;
 	}
 	// 테스트용 파일 삭제
 	fremove("fileIOTest.bin");
 
 	// 파일 열기 테스트
-	kPrintF("1. File Open Fail Test ....");
+	kPrintf("1. File Open Fail Test ....");
 	// r 옵션은 파일을 생성하지 않으니 테스트 파일이 없으면 NULL이 되어야 함
 	file = fopen("fileIOTest.bin", "r");
-	if(file == NULL) kPrintF("[  Hit  ]\n");
+	if(file == NULL) kPrintf("[  Hit  ]\n");
 	else {
-		kPrintF("[  Err  ]\n");
+		kPrintf("[  Err  ]\n");
 		fclose(file);
 	}
 
 	// 파일 생성 테스트
-	kPrintF("2. Make a File Test .......");
+	kPrintf("2. Make a File Test .......");
 	// w 옵션은 파일을 생성하므로 정상적으로 핸들이 반환되어야 함
 	file = fopen("fileIOTest.bin", "w");
 	if(file != NULL) {
-		kPrintF("[  Hit  ]\n");
-		kPrintF("    File Handle [0x%Q]\n", file);
-	} else kPrintF("[  Err  ]\n");
+		kPrintf("[  Hit  ]\n");
+		kPrintf("    File Handle [0x%Q]\n", file);
+	} else kPrintf("[  Err  ]\n");
 
 	// 순차적 영역 쓰기 테스트
-	kPrintF("3. Sequential Write Test(Cluster Size) .............");
+	kPrintf("3. Sequential Write Test(Cluster Size) .............");
 	// 열린 핸들로 쓰기 수행
 	for(i = 0; i < 100; i++) {
 		kMemSet(_buf, i, FILESYSTEM_CLUSTER_SIZE);
 		if(fwrite(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
-			kPrintF("[  Err  ]\n");
-			kPrintF("    %d Cluster Error\n", i);
+			kPrintf("[  Err  ]\n");
+			kPrintf("    %d Cluster Error\n", i);
 			break;
 		}
 	}
-	if(i >= 100) kPrintF("[  Hit  ]\n");
+	if(i >= 100) kPrintf("[  Hit  ]\n");
 
 	// 순차적인 영역 읽기 테스트
-	kPrintF("4. Sequential Read and Verify Test(Cluster Size) ...");
+	kPrintf("4. Sequential Read and Verify Test(Cluster Size) ...");
 	// 파일 처음으로 이동
 	fseek(file, -100 * FILESYSTEM_CLUSTER_SIZE, SEEK_END);
 
@@ -1400,21 +1401,21 @@ static void kCSFileIOTest(const char *buf) {
 	for(i = 0; i < 100; i++) {
 		// 파일 읽음
 		if(fread(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
-			kPrintF("[  Err  ]\n");
+			kPrintf("[  Err  ]\n");
 			return;
 		}
 
 		// 데이터 검사
 		for(j = 0; j < FILESYSTEM_CLUSTER_SIZE; j++) if(_buf[j] != (BYTE)i) {
-			kPrintF("[  Err  ]\n");
-			kPrintF("    %d Cluster Error. [%X] != [%X]\n", i, _buf[j], (BYTE)i);
+			kPrintf("[  Err  ]\n");
+			kPrintf("    %d Cluster Error. [%X] != [%X]\n", i, _buf[j], (BYTE)i);
 			break;
 		}
 	}
-	if(i >= 100) kPrintF("[  Hit  ]\n");
+	if(i >= 100) kPrintf("[  Hit  ]\n");
 
 	// 임의의 영역 쓰기 테스트
-	kPrintF("5. Random Write Test ...............\n");
+	kPrintf("5. Random Write Test ...............\n");
 
 	// 버퍼를 모두 0으로 채움
 	kMemSet(_buf, 0, maxSize);
@@ -1427,7 +1428,7 @@ static void kCSFileIOTest(const char *buf) {
 	for(i = 0; i < 100; i ++) {
 		byteCnt = (kRand() % (sizeof(_tmpBuf) - 1)) + 1;
 		randOffset = kRand() % (maxSize - byteCnt);
-		kPrintF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
+		kPrintf("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
 
 		// 파일 포인터 이동
 		fseek(file, randOffset, SEEK_SET);
@@ -1435,9 +1436,9 @@ static void kCSFileIOTest(const char *buf) {
 
 		// 데이터 씀
 		if(fwrite(_tmpBuf, 1, byteCnt, file) != byteCnt) {
-			kPrintF("[  Hit  ]\n");
+			kPrintf("[  Hit  ]\n");
 			break;
-		} else kPrintF("[  Err  ]\n");
+		} else kPrintf("[  Err  ]\n");
 
 		kMemSet(_buf + randOffset, i, byteCnt);
 	}
@@ -1448,70 +1449,70 @@ static void kCSFileIOTest(const char *buf) {
 	_buf[maxSize - 1] = (BYTE)i;
 
 	// 임의의 영역 읽기 테스트
-	kPrintF("6. Random Read And Verify Test .....\n");
+	kPrintf("6. Random Read And Verify Test .....\n");
 	// 임의의 위치로 옮기며 파일에서 데이터를 읽어 버퍼 내용과 비교
 	for(i = 0; i < 100; i++) {
 		byteCnt = (kRand() % (sizeof(_tmpBuf) -  1)) + 1;
 		randOffset = kRand() % ((maxSize) - byteCnt);
-		kPrintF("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
+		kPrintf("    [%d] Offset [%d] Byte [%d] ...................", i, randOffset, byteCnt);
 
 		// 파일 포인터 이동
 		fseek(file, randOffset, SEEK_SET);
 
 		// 데이터 읽음
 		if(fread(_tmpBuf, 1, byteCnt, file) != byteCnt) {
-			kPrintF("[  Err  ]\n");
-			kPrintF("    %d Read Fail...\n", randOffset);
+			kPrintf("[  Err  ]\n");
+			kPrintf("    %d Read Fail...\n", randOffset);
 			break;
 		}
 
 		// 버퍼와 비교
 		if(kMemCmp(_buf + randOffset, _tmpBuf, byteCnt) != 0) {
-			kPrintF("[  Err  ]\n");
-			kPrintF("    %d Compare Fail\n", randOffset);
+			kPrintf("[  Err  ]\n");
+			kPrintf("    %d Compare Fail\n", randOffset);
 			break;
 		}
-		kPrintF("[  Hit  ]\n");
+		kPrintf("[  Hit  ]\n");
 	}
 
 	// 다시 순차적 영역 읽기 테스
-	kPrintF("7. Sequential Write, Read and Verify Test(1024 Byte)\n");
+	kPrintf("7. Sequential Write, Read and Verify Test(1024 Byte)\n");
 	// 파일의 처음으로 이동
 	fseek(file, -100 * maxSize, SEEK_CUR);
 
 	// 열린 핸들로 쓰기 수행. 앞부분 2MB만 씀
 	for(i = 0; i < (2 * 1024 * 1024 / 1024) ; i++) {
-		kPrintF("    [%d] Offset [%d] Byte [%d] Write .............", i, i * 1024, 1024);
+		kPrintf("    [%d] Offset [%d] Byte [%d] Write .............", i, i * 1024, 1024);
 
 		// 1024바이트씩 파일 읽음
 		if(fread(_tmpBuf, 1, 1024, file) != 1024) {
-			kPrintF("[  Err  ]\n");
+			kPrintf("[  Err  ]\n");
 			return;
 		}
 
 		if(kMemCmp(_buf + (i * 1024), _tmpBuf, 1024) != 0) {
-			kPrintF("[  Err  ]\n");
+			kPrintf("[  Err  ]\n");
 			break;
-		} else kPrintF("[  Hit  ]\n");
+		} else kPrintf("[  Hit  ]\n");
 	}
 
 	// 파일 삭제 실패 테스트
-	kPrintF("8. File Remove Fail Test ..");
+	kPrintf("8. File Remove Fail Test ..");
 	// 파일이 열려있는 상태이므로 지울 수 없으니 실패
-	if(fremove("fileIOTest.bin" != 0)) kPrintF("[  Hit  ]\n");
-	else kPrintF("[  Err  ]\n");
+	if(fremove("fileIOTest.bin" != 0)) kPrintf("[  Hit  ]\n");
+	else kPrintf("[  Err  ]\n");
 
 	// 파일 닫기 테스트
-	kPrintF("9. File Close Test ........");
+	kPrintf("9. File Close Test ........");
 	// 파일이 정상적으로 닫혀야 함
-	if(fclose(file) == 0) kPrintF("[  Hit  ]\n");
-	else kPrintF("[  Err  ]\n");
+	if(fclose(file) == 0) kPrintf("[  Hit  ]\n");
+	else kPrintf("[  Err  ]\n");
 
 	// 파일 삭제 테스트
-	kPrintF("10. File Remove Test ......");
+	kPrintf("10. File Remove Test ......");
 	// 파일이 닫혔으니 정상 삭제
-	if(fremove("fileIOTest.bin") == 0) kPrintF("[  Hit  ]\n");
-	else kPrintF("[  Err  ]\n");
+	if(fremove("fileIOTest.bin") == 0) kPrintf("[  Hit  ]\n");
+	else kPrintf("[  Err  ]\n");
 
 	kFreeMem(_buf);
 }
@@ -1531,23 +1532,23 @@ static void kCSCacheTest(const char *buf) {
 	// 테스트용 버퍼 메모리 할당
 	_buf = kAllocMem(clusterSize);
 	if(_buf == NULL) {
-		kPrintF("Memory Allocation Fail...\n");
+		kPrintf("Memory Allocation Fail...\n");
 		return;
-	} else kPrintF("Allocation Memory : 0x%Q\n", _buf);
+	} else kPrintf("Allocation Memory : 0x%Q\n", _buf);
 
 	// 버퍼 초기화
 	kMemSet(_buf, 0, FILESYSTEM_CLUSTER_SIZE);
 
-	kPrintF("   ==================== File I/O Cache Test ===================\n");
+	kPrintf("   ==================== File I/O Cache Test ===================\n");
 
 	// 클러스터 단위 파일을 순차적으로 쓰는 테스트
-	kPrintF("1. Sequential Read/Write Test(Cluster Size)\n");
+	kPrintf("1. Sequential Read/Write Test(Cluster Size)\n");
 
 	// 기존 테스트 파일 제거 후 새로 만듬
 	fremove("performance.txt");
 	file = fopen("performance.txt", "w");
 	if(file == NULL) {
-		kPrintF("File Open Fail...\n");
+		kPrintf("File Open Fail...\n");
 		kFreeMem(_buf);
 		return;
 	}
@@ -1555,14 +1556,14 @@ static void kCSCacheTest(const char *buf) {
 	lastTickCnt = kGetTickCnt();
 	// 클러스터 단위로 쓰는 테스트
 	for(i = 0; i < (clusterSize / FILESYSTEM_CLUSTER_SIZE); i++) if(fwrite(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
-		kPrintF("Write Fail...\n");
+		kPrintf("Write Fail...\n");
 		// 파일 닫고 메모리 해제
 		fclose(file);
 		kFreeMem(_buf);
 		return;
 	}
 	// 시간 출력
-	kPrintF("   Sequential Write(Cluster Size): %d ms\n", kGetTickCnt() - lastTickCnt);
+	kPrintf("   Sequential Write(Cluster Size): %d ms\n", kGetTickCnt() - lastTickCnt);
 
 	// 클러스터 단위로 파일 순차적 읽기 테스트, 파일의 처음으로 이동
 	fseek(file, 0, SEEK_SET);
@@ -1570,23 +1571,23 @@ static void kCSCacheTest(const char *buf) {
 	lastTickCnt = kGetTickCnt();
 	// 클러스터 단위로 읽는 테스트
 	for(i = 0; i < (clusterSize / FILESYSTEM_CLUSTER_SIZE); i++) if(fread(_buf, 1, FILESYSTEM_CLUSTER_SIZE, file) != FILESYSTEM_CLUSTER_SIZE) {
-		kPrintF("Read Fail...\n");
+		kPrintf("Read Fail...\n");
 		// 파일 닫고 메모리 해제
 		fclose(file);
 		kFreeMem(_buf);
 		return;
 	}
 	// 시간 출력
-	kPrintF("   Sequential Read(Cluster Size): %d ms\n", kGetTickCnt() - lastTickCnt);
+	kPrintf("   Sequential Read(Cluster Size): %d ms\n", kGetTickCnt() - lastTickCnt);
 
 	// 1바이트 단위로 파일 순차적으로 쓰는 테스트
-	kPrintF("2. Sequential Read/Write Test(1 Byte)\n");
+	kPrintf("2. Sequential Read/Write Test(1 Byte)\n");
 
 	// 기존 테스트 파일 제거 후 새로 만듬
 	fremove("performance.txt");
 	file = fopen("performance.txt", "w");
 	if(file == NULL) {
-		kPrintF("File Open Fail...\n");
+		kPrintf("File Open Fail...\n");
 		kFreeMem(_buf);
 		return;
 	}
@@ -1594,14 +1595,14 @@ static void kCSCacheTest(const char *buf) {
 	lastTickCnt = kGetTickCnt();
 	// 1 바이트 단위로 쓰는 테스트
 	for(i = 0; i < oneByteSize; i++) if(fwrite(_buf, 1, 1, file) != 1) {
-		kPrintF("Write Fail...\n");
+		kPrintf("Write Fail...\n");
 		// 파일 닫고 메모리 해제
 		fclose(file);
 		kFreeMem(_buf);
 		return;
 	}
 	// 시간 출력
-	kPrintF("   Sequential Write(1 Byte): %d ms\n", kGetTickCnt() - lastTickCnt);
+	kPrintf("   Sequential Write(1 Byte): %d ms\n", kGetTickCnt() - lastTickCnt);
 
 	// 1 바이트 단위로 파일을 순차적이게 읽는 테스트, 파일의 처음으로 이동
 	fseek(file, 0, SEEK_SET);
@@ -1609,14 +1610,14 @@ static void kCSCacheTest(const char *buf) {
 	lastTickCnt = kGetTickCnt();
 	// 1 바이트 단위로 읽는 테스트
 	for(i = 0; i < oneByteSize; i++) if(fread(_buf, 1, 1, file) != 1) {
-		kPrintF("Read Fail...\n");
+		kPrintf("Read Fail...\n");
 		// 파일 닫고 메모리 해제
 		fclose(file);
 		kFreeMem(_buf);
 		return;
 	}
 	// 시간 출력
-	kPrintF("   Sequential Read(1 Byte): %d ms\n", kGetTickCnt() - lastTickCnt);
+	kPrintf("   Sequential Read(1 Byte): %d ms\n", kGetTickCnt() - lastTickCnt);
 
 	// 파일 닫고 메모리 해제
 	fclose(file);
@@ -1628,10 +1629,10 @@ static void kCSCacheFlush(const char *buf) {
 	QWORD tickCnt;
 
 	tickCnt = kGetTickCnt();
-	kPrintF("Cache Flushing ...");
-	if(kFlushFileSystemCache() == TRUE) kPrintF("[  Hit  ]\n");
-	else kPrintF("[  Err  ]\n");
-	kPrintF("Total Time = %d ms\n", kGetTickCnt() - tickCnt);
+	kPrintf("Cache Flushing ...");
+	if(kFlushFileSystemCache() == TRUE) kPrintf("[  Hit  ]\n");
+	else kPrintf("[  Err  ]\n");
+	kPrintf("Total Time = %d ms\n", kGetTickCnt() - tickCnt);
 }
 
 // 시리얼 포트로부터 데이터 수신해 파일로 저장
@@ -1649,8 +1650,8 @@ static void kCSDownload(const char *buf) {
 	nameLen = kGetNextParam(&list, name);
 	name[nameLen] = '\0';
 	if((nameLen > (FILESYSTEM_FILENAME_MAXLEN - 1)) || (nameLen == 0)) {
-		kPrintF("Too Long or Too Short File Name\n");
-		kPrintF("ex)download a.txt\n");
+		kPrintf("Too Long or Too Short File Name\n");
+		kPrintf("ex)download a.txt\n");
 		return;
 	}
 
@@ -1658,7 +1659,7 @@ static void kCSDownload(const char *buf) {
 	kClearSerialFIFO();
 
 	// 데이터 길이 수신될 때까지 기다린 후 4바이트 수신하면 ACK 전송
-	kPrintF("Waiting For Data Length ...");
+	kPrintf("Waiting For Data Length ...");
 	lastTickCnt = kGetTickCnt();
 	while(recvSize < 4) {
 		// 남은 수만큼 데이터 수신
@@ -1671,12 +1672,12 @@ static void kCSDownload(const char *buf) {
 
 			// 대기한 시간이 30초 이상이면 Time Out
 			if((kGetTickCnt() - lastTickCnt) > 30000) {
-				kPrintF("Time Out Occur(30s) !!\n");
+				kPrintf("Time Out Occur(30s) !!\n");
 				return;
 			}
 		} else lastTickCnt = kGetTickCnt();	// 마지막으로 데이터 수신한 시간 갱신
 	}
-	kPrintF("[%d] Byte\n", dataLen);
+	kPrintf("[%d] Byte\n", dataLen);
 
 	// 정상적으로 데이터 길이 수신했으니 ACK 송신
 	kSendSerialData("A", 1);
@@ -1684,12 +1685,12 @@ static void kCSDownload(const char *buf) {
 	// 파일 생성 후 시리얼로부터 데이터 수신해 파일로 저장
 	fp = fopen(name, "w");
 	if(fp == NULL) {
-		kPrintF("%s File Open Fail...\n", name);
+		kPrintf("%s File Open Fail...\n", name);
 		return;
 	}
 
 	// 데이터 수신
-	kPrintF("Data Receive Start: ");
+	kPrintf("Data Receive Start: ");
 	recvSize = 0;
 	lastTickCnt = kGetTickCnt();
 	while(recvSize < dataLen) {
@@ -1702,12 +1703,12 @@ static void kCSDownload(const char *buf) {
 			// 수신하는 쪽은 데이터 마지막까지 수신했거나 FIFO 크기인 16바이트마다 한 번씩 ACK 전송
 			if(((recvSize % SERIAL_FIFO_MAXSIZE) == 0) || (recvSize == dataLen)) {
 				kSendSerialData("A", 1);
-				kPrintF("#");
+				kPrintf("#");
 			}
 
 			// 쓰기 중에 문제가 생기면 바로 종료
 			if(fwrite(_buf, 1, tmpSize, fp) != tmpSize) {
-				kPrintF("File Write Error Occur !!\n");
+				kPrintf("File Write Error Occur !!\n");
 				break;
 			}
 
@@ -1718,15 +1719,15 @@ static void kCSDownload(const char *buf) {
 
 			// 대기한 시간이 10초 이상이면 Time Out
 			if((kGetTickCnt() - lastTickCnt) > 10000) {
-				kPrintF("Time Out Occur(10s) !!\n");
+				kPrintf("Time Out Occur(10s) !!\n");
 				break;
 			}
 		}
 	}
 
 	// 전체 데이터 크기와 실제 수신된 데이터 크기를 비교해 성공 여부 출력 후 파일을 닫고 캐시 비우기, 수신된 길이 비교 후 문제 발생 여부 표시
-	if(recvSize != dataLen) kPrintF("\nError Occur. Total Size [%d] Received Size [%d]\n", recvSize, dataLen);
-	else kPrintF("\nReceive Complete. Total Size [%d] Byte\n", recvSize);
+	if(recvSize != dataLen) kPrintf("\nError Occur. Total Size [%d] Received Size [%d]\n", recvSize, dataLen);
+	else kPrintf("\nReceive Complete. Total Size [%d] Byte\n", recvSize);
 
 	// 파일 닫고 캐시 비움
 	fclose(fp);
@@ -1742,13 +1743,13 @@ static void kCSMPConfigInfo(const char *buf) {
 static void kCSStartAP(const char *buf) {
 	// AP(Application Processor) 깨움
 	if(kStartUpAP() == FALSE) {
-		kPrintF("Application Processor Start Fail...\n");
+		kPrintf("Application Processor Start Fail...\n");
 		return;
 	}
-	kPrintF("Application Processor Start Success !!\n");
+	kPrintf("Application Processor Start Success !!\n");
 
 	// BSP(Bootstrap Processor)의 APIC ID 출력
-	kPrintF("Bootstrap Processor[APIC ID: %d] Start Application Processor\n", kGetAPICID());
+	kPrintf("Bootstrap Processor[APIC ID: %d] Start Application Processor\n", kGetAPICID());
 }
 
 // 대칭 IO 모드로 전환
@@ -1758,7 +1759,7 @@ static void kCSSymmetricIOMode(const char *buf) {
 
 	// MP 설정 테이블 분석
 	if(kAnalysisMPConfig() == FALSE) {
-		kPrintF("Analyze MP Configuration Table Fail...\n");
+		kPrintf("Analyze MP Configuration Table Fail...\n");
 		return;
 	}
 
@@ -1771,19 +1772,19 @@ static void kCSSymmetricIOMode(const char *buf) {
 	}
 
 	// PIC 컨트롤러의 인터럽트 모두 마스크해 인터럽트가 발생할 수 없도록 함
-	kPrintF("Mask All PIC Controller Interrupt\n");
+	kPrintf("Mask All PIC Controller Interrupt\n");
 	kMaskPIC(0xFFFF);
 
 	// 프로세서 전체의 로컬 APIC 활성화
-	kPrintF("Enable Global Local APIC\n");
+	kPrintf("Enable Global Local APIC\n");
 	kOnLocalAPIC();
 
 	// 현재 코어 로컬 APIC 활성화
-	kPrintF("Enable Software Local APIC\n");
+	kPrintf("Enable Software Local APIC\n");
 	kOnSWLocalAPIC();
 
 	// 인터럽트 불가로 설정
-	kPrintF("Disable CPU Interrupt Flag\n");
+	kPrintf("Disable CPU Interrupt Flag\n");
 	interruptFlag = kSetInterruptFlag(FALSE);
 
 	// 모든 인터럽트를 수신할 수 있도록 태스크 우선순위 레지스터를 0으로 설정
@@ -1796,14 +1797,14 @@ static void kCSSymmetricIOMode(const char *buf) {
 	kSetSymmetricIOMode(TRUE);
 
 	// IO APIC 리다이렉트 테이블 초기화
-	kPrintF("Initialize I/O Redirection Table\n");
+	kPrintf("Initialize I/O Redirection Table\n");
 	kInitIORedirect();
 
 	// 이전 인터럽트 플래그 복원
-	kPrintF("Restore CPU Interrupt Flag\n");
+	kPrintf("Restore CPU Interrupt Flag\n");
 	kSetInterruptFlag(interruptFlag);
 
-	kPrintF("Change Symmetric I/O Mode Complete !!\n");
+	kPrintf("Change Symmetric I/O Mode Complete !!\n");
 }
 
 // IRQ와 IO APIC의 인터럽트 입력 핀(INTIN)의 관계를 저장한 테이블 표시
@@ -1818,25 +1819,25 @@ static void kCSInterruptProcCnt(const char *buf) {
 	int i, j, procCnt, len, lineCnt;
 	char _buf[20];
 
-	kPrintF("   ====================== Interrupt Count =====================\n");
+	kPrintf("   ====================== Interrupt Count =====================\n");
 
 	// MP 설정 테이블에 저장된 코어 개수 읽음
 	procCnt = kGetProcCnt();
 
 	// 프로세서 수만큼 Column 출력. 한 줄에 코어 4개씩 출력하고 한 Column당 15칸 할당
 	for(i = 0; i < procCnt; i++) {
-		if(i == 0) kPrintF("IRQ Num\t\t");
-		else if((i % 4) == 0) kPrintF("\n      \t\t");
-		kSprintF(_buf, "Core %d", i);
-		kPrintF(_buf);
+		if(i == 0) kPrintf("IRQ Num\t\t");
+		else if((i % 4) == 0) kPrintf("\n      \t\t");
+		kSprintf(_buf, "Core %d", i);
+		kPrintf(_buf);
 
 		// 출력하고 남은 공간을 모두 스페이스로 채움
 		len = 15 - kStrLen(_buf);
 		kMemSet(_buf, ' ', len);
 		_buf[len] = '\0';
-		kPrintF(_buf);
+		kPrintf(_buf);
 	}
-	kPrintF("\n");
+	kPrintf("\n");
 
 	// Row와 인터럽트 처리 횟수 출력. 총 인터럽트 횟수와 코어별 인터럽트 처리 횟수 출력
 	lineCnt = 0;
@@ -1847,37 +1848,37 @@ static void kCSInterruptProcCnt(const char *buf) {
 			if(j == 0) {
 				// 20 라인마다 화면 정지
 				if((lineCnt != 0) && (lineCnt > 10)) {
-					kPrintF("\nPress any key to continue... ('q' is exit) : ");
+					kPrintf("\nPress any key to continue... ('q' is exit) : ");
 					if(kGetCh() == 'q') {
-						kPrintF("\n");
+						kPrintf("\n");
 						return;
 					}
 					lineCnt = 0;
-					kPrintF("\n");
+					kPrintf("\n");
 				}
-				kPrintF("---------------------------------------------------------------\n");
-				kPrintF("IRQ %d\t\t", i);
+				kPrintf("---------------------------------------------------------------\n");
+				kPrintf("IRQ %d\t\t", i);
 				lineCnt += 2;
 			} else if((j % 4) == 0) {
-				kPrintF("\n      \t\t");
+				kPrintf("\n      \t\t");
 				lineCnt++;
 			}
 
-			kSprintF(_buf, "0x%Q", manager->coreInterruptCnt[j][i]);
+			kSprintf(_buf, "0x%Q", manager->coreInterruptCnt[j][i]);
 			// 출력하고 남은 영역을 모두 스페이스로 채움
-			kPrintF(_buf);
+			kPrintf(_buf);
 			len = 15 - kStrLen(_buf);
 			kMemSet(_buf, ' ', len);
 			_buf[len] = '\0';
-			kPrintF(_buf);
+			kPrintf(_buf);
 		}
-		kPrintF("\n");
+		kPrintf("\n");
 	}
 }
 
 // 인터럽트 부하 분산 기능 시작
 static void kCSInterruptLoadBalancing(const char *buf) {
-	kPrintF("Start Interrupt Load Balancing...\n");
+	kPrintf("Start Interrupt Load Balancing...\n");
 	kSetInterruptLoadBalancing(TRUE);
 }
 
@@ -1885,7 +1886,7 @@ static void kCSInterruptLoadBalancing(const char *buf) {
 static void kCSTaskLoadBalancing(const char *buf) {
 	int i;
 
-	kPrintF("Start Task Load Balancing...\n");
+	kPrintf("Start Task Load Balancing...\n");
 	for(i = 0; i < MAXPROCESSORCNT; i++) kSetTaskLoadBalancing(i, TRUE);
 }
 
@@ -1909,9 +1910,9 @@ static void kCSChangeAffinity(const char *buf) {
 	if(kMemCmp(id, "0x", 2) == 0) _affinity = kAtoI(affinity + 2, 16);
 	else _affinity = kAtoI(affinity, 10);
 
-	kPrintF("Change Task Affinity ID [0x%q] Affinity[0x%x] ", _id, _affinity);
-	if(kAlterAffinity(_id, _affinity) == TRUE) kPrintF("Success !!\n");
-	else kPrintF("Fail...\n");
+	kPrintf("Change Task Affinity ID [0x%q] Affinity[0x%x] ", _id, _affinity);
+	if(kAlterAffinity(_id, _affinity) == TRUE) kPrintf("Success !!\n");
+	else kPrintf("Fail...\n");
 }
 
 // VBE 모드 정보 블록 출력
@@ -1920,19 +1921,19 @@ static void kCSVBEModeInfo(const char *buf) {
 
 	// VBE 모드 정보 블록 반환
 	mode = kGetVBEModeInfo();
-	kPrintF("VESA %x\n", mode->winWeighting);
-	kPrintF("X Pixel: %d\n", mode->xPixel);
-	kPrintF("Y Pixel: %d\n", mode->yPixel);
-	kPrintF("Bits Per Pixel: %d\n", mode->perPixelBit);
+	kPrintf("VESA %x\n", mode->winWeighting);
+	kPrintf("X Pixel: %d\n", mode->xPixel);
+	kPrintf("Y Pixel: %d\n", mode->yPixel);
+	kPrintf("Bits Per Pixel: %d\n", mode->perPixelBit);
 
 	// 해상도와 색 정보 위주 출력
-	kPrintF("Red Mask Size: %d, Field Position: %d\n", mode->redMaskSize, mode->redPosition);
-	kPrintF("Green Mask Size: %d, Field Position: %d\n", mode->greenMaskSize, mode->greenPosition);
-	kPrintF("Blue Mask Size: %d, Field Position: %d\n", mode->blueMaskSize, mode->bluePosition);
-	kPrintF("Linear Frame Base Address: 0x%X\n", mode->linearBaseAddr);
-	kPrintF("Linear Red Mask Size: %d, Field Position: %d\n", mode->linearRedMaskSize, mode->linearRedPosition);
-	kPrintF("Linear Green Mask Size: %d, Field Position: %d\n", mode->linearGreenMaskSize, mode->linearGreenPosition);
-	kPrintF("Linear Blue Mask Size: %d, Field Position: %d\n", mode->linearBlueMaskSize, mode->linearBluePosition);
+	kPrintf("Red Mask Size: %d, Field Position: %d\n", mode->redMaskSize, mode->redPosition);
+	kPrintf("Green Mask Size: %d, Field Position: %d\n", mode->greenMaskSize, mode->greenPosition);
+	kPrintf("Blue Mask Size: %d, Field Position: %d\n", mode->blueMaskSize, mode->bluePosition);
+	kPrintf("Linear Frame Base Address: 0x%X\n", mode->linearBaseAddr);
+	kPrintf("Linear Red Mask Size: %d, Field Position: %d\n", mode->linearRedMaskSize, mode->linearRedPosition);
+	kPrintf("Linear Green Mask Size: %d, Field Position: %d\n", mode->linearGreenMaskSize, mode->linearGreenPosition);
+	kPrintf("Linear Blue Mask Size: %d, Field Position: %d\n", mode->linearBlueMaskSize, mode->linearBluePosition);
 }
 
 // 시스템 콜 테스트 유저 레벨 태스크 생성
@@ -1941,11 +1942,35 @@ static void kCSSysCall(const char *buf) {
 
 	// 동적 할당 영역에 4Kbyte 메모리 할당받아 유저 레벨 태스크를 생성할 준비
 	userMem = kAllocMem(0x1000);
-	if(userMem == NULL) return ;
+	if(userMem == NULL) return;
 
 	// 유저 레벨 태스크로 사용할 kSysCallTaskTest() 함수 코드를 할당받은 메모리에 복사
 	kMemCpy(userMem, kSysCallTaskTest, 0x1000);
 
 	// 유저 레벨 프로세스 생성
 	kCreateTask(TASK_FLAGS_USERLV | TASK_FLAGS_PROC, userMem, 0x1000, (QWORD)userMem, TASK_LOADBALANCING_ID);
+}
+
+// 응용프로그램 실행
+static void kCSExecAppProg(const char *buf) {
+	PARAMLIST list;
+	char fileName[512], argv[1024];
+	QWORD id;
+
+	// 파라미터 추출
+	kInitParam(&list, buf);
+	// 형식에 맞지 않으면 도움말 출력 후 종료
+	if(kGetNextParam(&list, fileName) == 0) {
+		kPrintf("ex)exec a.elf argument\n");
+		return;
+	}
+
+	// 두 번째 인자 문자열은 옵션으로 처리
+	if(kGetNextParam(&list, argv) == 0) argv[0] = '\0';
+
+	kPrintf("Execute Program... File [%s], Argument [%s]\n", fileName, argv);
+
+	// 태스크 생성
+	id = kExecProg(fileName, argv, TASK_LOADBALANCING_ID);
+	kPrintf("Task ID = 0x%Q\n", id);
 }

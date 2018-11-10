@@ -30,7 +30,7 @@ void kAppPanelGUITask(void) {
 
 	// 그래픽 모드 판단
 	if(kIsGUIMode() == FALSE) {
-		kPrintF("It is GUI Task. You must execute GUI Mode.\n");
+		kPrintf("It is GUI Task. You must execute GUI Mode.\n");
 		return;
 	}
 

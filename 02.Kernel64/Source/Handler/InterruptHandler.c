@@ -110,9 +110,9 @@ void kExceptionHandler(int vecNum, QWORD errCode) {
 	kPrintXY(7, 1, 0x1F, "=============================================================           ");
 	kPrintXY(7, 2, 0x1F, "                                                                        ");
 	kPrintXY(7, 3, 0x1B, "                Interrupt Handler Execute                               ");
-	kSprintF(buf, "Vector:%d%d, ErrorCode:0x%X, Core ID:0x%X", vecNum / 10, vecNum % 10, errCode, apicID);
+	kSprintf(buf, "Vector:%d%d, ErrorCode:0x%X, Core ID:0x%X", vecNum / 10, vecNum % 10, errCode, apicID);
 	kPrintXY(7, 4, 0x1C, buf);
-	kSprintF(buf, "Task ID:0x%Q", task->link.id);
+	kSprintf(buf, "Task ID:0x%Q", task->link.id);
 	kPrintXY(7, 5, 0x1C, buf);
 	kPrintXY(7, 6, 0x1F, "                                                                        ");
 	kPrintXY(7, 7, 0x1F, "=============================================================           ");

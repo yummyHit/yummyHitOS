@@ -56,7 +56,7 @@ void kStartWinManager(void) {
 			preLoopCnt = loopCnt;
 
 			// 루프의 최소 수행 횟수를 1초마다 업데이트
-			kSprintF(tmp, "MIN Loop Execution Count:%d   ", minLoopCnt);
+			kSprintf(tmp, "MIN Loop Execution Count:%d   ", minLoopCnt);
 			kDrawText(backgroundID, 0, 0, RGB(255, 255, 135), RGB(186, 140, 255), tmp, strLen(tmp));
 
 			// 배경 윈도우 전체를 업데이트하면 시간이 오래 걸려 배경 윈도우에 루프 수행 횟수가 출력된 부분만 업데이트

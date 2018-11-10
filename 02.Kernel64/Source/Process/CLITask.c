@@ -90,7 +90,7 @@ static void kFreeTCB(QWORD id) {
 // 태스크 생성. 태스크 ID에 따라 스택 풀에서 스택 자동 할당. 프로세스와 쓰레드 모두 생성 가능. affinity에 태스크를 수행하고 싶은 코어 ID 설정 가능
 TCB *kCreateTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr, BYTE affinity) {
 	TCB *task, *proc;
-	void *stackAddr;
+//	void *stackAddr;
 	BYTE _id;
 
 	// 현재 코어의 로컬 APIC ID 확인
@@ -99,8 +99,10 @@ TCB *kCreateTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr, BYTE af
 	task = kAllocTCB();
 	if(task == NULL) return NULL;
 
-	stackAddr = kAllocMem(TASK_STACKSIZE);
-	if(stackAddr == NULL) {
+	task->stackAddr = kAllocMem(TASK_STACKSIZE);
+	if(task->stackAddr == NULL) {
+//	stackAddr = kAllocMem(TASK_STACKSIZE);
+//	if(stackAddr == NULL) {
 		kFreeTCB(task->link.id);
 		return NULL;
 	}
@@ -113,7 +115,8 @@ TCB *kCreateTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr, BYTE af
 	// 만약 프로세스가 없다면 아무 작업도 안함
 	if(proc == NULL) {
 		kFreeTCB(task->link.id);
-		kFreeMem(stackAddr);
+		kFreeMem(task->stackAddr);
+//		kFreeMem(stackAddr);
 		// 임계 영역 끝
 		kUnlock_spinLock(&(gs_scheduler[_id].spinLock));
 		return NULL;
@@ -140,11 +143,9 @@ TCB *kCreateTask(QWORD flag, void *memAddr, QWORD memSize, QWORD epAddr, BYTE af
 	// 임계 영역 끝
 	kUnlock_spinLock(&(gs_scheduler[_id].spinLock));
 
-	// 태스크 ID로 스택 어드레스 계산, 하위 32비트가 스택 풀의 오프셋 역할 수행
-//	stackAddr = (void*)(TASK_STACKPOOLADDR + (TASK_STACKSIZE * (GETTCBOFFSET(task->link.id))));
-
 	// TCB를 설정한 후 준비 리스트에 삽입해 스케줄링 될 수 있도록 함
-	kSetTask(task, flag, epAddr, stackAddr, TASK_STACKSIZE);
+	kSetTask(task, flag, epAddr, task->stackAddr, TASK_STACKSIZE);
+//	kSetTask(task, flag, epAddr, stackAddr, TASK_STACKSIZE);
 
 	// 자식 쓰레드 리스트 초기화
 	kInitList(&(task->childThreadList));
@@ -859,7 +860,7 @@ void kIdleTask(void) {
 				kFreeMem(task->stackAddr);
 				kFreeTCB(id);
 
-				kPrintF("### IDLE: Task ID[0x%q] is Completely Finished.\n", id);
+				kPrintf("### IDLE: Task ID[0x%q] is Completely Finished.\n", id);
 			}
 		}
 	kSchedule();

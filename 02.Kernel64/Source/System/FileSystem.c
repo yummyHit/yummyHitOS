@@ -260,7 +260,7 @@ static CACHEBUF *kAllocCacheBufOnFlush(int idx) {
 		cacheBuf = kGetTargetCacheBuf(idx);
 		// 오래된 캐시 버퍼도 할당 받을 수 없으면 오류
 		if(cacheBuf == NULL) {
-			kPrintF("Cache Allocation Fail...\n");
+			kPrintf("Cache Allocation Fail...\n");
 			return NULL;
 		}
 
@@ -270,7 +270,7 @@ static CACHEBUF *kAllocCacheBufOnFlush(int idx) {
 			case CACHE_CLUSTER_AREA:
 				// 쓰기 실패시 오류
 				if(kInWriteClusterNonCache(cacheBuf->tag, cacheBuf->buf) == FALSE) {
-					kPrintF("Write to Cache Buffer Fail(Cluster)...\n");
+					kPrintf("Write to Cache Buffer Fail(Cluster)...\n");
 					return NULL;
 				}
 				break;
@@ -279,13 +279,13 @@ static CACHEBUF *kAllocCacheBufOnFlush(int idx) {
 			case CACHE_DATA_AREA:
 				// 쓰기 실패시 오류
 				if(kInWriteDataNonCache(cacheBuf->tag, cacheBuf->buf) == FALSE) {
-					kPrintF("Write to Cache Buffer Fail(Data)...\n");
+					kPrintf("Write to Cache Buffer Fail(Data)...\n");
 					return NULL;
 				}
 				break;
 			// 기타 오류
 			default:
-				kPrintF("kAllocCacheBufOnFlush Function Fail...\n");
+				kPrintf("kAllocCacheBufOnFlush Function Fail...\n");
 				return NULL;
 				break;
 		}

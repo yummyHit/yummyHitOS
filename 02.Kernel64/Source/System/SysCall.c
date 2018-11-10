@@ -17,6 +17,7 @@
 #include <Util.h>
 #include <Win.h>
 #include <JPEG.h>
+#include <Loader.h>
 
 // 시스템 콜을 호출할 수 있도록 초기화
 void kInitSysCall(void) {
@@ -114,6 +115,10 @@ QWORD kSysCallProc(QWORD num, PARAMTBL *param) {
 			return kGetProcLoad(PARAM(0));
 		case SYSCALL_ALTERAFFINITY:
 			return kAlterAffinity(PARAM(0), PARAM(1));
+		case SYSCALL_EXECPROGRAM:
+			return kExecProg((char*)PARAM(0), (char*)PARAM(1), (BYTE)PARAM(2));
+		case SYSCALL_CREATETHREAD:
+			return kCreateThread(PARAM(0), PARAM(1), (BYTE)PARAM(2), PARAM(3));
 
 		// GUI 시스템 관련
 		case SYSCALL_GETBACKGROUNDID:
@@ -219,12 +224,12 @@ QWORD kSysCallProc(QWORD num, PARAMTBL *param) {
 		case SYSCALL_ISGUIMODE:
 			return kIsGUIMode();
 		case SYSCALL_TEST:
-			kPrintF("\nSystem Call Test... System Call Success~!!\n");
+			kPrintf("\nSystem Call Test... System Call Success~!!\n");
 			return TRUE;
 
 		// 정의되지 않은 시스템 콜
 		default:
-			kPrintF("\nUndefined System Call!! Service Number: %d\n", num);
+			kPrintf("\nUndefined System Call!! Service Number: %d\n", num);
 			return FALSE;
 	}
 }

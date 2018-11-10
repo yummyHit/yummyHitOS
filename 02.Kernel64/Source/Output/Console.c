@@ -87,14 +87,14 @@ void kGetCursor(int *x, int *y) {
 }
 
 // printf 함수 내부 구현
-int kPrintF(const char *format, ...) {
+int kPrintf(const char *format, ...) {
 	va_list v;
 	char buf[1024];
 	int nextPrintOffset, tmp = 0;
 
 	// 가변 인자 리스트를 사용해 vsprintf()로 처리
 	va_start(v, format);
-	tmp = kVsprintF(buf, format, v);
+	tmp = kVsprintf(buf, format, v);
 	va_end(v);
 
 	// 포맷 문자열을 화면에 출력
@@ -274,7 +274,7 @@ void yummy_ascii_art(const char *buf) {
 	// 파일 끝까지 출력하는 것 반복
 	while(1) {
 		if(fread(&key, 1, 1, fp) != 1) break;
-		kPrintF("%c", key);
+		kPrintf("%c", key);
 	}
 	fclose(fp);
 }

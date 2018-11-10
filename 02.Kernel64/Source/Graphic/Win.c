@@ -29,7 +29,7 @@ static void kInitWinPool(void) {
 	// 윈도우 풀 메모리 할당
 	addr = (void*)kAllocMem(sizeof(WINDOW) * WINDOW_MAXCNT);
 	if(addr == NULL) {
-		kPrintF("Window Pool Allocate Fail\n");
+		kPrintf("Window Pool Allocate Fail\n");
 		while(1);
 	}
 
@@ -141,7 +141,7 @@ void kInitGUISystem(void) {
 	// 이벤트 큐에서 사용할 이벤트 자료구조 풀 생성
 	buf = (EVENT*)kAllocMem(sizeof(EVENT) * WINDOW_MAXCNT);
 	if(buf == NULL) {
-		kPrintF("Window Manager Event Queue Allocate Fail...\n");
+		kPrintf("Window Manager Event Queue Allocate Fail...\n");
 		while(1);
 	}
 	// 이벤트 큐 초기화
@@ -150,7 +150,7 @@ void kInitGUISystem(void) {
 	// 화면 업데이트 시 사용할 비트맵 버퍼 생성. 비트맵은 화면 전체 크기로 생성해 공용으로 사용
 	gs_winManager.bitmap = kAllocMem((mode->xPixel * mode->yPixel + 7) / 8);
 	if(gs_winManager.bitmap == NULL) {
-		kPrintF("Draw Bitmap Allocate Fail...\n");
+		kPrintf("Draw Bitmap Allocate Fail...\n");
 		while(1);
 	}
 

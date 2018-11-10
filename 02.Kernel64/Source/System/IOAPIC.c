@@ -167,9 +167,9 @@ void kInitIORedirect(void) {
 void kPrintIRQMap(void) {
 	int i;
 
-	kPrintF("   =========== IRQ to I/O APIC INT IN Mapping Table ===========\n");
+	kPrintf("   =========== IRQ to I/O APIC INT IN Mapping Table ===========\n");
 
-	for(i = 0; i < IO_APIC_MAXIRQ_MAPCNT; i++) kPrintF("IRQ[%d] -> INTIN [%d]\n", i, gs_ioAPICManager.irqMap[i]);
+	for(i = 0; i < IO_APIC_MAXIRQ_MAPCNT; i++) kPrintf("IRQ[%d] -> INTIN [%d]\n", i, gs_ioAPICManager.irqMap[i]);
 }
 
 // IRQ를 로컬 APIC ID로 전달하도록 변경

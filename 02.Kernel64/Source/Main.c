@@ -62,7 +62,7 @@ void Main(void) {
 	kPrintXY(7, 6, 0x1F, "Memory Size Check ................................[     MB]");
 	kChkTotalMemSize();
 	kSetCursor(58, ++y);
-	kPrintF("%d", kGetTotalMemSize());
+	kPrintf("%d", kGetTotalMemSize());
 
 	kPrintXY(7, 7, 0x1F, "TCB Pool And Scheduler Initialize ................");
 	kInitScheduler();

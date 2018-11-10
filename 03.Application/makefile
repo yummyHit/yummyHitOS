@@ -1,4 +1,4 @@
-all: yummyLibrary #HelloWorld TextViewer Shooter Hexa HangulViewer OneLineMemo
+all: yummyLibrary HelloWorld #TextViewer Shooter Hexa HangulViewer OneLineMemo
 
 yummyLibrary:
 	@echo 
@@ -80,8 +80,8 @@ OneLineMemo:
 clean:
 	make -C UserLibrary clean
 	make -C 00.HelloWorld clean
-	make -C 01.TextViewer clean
-	make -C 02.Shooter clean
-	make -C 03.Hexa clean
-	make -C 04.HangulViewer clean
-	make -C 05.OneLineMemo clean
+#	make -C 01.TextViewer clean
+#	make -C 02.Shooter clean
+#	make -C 03.Hexa clean
+#	make -C 04.HangulViewer clean
+#	make -C 05.OneLineMemo clean

@@ -82,7 +82,7 @@ typedef struct kCSManager {
 void kInitConsole(int x, int y);
 void kSetCursor(int x, int y);
 void kGetCursor(int *x, int *y);
-int kPrintF(const char *format, ...);
+int kPrintf(const char *format, ...);
 int kCSPrint(const char *buf);
 void kClearMonitor(void);
 void kClearMatrix(void);

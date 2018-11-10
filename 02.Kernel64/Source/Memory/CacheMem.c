@@ -175,7 +175,7 @@ CACHEBUF *kGetTargetCacheBuf(int idx) {
 
 	// 캐시 버퍼를 찾지 못하면 문제 발생
 	if(oldIdx == -1) {
-		kPrintF("Find Cache Buffer Error...\n");
+		kPrintf("Find Cache Buffer Error...\n");
 		return NULL;
 	}
 

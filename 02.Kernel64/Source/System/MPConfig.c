@@ -17,8 +17,8 @@ BOOL kFindFloatingAddress(QWORD *addr) {
 	QWORD ebdaAddr, baseMem;	// EBDA : Extended BIOS Data Area
 
 	// 확장 BIOS 데이터 영역과 시스템 기본 메모리 출력
-//	kPrintF("Extended BIOS Data Area = [0x%X]\n", (DWORD)(*(WORD*)0x040E) * 16);
-//	kPrintF("System Bas Address = [0x%X]\n", (DWORD)(*(WORD*)0x0413) * 1024);
+//	kPrintf("Extended BIOS Data Area = [0x%X]\n", (DWORD)(*(WORD*)0x040E) * 16);
+//	kPrintf("System Bas Address = [0x%X]\n", (DWORD)(*(WORD*)0x0413) * 1024);
 
 	// 확장 BIOS 데이터 영역을 검색해 MP 플로팅 포인터를 찾고, 이 영역은 0x040E에서 세그먼트 시작 주소를 찾을 수 있음
 	ebdaAddr = *(WORD*)(0x040E);
@@ -26,7 +26,7 @@ BOOL kFindFloatingAddress(QWORD *addr) {
 	// 세그먼트 시작 주소이므로 16을 곱해 실제 물리 어드레스로 변환
 	ebdaAddr *= 16;
 	for(ptr = (char*)ebdaAddr; (QWORD)ptr <= (ebdaAddr + 1024); ptr++) if(kMemCmp(ptr, "_MP_", 4) == 0) {
-//		kPrintF("MP Floating Pointer is in EBDA, [0x%X] Address\n", (QWORD)ptr);
+//		kPrintf("MP Floating Pointer is in EBDA, [0x%X] Address\n", (QWORD)ptr);
 		*addr = (QWORD)ptr;
 		return TRUE;
 	}
@@ -36,14 +36,14 @@ BOOL kFindFloatingAddress(QWORD *addr) {
 	// KB단위로 저장된 값이므로 1024를 곱해 실제 물리 어드레스로 변환
 	baseMem *= 1024;
 	for(ptr = (char*)(baseMem - 1024); (QWORD)ptr <= baseMem; ptr++) if(kMemCmp(ptr, "_MP_", 4) == 0) {
-//		kPrintF("MP Floating Pointer is in System Base Memory, [0x%X] Address\n", (QWORD)ptr);
+//		kPrintf("MP Floating Pointer is in System Base Memory, [0x%X] Address\n", (QWORD)ptr);
 		*addr = (QWORD)ptr;
 		return TRUE;
 	}
 
 	// BIOS의 ROM영역을 검색해 MP 플로팅 포인터 찾음
 	for(ptr = (char*)0x0F0000; (QWORD)ptr < 0x0FFFFF; ptr++) if(kMemCmp(ptr, "_MP_", 4) == 0) {
-//		kPrintF("MP Floating Pointer is in ROM, [0x%X] Address\n", (QWORD)ptr);
+//		kPrintf("MP Floating Pointer is in ROM, [0x%X] Address\n", (QWORD)ptr);
 		*addr = (QWORD)ptr;
 		return TRUE;
 	}
@@ -133,80 +133,80 @@ void kPrintMPConfig(void) {
 	char *interruptFlagEL[4] = {"Conform", "Edge-Trigger", "Reserved", "Level-Trigger"};
 
 	// MP 설정 테이블 처리 함수를 먼저 호출해 시스템 처리에 필요한 정보 저장
-	kPrintF("   ============== MP Configuration Table Summary ==============\n");
+	kPrintf("   ============== MP Configuration Table Summary ==============\n");
 	manager = kGetMPConfigManager();
 	if((manager->startAddr == 0) && (kAnalysisMPConfig() == FALSE)) {
-		kPrintF("MP Configuration Table Analysis Fail...\n");
+		kPrintf("MP Configuration Table Analysis Fail...\n");
 		return;
 	}
-	kPrintF("MP Configuration Table Analysis Success !!\n");
+	kPrintf("MP Configuration Table Analysis Success !!\n");
 
-	kPrintF("MP Floating Pointer Address : 0x%Q\n", manager->floatingPtr);
-	kPrintF("PIC Mode Support : %d\n", manager->usePICMode);
-	kPrintF("MP Configuration Table Header Address : 0x%Q\n", manager->tblHeader);
-	kPrintF("Base MP Configuration Table Entry Start Address : 0x%Q\n", manager->startAddr);
-	kPrintF("Processor Count : %d\n", manager->procCnt);
-	kPrintF("ISA Bus ID : %d\n", manager->isaBusID);
+	kPrintf("MP Floating Pointer Address : 0x%Q\n", manager->floatingPtr);
+	kPrintf("PIC Mode Support : %d\n", manager->usePICMode);
+	kPrintf("MP Configuration Table Header Address : 0x%Q\n", manager->tblHeader);
+	kPrintf("Base MP Configuration Table Entry Start Address : 0x%Q\n", manager->startAddr);
+	kPrintf("Processor Count : %d\n", manager->procCnt);
+	kPrintf("ISA Bus ID : %d\n", manager->isaBusID);
 
-	kPrintF("Press any key to continue... ('q' is exit) : ");
+	kPrintf("Press any key to continue... ('q' is exit) : ");
 	if(kGetCh() == 'q') {
-		kPrintF("\n");
+		kPrintf("\n");
 		return;
 	}
-	kPrintF("\n");
+	kPrintf("\n");
 
 	// MP 플로팅 포인터 정보 출력
-	kPrintF("   =================== MP Floating Pointer ====================\n");
+	kPrintf("   =================== MP Floating Pointer ====================\n");
 	ptr = manager->floatingPtr;
 	kMemCpy(buf, ptr->sign, 4);
 	buf[4] = '\0';
-	kPrintF("Signature : %s\n", buf);
-	kPrintF("MP Configuration Table Address : 0x%Q\n", ptr->tblAddr);
-	kPrintF("Length : %d * 16 Byte\n", ptr->len);
-	kPrintF("Version : %d\n", ptr->revision);
-	kPrintF("CheckSum : 0x%X\n", ptr->checkSum);
+	kPrintf("Signature : %s\n", buf);
+	kPrintf("MP Configuration Table Address : 0x%Q\n", ptr->tblAddr);
+	kPrintf("Length : %d * 16 Byte\n", ptr->len);
+	kPrintf("Version : %d\n", ptr->revision);
+	kPrintf("CheckSum : 0x%X\n", ptr->checkSum);
 
 	// MP 설정 테이블 사용 여부 출력
-	kPrintF("Feature Byte 1 : 0x%X ", ptr->featureByte[0]);
-	if(ptr->featureByte[0] == 0) kPrintF("(Use MP Configuration Table)\n");
-	else kPrintF("(Use Default Configuration)\n");
+	kPrintf("Feature Byte 1 : 0x%X ", ptr->featureByte[0]);
+	if(ptr->featureByte[0] == 0) kPrintf("(Use MP Configuration Table)\n");
+	else kPrintf("(Use Default Configuration)\n");
 
 	// PIC 모드 지원 여부 출력
-	kPrintF("Feature Byte 2 : 0x%X ", ptr->featureByte[1]);
-	if(ptr->featureByte[2] & MP_FLOATINGPTR_FEATUREBYTE2_PICMODE) kPrintF("(PIC Mode Support)\n");
-	else kPrintF("(Virtual Wire Mode Support)\n");
+	kPrintf("Feature Byte 2 : 0x%X ", ptr->featureByte[1]);
+	if(ptr->featureByte[2] & MP_FLOATINGPTR_FEATUREBYTE2_PICMODE) kPrintf("(PIC Mode Support)\n");
+	else kPrintf("(Virtual Wire Mode Support)\n");
 
 	// MP 설정 테이블 헤더 정보 출력
-	kPrintF("\n   =============== MP Configuration Table Header ==============\n");
+	kPrintf("\n   =============== MP Configuration Table Header ==============\n");
 	head = manager->tblHeader;
 	kMemCpy(buf, head->sign, 4);
 	buf[4] = '\0';
-	kPrintF("Signature : %s\n", buf);
-	kPrintF("Length : %d Byte\n", head->len);
-	kPrintF("Version : %d\n", head->revision);
-	kPrintF("CheckSUm : 0x%X\n", head->checkSum);
+	kPrintf("Signature : %s\n", buf);
+	kPrintf("Length : %d Byte\n", head->len);
+	kPrintf("Version : %d\n", head->revision);
+	kPrintf("CheckSUm : 0x%X\n", head->checkSum);
 	kMemCpy(buf, head->oemIDStr, 8);
 	buf[8] = '\0';
-	kPrintF("OEM ID String : %s\n", buf);
+	kPrintf("OEM ID String : %s\n", buf);
 	kMemCpy(buf, head->productIDStr, 12);
 	buf[12] = '\0';
-	kPrintF("Product ID String : %s\n", buf);
-	kPrintF("OEM Table Pointer : 0x%X\n", head->oemPtrAddr);
-	kPrintF("OEM Table Size : %d Byte\n", head->oemSize);
-	kPrintF("Entry Count : %d\n", head->entryCnt);
-	kPrintF("Memory Mapped I/O Address Of Local APIC : 0x%X\n", head->localAPICAddr);
-	kPrintF("Extended Table Length : %d Byte\n", head->extLen);
-	kPrintF("Extended Table CheckSum : 0x%X\n", head->extCheckSum);
+	kPrintf("Product ID String : %s\n", buf);
+	kPrintf("OEM Table Pointer : 0x%X\n", head->oemPtrAddr);
+	kPrintf("OEM Table Size : %d Byte\n", head->oemSize);
+	kPrintf("Entry Count : %d\n", head->entryCnt);
+	kPrintf("Memory Mapped I/O Address Of Local APIC : 0x%X\n", head->localAPICAddr);
+	kPrintf("Extended Table Length : %d Byte\n", head->extLen);
+	kPrintf("Extended Table CheckSum : 0x%X\n", head->extCheckSum);
 
-	kPrintF("Press any key to continue... ('q' is exit) : ");
+	kPrintf("Press any key to continue... ('q' is exit) : ");
 	if(kGetCh() == 'q') {
-		kPrintF("\n");
+		kPrintf("\n");
 		return;
 	}
-	kPrintF("\n");
+	kPrintf("\n");
 
 	// 기본 MP 설정 테이블 엔트리 정보 출력
-	kPrintF("\n   ============= Base MP Configuration Table Entry ============\n");
+	kPrintf("\n   ============= Base MP Configuration Table Entry ============\n");
 	entryAddr = ptr->tblAddr + sizeof(MPCONFIGHEADER);
 	for(i = 0; i < head->entryCnt; i++) {
 		type = *(BYTE*)entryAddr;
@@ -214,18 +214,18 @@ void kPrintMPConfig(void) {
 		// 프로세스 엔트리 정보 출력
 		case MP_ENTRYTYPE_PROCESSOR:
 			procEntry = (PROCESSORENTRY*)entryAddr;
-			kPrintF("Entry Type : Processor\n");
-			kPrintF("Local APIC ID : %d\n", procEntry->localAPICID);
-			kPrintF("Local APIC Version : 0x%X\n", procEntry->localAPICVersion);
-			kPrintF("CPU Flags : 0x%X ", procEntry->cpuFlag);
+			kPrintf("Entry Type : Processor\n");
+			kPrintf("Local APIC ID : %d\n", procEntry->localAPICID);
+			kPrintf("Local APIC Version : 0x%X\n", procEntry->localAPICVersion);
+			kPrintf("CPU Flags : 0x%X ", procEntry->cpuFlag);
 			// Enable, Disable
-			if(procEntry->cpuFlag & MP_CPUFLAG_ON) kPrintF("(Enable, ");
-			else kPrintF("(Disable, ");
+			if(procEntry->cpuFlag & MP_CPUFLAG_ON) kPrintf("(Enable, ");
+			else kPrintf("(Disable, ");
 			// BSP, AP
-			if(procEntry->cpuFlag & MP_CPUFLAG_BSP) kPrintF("BSP)\n");
-			else kPrintF("AP)\n");
-			kPrintF("CPU Signature : 0x%X\n", procEntry->cpuSign);
-			kPrintF("Feature Flags : 0x%X\n\n", procEntry->featureFlag);
+			if(procEntry->cpuFlag & MP_CPUFLAG_BSP) kPrintf("BSP)\n");
+			else kPrintf("AP)\n");
+			kPrintf("CPU Signature : 0x%X\n", procEntry->cpuSign);
+			kPrintf("Feature Flags : 0x%X\n\n", procEntry->featureFlag);
 
 			// 프로세스 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(PROCESSORENTRY);
@@ -233,11 +233,11 @@ void kPrintMPConfig(void) {
 		// 버스 엔트리 정보 출력
 		case MP_ENTRYTYPE_BUS:
 			busEntry = (BUSENTRY*)entryAddr;
-			kPrintF("Entry Type : BUS\n");
-			kPrintF("Bus ID : %d\n", busEntry->id);
+			kPrintf("Entry Type : BUS\n");
+			kPrintf("Bus ID : %d\n", busEntry->id);
 			kMemCpy(buf, busEntry->typeStr, 6);
 			buf[6] = '\0';
-			kPrintF("Bus Type String : %s\n\n", buf);
+			kPrintf("Bus Type String : %s\n\n", buf);
 
 			// 버스 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(BUSENTRY);
@@ -245,14 +245,14 @@ void kPrintMPConfig(void) {
 		// IO APIC 엔트리
 		case MP_ENTRYTYPE_IOAPIC:
 			ioAPICEntry = (IOAPICENTRY*)entryAddr;
-			kPrintF("Entry Type : I/O APIC\n");
-			kPrintF("I/O APIC ID : %d\n", ioAPICEntry->id);
-			kPrintF("I/O APIC Version : 0x%X\n", ioAPICEntry->version);
-			kPrintF("I/O APIC Flags : 0x%X ", ioAPICEntry->flag);
+			kPrintf("Entry Type : I/O APIC\n");
+			kPrintf("I/O APIC ID : %d\n", ioAPICEntry->id);
+			kPrintf("I/O APIC Version : 0x%X\n", ioAPICEntry->version);
+			kPrintf("I/O APIC Flags : 0x%X ", ioAPICEntry->flag);
 			// Enable, Disable
-			if(ioAPICEntry->flag == 1) kPrintF("(Enable)\n");
-			else kPrintF("(Disable)\n");
-			kPrintF("Memory Mapped I/O Address : 0x%X\n\n", ioAPICEntry->memAddr);
+			if(ioAPICEntry->flag == 1) kPrintf("(Enable)\n");
+			else kPrintf("(Disable)\n");
+			kPrintf("Memory Mapped I/O Address : 0x%X\n\n", ioAPICEntry->memAddr);
 
 			// IO APIC 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(IOAPICENTRY);
@@ -260,17 +260,17 @@ void kPrintMPConfig(void) {
 		// IO 인터럽트 지정 엔트리
 		case MP_ENTRYTYPE_IOINTERRUPT:
 			ioInterruptEntry = (IOINTERRUPTENTRY*)entryAddr;
-			kPrintF("Entry Type : I/O Interrupt Assignment\n");
-			kPrintF("Interrupt Type : 0x%X ", ioInterruptEntry->type);
+			kPrintf("Entry Type : I/O Interrupt Assignment\n");
+			kPrintf("Interrupt Type : 0x%X ", ioInterruptEntry->type);
 			// 인터럽트 타입 출력
-			kPrintF("(%s)\n", interruptType[ioInterruptEntry->type]);
-			kPrintF("I/O Interrupt Flags : 0x%X ", ioInterruptEntry->flag);
+			kPrintf("(%s)\n", interruptType[ioInterruptEntry->type]);
+			kPrintf("I/O Interrupt Flags : 0x%X ", ioInterruptEntry->flag);
 			// 극성과 트리거 모드 출력
-			kPrintF("(%s, %s)\n", interruptFlagPO[ioInterruptEntry->flag & 0x03], interruptFlagEL[(ioInterruptEntry->flag >> 2) & 0x03]);
-			kPrintF("Source BUS ID : %d\n", ioInterruptEntry->srcID);
-			kPrintF("Source BUS IRQ : %d\n", ioInterruptEntry->srcIRQ);
-			kPrintF("Destination I/O APIC ID : %d\n", ioInterruptEntry->destID);
-			kPrintF("Destination I/O APIC INTIN : %d\n\n", ioInterruptEntry->destINTIN);
+			kPrintf("(%s, %s)\n", interruptFlagPO[ioInterruptEntry->flag & 0x03], interruptFlagEL[(ioInterruptEntry->flag >> 2) & 0x03]);
+			kPrintf("Source BUS ID : %d\n", ioInterruptEntry->srcID);
+			kPrintf("Source BUS IRQ : %d\n", ioInterruptEntry->srcIRQ);
+			kPrintf("Destination I/O APIC ID : %d\n", ioInterruptEntry->destID);
+			kPrintf("Destination I/O APIC INTIN : %d\n\n", ioInterruptEntry->destINTIN);
 
 			// IO 인터럽트 지정 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(IOINTERRUPTENTRY);
@@ -278,34 +278,34 @@ void kPrintMPConfig(void) {
 		// 로컬 인터럽트 지정 엔트리
 		case MP_ENTRYTYPE_LOCALINTERRUPT:
 			localInterruptEntry = (LOCALINTERRUPTENTRY*)entryAddr;
-			kPrintF("Entry Type : Local Interrupt Assignment\n");
-			kPrintF("Interrupt Type : 0x%X ", localInterruptEntry->type);
+			kPrintf("Entry Type : Local Interrupt Assignment\n");
+			kPrintf("Interrupt Type : 0x%X ", localInterruptEntry->type);
 			// 인터럽트 타입 출력
-			kPrintF("(%s)\n", interruptType[localInterruptEntry->type]);
-			kPrintF("I/O Interrupt Flags : 0x%X ", localInterruptEntry->flag);
+			kPrintf("(%s)\n", interruptType[localInterruptEntry->type]);
+			kPrintf("I/O Interrupt Flags : 0x%X ", localInterruptEntry->flag);
 			// 극성과 트리거 모드 출력
-			kPrintF("(%s, %s)\n", interruptFlagPO[localInterruptEntry->flag & 0x03], interruptFlagEL[(localInterruptEntry->flag >> 2) & 0x03]);
-			kPrintF("Source BUS ID : %d\n", localInterruptEntry->srcID);
-			kPrintF("Source BUS IRQ : %d\n", localInterruptEntry->srcIRQ);
-			kPrintF("Destination Local APIC ID : %d\n", localInterruptEntry->destID);
-			kPrintF("Destination Local APIC LINTIN : %d\n\n", localInterruptEntry->destLINTIN);
+			kPrintf("(%s, %s)\n", interruptFlagPO[localInterruptEntry->flag & 0x03], interruptFlagEL[(localInterruptEntry->flag >> 2) & 0x03]);
+			kPrintf("Source BUS ID : %d\n", localInterruptEntry->srcID);
+			kPrintf("Source BUS IRQ : %d\n", localInterruptEntry->srcIRQ);
+			kPrintf("Destination Local APIC ID : %d\n", localInterruptEntry->destID);
+			kPrintf("Destination Local APIC LINTIN : %d\n\n", localInterruptEntry->destLINTIN);
 
 			// 로컬 인터럽트 지정 엔트리 크기만큼 어드레스를 증가시켜 다음 엔트리로 이동
 			entryAddr += sizeof(LOCALINTERRUPTENTRY);
 			break;
 		default:
-			kPrintF("Unknown Entry Type. %d\n", type);
+			kPrintf("Unknown Entry Type. %d\n", type);
 			break;
 		}
 
 		// 3개 출력 후 키 입력 대기
 		if((i != 0) && (((i + 1) % 3) == 0)) {
-			kPrintF("Press any key to continue... ('q' is exit) : ");
+			kPrintf("Press any key to continue... ('q' is exit) : ");
 			if(kGetCh() == 'q') {
-				kPrintF("\n");
+				kPrintf("\n");
 				return;
 			}
-			kPrintF("\n");
+			kPrintf("\n");
 		}
 	}
 }

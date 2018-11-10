@@ -257,20 +257,20 @@ void kRevStr(char *buf) {
 }
 
 // sprintf() 함수 내부 구현
-int kSprintF(char *buf, const char *format, ...) {
+int kSprintf(char *buf, const char *format, ...) {
 	va_list v;
 	int ret;
 
 	// 가변 인자를 꺼내 vsprintf() 함수에 넘김
 	va_start(v, format);
-	ret = kVsprintF(buf, format, v);
+	ret = kVsprintf(buf, format, v);
 	va_end(v);
 
 	return ret;
 }
 
 // vsprintf() 함수 내부 구현. 버퍼에 포맷 문자열에 따라 데이터 복사
-int kVsprintF(char *buf, const char *format, va_list v) {
+int kVsprintf(char *buf, const char *format, va_list v) {
 	QWORD i, j, k, qwV;
 	int bufIdx = 0, fmLen, cpLen, iV;
 	char *cpStr;

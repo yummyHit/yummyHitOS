@@ -1,5 +1,5 @@
 NASM64 = nasm -f elf64
-GCC64 = gcc -g -std=c99 -C -m64 -ffreestanding -I ../../../02.Kernel64/Source/Headers -Wall -w
+GCC64 = gcc -g -std=c99 -C -m64 -ffreestanding -I ../../../02.Kernel64/Source/Headers -Wall -w -mcmodel=large -fno-common
 AR64 = ar rcs
 
 OBJDIR = Temp
@@ -21,7 +21,7 @@ libyummyHit: dep
 	rm -f $(SRCDIR)/*.gch
 	rm -f $(OBJDIR)/*.*
 	rm -f ../../02.Kernel64/Source/Headers/*.gch
-	rm -f ./libyummyHit.a
+	mv ./libyummyHit.a $(OBJDIR)/libyummyHit.a
 
 CSRCFILES = $(shell find ../ -name *.c)
 ASMSRCFILES = $(shell find ../ -name *.asm)

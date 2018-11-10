@@ -27,7 +27,7 @@ void kBaseGUITask(void) {
 
 	// 그래픽 모드 판단. 그래픽 모드로 시작했는지 여부 확인
 	if(kIsGUIMode() == FALSE) {
-		kPrintF("It is GUI Task. You must execute GUI Mode.\n");
+		kPrintf("It is GUI Task. You must execute GUI Mode.\n");
 		return;
 	}
 
@@ -121,7 +121,7 @@ void kFirstGUITask(void) {
 
 	// 그래픽 모드 판단. 그래픽 모드로 시작했는지 여부 확인
 	if(kIsGUIMode() == FALSE) {
-		kPrintF("It is GUI Task. You must execute GUI Mode.\n");
+		kPrintf("It is GUI Task. You must execute GUI Mode.\n");
 		return;
 	}
 
@@ -133,7 +133,7 @@ void kFirstGUITask(void) {
 	height = 200;
 
 	// 윈도우 생성 함수 호출. 마우스가 있던 위치를 기준으로 생성하고 번호를 추가해 윈도우마다 개별 이름 할당
-	kSprintF(buf, "YummyHitOS Window %d", winCnt++);
+	kSprintf(buf, "YummyHitOS Window %d", winCnt++);
 	id = kCreateWin(xMouse - 10, yMouse - WINDOW_TITLE_HEIGHT / 2, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, buf);
 	// 윈도우 생성 못하면 실패
 	if(id == WINDOW_INVALID_ID) return;
@@ -143,7 +143,7 @@ void kFirstGUITask(void) {
 
 	// 이벤트 정보 표시 영역 테두리와 윈도우 ID 표시
 	kDrawRect(id, 10, y + 8, width - 10, y + 70, RGB(0, 0, 0), FALSE);
-	kSprintF(buf, "GUI Event Information[Window ID: 0x%Q]", id);
+	kSprintf(buf, "GUI Event Information[Window ID: 0x%Q]", id);
 	kDrawText(id, 20, y, RGB(186, 140, 255), RGB(255, 255, 255), buf, kStrLen(buf));
 
 	// 화면 아래 이벤트 전송 버튼 그림. 버튼 영역 설정
@@ -178,11 +178,11 @@ void kFirstGUITask(void) {
 				mouseEvent = &(recvEvent.mouseEvent);
 
 				// 마우스 이벤트 타입 출력
-				kSprintF(buf, "Mouse Event: %s", str[recvEvent.type]);
+				kSprintf(buf, "Mouse Event: %s", str[recvEvent.type]);
 				kDrawText(id, 20, y + 20, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 				// 마우스 데이터 출력
-				kSprintF(buf, "Data: X = %d, Y = %d, Button = %X", mouseEvent->point.x, mouseEvent->point.y, mouseEvent->btnStat);
+				kSprintf(buf, "Data: X = %d, Y = %d, Button = %X", mouseEvent->point.x, mouseEvent->point.y, mouseEvent->btnStat);
 				kDrawText(id, 20, y + 40, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 				// 마우스 눌림 또는 떨어짐 이벤트면 버튼 색깔 다시 그림. 마우스 왼쪽 버튼이 눌렸을 때 처리
@@ -202,7 +202,7 @@ void kFirstGUITask(void) {
 						// 생성된 윈도우 수만큼 루프 수행하며 이벤트 전송
 						for(i = 0; i < winCnt; i++) {
 							// 윈도우 제목으로 윈도우 검색
-							kSprintF(buf, "YummyHitOS Window %d", i);
+							kSprintf(buf, "YummyHitOS Window %d", i);
 							winID = kFindWinTitle(buf);
 							// 윈도우가 존재하며 윈도우 자신이 아닌 경우 이벤트 전송
 							if((winID != WINDOW_INVALID_ID) && (winID != id)) kEventToWin(winID, &sendEvent);
@@ -217,11 +217,11 @@ void kFirstGUITask(void) {
 				keyEvent = &(recvEvent.keyEvent);
 
 				// 키 이벤트 타입 출력
-				kSprintF(buf, "Key Event: %s", str[recvEvent.type]);
+				kSprintf(buf, "Key Event: %s", str[recvEvent.type]);
 				kDrawText(id, 20, y + 20, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 				// 키 데이터 출력
-				kSprintF(buf, "Data: Key = %c, Flag = %X", keyEvent->ascii, keyEvent->flag);
+				kSprintf(buf, "Data: Key = %c, Flag = %X", keyEvent->ascii, keyEvent->flag);
 				kDrawText(id, 20, y + 40, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 				break;
 				// 윈도우 이벤트 처리
@@ -234,11 +234,11 @@ void kFirstGUITask(void) {
 				winEvent = &(recvEvent.winEvent);
 
 				// 윈도우 이벤트 타입 출력
-				kSprintF(buf, "Window Event: %s", str[recvEvent.type]);
+				kSprintf(buf, "Window Event: %s", str[recvEvent.type]);
 				kDrawText(id, 20, y + 20, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 				// 윈도우 데이터 출력
-				kSprintF(buf, "Data: X1 = %d, Y1 = %d, X2 = %d, Y2 = %d", winEvent->area.x1, winEvent->area.y1, winEvent->area.x2, winEvent->area.y2);
+				kSprintf(buf, "Data: X1 = %d, Y1 = %d, X2 = %d, Y2 = %d", winEvent->area.x1, winEvent->area.y1, winEvent->area.x2, winEvent->area.y2);
 				kDrawText(id, 20, y + 40, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 				// 윈도우 닫기 이벤트면 윈도우 삭제 후 태스크 종료
@@ -249,11 +249,11 @@ void kFirstGUITask(void) {
 				break;
 			default:
 				// 여기에 알 수 없는 이벤트 처리 코드 넣기
-				kSprintF(buf, "Unknown Event: 0x%X", recvEvent.type);
+				kSprintf(buf, "Unknown Event: 0x%X", recvEvent.type);
 				kDrawText(id, 20, y + 20, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 				// 윈도우 데이터 출력
-				kSprintF(buf, "Data0 = 0x%Q, Data1 = 0x%Q, Data2 = 0x%Q", recvEvent.data[0], recvEvent.data[1], recvEvent.data[2]);
+				kSprintf(buf, "Data0 = 0x%Q, Data1 = 0x%Q, Data2 = 0x%Q", recvEvent.data[0], recvEvent.data[1], recvEvent.data[2]);
 				kDrawText(id, 20, y + 40, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 				break;
 		}
@@ -288,7 +288,7 @@ void kSysMonTask(void) {
 
 	// 그래픽 모드 판단
 	if(kIsGUIMode() == FALSE) {
-		kPrintF("It is GUI Task. You must execute GUI Mode.\n");
+		kPrintf("It is GUI Task. You must execute GUI Mode.\n");
 		return;
 	}
 
@@ -406,11 +406,11 @@ static void kDrawProcInfo(QWORD winID, int x, int y, BYTE id) {
 	int midX;
 
 	// 프로세서 ID 표시
-	kSprintF(buf, "Processor ID: %d", id);
+	kSprintf(buf, "Processor ID: %d", id);
 	kDrawText(winID, x + 10, y, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 	// 프로세서 태스크 개수 표시
-	kSprintF(buf, "Task Count: %d", kGetTaskCnt(id));
+	kSprintf(buf, "Task Count: %d", kGetTaskCnt(id));
 	kDrawText(winID, x + 10, y + 18, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 	// 프로세서 부하 나타내는 막대 표시
@@ -431,7 +431,7 @@ static void kDrawProcInfo(QWORD winID, int x, int y, BYTE id) {
 	kDrawRect(winID, x + 2, y + 38, x + SYSMON_PROCESSOR_WIDTH - 2, y + (SYSMON_PROCESSOR_HEIGHT - usageBar) - 1, WINDOW_COLOR_BACKGROUND, TRUE);
 
 	// 프로세서 부하 표시. 막대 가운데 부하 표시
-	kSprintF(buf, "Usage: %d%%", procLoad);
+	kSprintf(buf, "Usage: %d%%", procLoad);
 	midX = (SYSMON_PROCESSOR_WIDTH - (kStrLen(buf) * FONT_ENG_WIDTH)) / 2;
 	kDrawText(winID, x + midX, y + 80, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
@@ -451,12 +451,12 @@ static void kDrawMemInfo(QWORD winID, int y, int winWidth) {
 	totalMemKBSize = kGetTotalMemSize() * 1024;
 
 	// 메모리 정보 표시
-	kSprintF(buf, "Total Size: %d KB		", totalMemKBSize);
+	kSprintf(buf, "Total Size: %d KB		", totalMemKBSize);
 	kDrawText(winID, SYSMON_PROCESSOR_MARGIN + 10, y + 3, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 	// 동적 메모리 정보 반환
 	kGetDynMemInfo(&dynMemStartAddr, &tmp, &tmp, &dynMemSize);
-	kSprintF(buf, "Used Size: %d KB		", (dynMemSize + dynMemStartAddr) / 1024);
+	kSprintf(buf, "Used Size: %d KB		", (dynMemSize + dynMemStartAddr) / 1024);
 	kDrawText(winID, SYSMON_PROCESSOR_MARGIN + 10, y + 21, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
 	// 메모리 사용량 나타내는 막대 표시
@@ -476,7 +476,7 @@ static void kDrawMemInfo(QWORD winID, int y, int winWidth) {
 	kDrawRect(winID, SYSMON_PROCESSOR_MARGIN + 2 + usageBar, y + 42, winWidth - SYSMON_PROCESSOR_MARGIN - 2, y + SYSMON_MEMORY_HEIGHT - 34, WINDOW_COLOR_BACKGROUND, TRUE);
 
 	// 사용량 나타내는 텍스트 표시. 막대 가운데 사용량 표시
-	kSprintF(buf, "Usage: %d%%", nowPercent);
+	kSprintf(buf, "Usage: %d%%", nowPercent);
 	midX = (winWidth - (kStrLen(buf) * FONT_ENG_WIDTH)) / 2;
 	kDrawText(winID, midX, y + 45, RGB(119, 68, 255), WINDOW_COLOR_BACKGROUND, buf, kStrLen(buf));
 
@@ -501,7 +501,7 @@ void kGUIShell(void) {
 
 	// 그래픽 모드 판단
 	if(kIsGUIMode() == FALSE) {
-		kPrintF("It is GUI Task. You must execute GUI Mode.\n");
+		kPrintf("It is GUI Task. You must execute GUI Mode.\n");
 		return;
 	}
 
@@ -647,7 +647,7 @@ void kImgViewTask(void) {
 
 	// 그래픽 모드로 시작했는지 확인
 	if(kIsGUIMode() == FALSE) {
-		kPrintF("It is GUI Task. You must execute GUI Mode.\n");
+		kPrintf("It is GUI Task. You must execute GUI Mode.\n");
 		return;
 	}
 
@@ -822,14 +822,14 @@ static BOOL kCreateImgOnWinExe(QWORD mainWinID, const char *fileName) {
 	dclose(dir);
 
 	if(fileSize == 0) {
-		kPrintF("[JPEG Viewer] %s file doesn't exist or size is zero\n", fileName);
+		kPrintf("[JPEG Viewer] %s file doesn't exist or size is zero\n", fileName);
 		return FALSE;
 	}
 
 	// 파일 읽은 후 이미지 디코딩
 	fp = fopen(fileName, "rb");
 	if(fp == NULL) {
-		kPrintF("[JPEG Viewer] %s file open fail\n", fileName);
+		kPrintf("[JPEG Viewer] %s file open fail\n", fileName);
 		return FALSE;
 	}
 
@@ -837,7 +837,7 @@ static BOOL kCreateImgOnWinExe(QWORD mainWinID, const char *fileName) {
 	fileBuf = (BYTE*)kAllocMem(fileSize);
 	jpg = (JPEG*)kAllocMem(sizeof(JPEG));
 	if((fileBuf == NULL) || (jpg == NULL)) {
-		kPrintF("[JPEG Viewer] Buffer allocation fail\n");
+		kPrintf("[JPEG Viewer] Buffer allocation fail\n");
 		kFreeMem(fileBuf);
 		kFreeMem(jpg);
 		fclose(fp);
@@ -846,7 +846,7 @@ static BOOL kCreateImgOnWinExe(QWORD mainWinID, const char *fileName) {
 
 	// 파일 읽은 후JPEG 파일 포맷 확인
 	if((fread(fileBuf, 1, fileSize, fp) != fileSize) || (kJpgInit(jpg, fileBuf, fileSize) == FALSE)) {
-		kPrintF("[JPEG Viewer] Read fail or file is not JPEG format\n");
+		kPrintf("[JPEG Viewer] Read fail or file is not JPEG format\n");
 		kFreeMem(fileBuf);
 		kFreeMem(jpg);
 		fclose(fp);
@@ -866,7 +866,7 @@ static BOOL kCreateImgOnWinExe(QWORD mainWinID, const char *fileName) {
 
 	// 윈도우 생성 실패 또는 출력 버퍼 할당 또는 디코딩 실패시 종료
 	if((winID == WINDOW_INVALID_ID) || (outBuf == NULL)) {
-		kPrintF("[JPEG Viewer] Window create fail or output buffer allocation fail\n");
+		kPrintf("[JPEG Viewer] Window create fail or output buffer allocation fail\n");
 		kFreeMem(fileBuf);
 		kFreeMem(jpg);
 		kFreeMem(outBuf);

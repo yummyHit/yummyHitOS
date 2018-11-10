@@ -237,7 +237,7 @@ int kReadHDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf) {
 		// 에러 발생시 종료
 		stat = kReadHDDStat(pri);
 		if((stat & HDD_STAT_ERR) == HDD_STAT_ERR) {
-			kPrintF("Error Occur !!\n");
+			kPrintf("Error Occur !!\n");
 			// 동기화 처리
 			kUnlock(&(gs_hddManager.mut));
 			return i;
@@ -250,7 +250,7 @@ int kReadHDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf) {
 			kSetHDDInterruptFlag(pri, FALSE);
 			// 인터럽트가 발생하지 않으면 문제가 발생했으니 종료
 			if(waitRes == FALSE) {
-				kPrintF("Interrupt Not Occur !!\n");
+				kPrintf("Interrupt Not Occur !!\n");
 				// 동기화 처리
 				kUnlock(&(gs_hddManager.mut));
 				return FALSE;
