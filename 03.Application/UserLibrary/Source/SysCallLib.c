@@ -337,6 +337,34 @@ BOOL alterAffinity(QWORD id, BYTE affinity) {
 	return (BOOL)ExecSysCall(SYSCALL_ALTERAFFINITY, &param);
 }
 
+// 응용프로그램 생성
+QWORD ExecProg(const char *fileName, const char *argv, BYTE affinity) {
+	PARAMTBL param;
+
+	// 파라미터 삽입
+	PARAM(0) = (QWORD)fileName;
+	PARAM(1) = (QWORD)argv;
+	PARAM(2) = (QWORD)affinity;
+
+	// 시스템 콜 호출
+	return (BOOL)ExecSysCall(SYSCALL_EXECPROGRAM, &param);
+}
+
+// 쓰레드 생성
+QWORD CreateThread(QWORD ep, QWORD arg, BYTE affinity) {
+	PARAMTBL param;
+
+	// 파라미터 삽입
+	PARAM(0) = (QWORD)ep;
+	PARAM(1) = (QWORD)arg;
+	PARAM(2) = (QWORD)affinity;
+	// 종료할 때 호출되는 함수에 exit을 지정하여 쓰레드가 스스로 종료하도록 함
+	PARAM(3) = (QWORD)exit;
+
+	// 시스템 콜 호출
+	return ExecSysCall(SYSCALL_EXECPROGRAM, &param);
+}
+
 // 배경 윈도우 ID
 QWORD getBackgroundID(void) {
 	// 시스템 콜 호출

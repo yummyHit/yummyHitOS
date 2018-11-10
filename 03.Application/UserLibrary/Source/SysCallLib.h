@@ -9,7 +9,7 @@
 #define __SYSCALLLIB_H__
 
 #include "Types.h"
-#include <SysCallList.h>
+#include "SysCallList.h"
 
 #pragma once
 // 파라미터로 전달할 수 있는 최대 수
@@ -68,6 +68,8 @@ int getTaskCnt(BYTE id);
 BOOL istask(QWORD id);
 QWORD getProcLoad(BYTE id);
 BOOL alterAffinity(QWORD id, BYTE affinity);
+QWORD ExecProg(const char *fileName, const char *argv, BYTE affinity);
+QWORD CreateThread(QWORD ep, QWORD arg, BYTE affinity);
 
 // GUI 시스템 관련 함수
 QWORD getBackgroundID(void);
