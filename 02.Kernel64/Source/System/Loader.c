@@ -91,7 +91,7 @@ static BOOL kLoadProgReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWOR
 	ELF64_XWORD lastSectionSize = 0;
 	ELF64_ADDR lastSectionAddr = 0;
 	int i;
-	QWORD memSize, stackAddr;
+	QWORD memSize;
 	BYTE *loadAddr;
 
 	// ELF 헤더 정보 출력 및 분석에 필요한 정보 저장

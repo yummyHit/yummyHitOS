@@ -557,7 +557,7 @@ static void kCSTaskList(const char *buf) {
 	if(procCnt > 1) {
 		for(i = 0; i < procCnt; i++) {
 			if((i != 0) && ((i % 4) == 0)) kPrintf("\n");
-			kSprintf(_buf, "Core %d : %d", i, kGetTaskCnt(i));
+			kSprintf(_buf, "Core %d: %d", i, kGetTaskCnt(i));
 			kPrintf(_buf);
 
 			// 출력하고 남은 공간 모두 스페이스바로 채움

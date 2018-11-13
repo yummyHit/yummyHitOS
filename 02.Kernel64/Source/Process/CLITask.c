@@ -550,7 +550,7 @@ BOOL kTaskFin(QWORD id) {
 		kUnlock_spinLock(&(gs_scheduler[_id].spinLock));
 
 		// 현재 스케줄러에서 실행 중인 태스크의 경우만 아래 적용
-		if(kGetAPICID() == _id)kSchedule();
+		if(kGetAPICID() == _id) kSchedule();
 		return TRUE;
 	}
 
@@ -783,7 +783,7 @@ void kIdleTask(void) {
 		nowIdleTask = gs_scheduler[_id].loopIdleTask;
 
 		// 프로세서 사용량 계산(100 - 유휴 태스크가 사용한 프로세서 시간) * 100 / 시스템 전체에서 사용한 프로세서 시간)
-		if(nowTickCnt - lastTickCnt == 0) gs_scheduler[_id].procLoad = 0;
+		if((nowTickCnt - lastTickCnt) == 0) gs_scheduler[_id].procLoad = 0;
 		else gs_scheduler[_id].procLoad = 100 - (nowIdleTask - lastIdleTask) * 100 / (nowTickCnt - lastTickCnt);
 
 		// 현재 상태를 이전 상태에 보관

@@ -301,7 +301,7 @@ void kSysMonTask(void) {
 	winWidth = procCnt * (SYSMON_PROCESSOR_WIDTH + SYSMON_PROCESSOR_MARGIN) + SYSMON_PROCESSOR_MARGIN;
 
 	// 윈도우를 화면 가운데 생성 후 화면에 표시 안함. 프로세서 정보와 메모리 정보 표시 영역 그린 후 화면에 표시
-	id = kCreateWin((monArea.x2 - winWidth) / 2, (monArea.y2 - SYSMON_WINDOW_HEIGHT) / 2, winWidth, SYSMON_WINDOW_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_RESIZABLE, "System Monitoring..(-- ) ( --)");
+	id = kCreateWin((monArea.x2 - winWidth) / 2, (monArea.y2 - SYSMON_WINDOW_HEIGHT) / 2, winWidth, SYSMON_WINDOW_HEIGHT, WINDOW_FLAGS_DEFAULT & ~WINDOW_FLAGS_SHOW | WINDOW_FLAGS_RESIZABLE, "System Monitoring.. +_____+");
 
 	// 윈도우 생성 못하면 실패
 	if(id == WINDOW_INVALID_ID) return;
@@ -372,7 +372,10 @@ void kSysMonTask(void) {
 			if(lastCPULoad[i] != kGetProcLoad(i)) {
 				lastCPULoad[i] = kGetProcLoad(i);
 				changed = TRUE;
-			} else if(lastTaskCnt[i] != kGetTaskCnt(i)) { // 태스크 수 검사
+			}
+
+			// 태스크 수 검사
+			if(lastTaskCnt[i] != kGetTaskCnt(i)) {
 				lastTaskCnt[i] = kGetTaskCnt(i);
 				changed = TRUE;
 			}
@@ -385,7 +388,6 @@ void kSysMonTask(void) {
 		}
 
 		// 동적 메모리 정보 출력
-		// 동적 메모리 정보 반환
 		kGetDynMemInfo(&tmp, &tmp, &tmp, &dynMemSize);
 
 		// 현재 동적 할당 메모리 사용량이 이전과 다르면 메모리 정보 출력
