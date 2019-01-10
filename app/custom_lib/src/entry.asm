@@ -10,7 +10,7 @@
 SECTION .text			; text 섹션(세그먼트)을 정의
 
 ; C언어에서 호출할 수 있도록 이름 노출
-global Start, ExecSysCall
+global Start, syscall
 
 extern main, exit
 
@@ -24,7 +24,7 @@ Start:
 	ret
 
 ; 시스템 콜 실행(PARAM: 서비스 번호, 파라미터)
-ExecSysCall:
+syscall:
 	push rcx		; SYSCALL 호출 시 RCX 레지스터에 RIP 레지스터 저장, R11 레지스터에 RFLAGS 레지스터 저장되니 스택에 보관
 	push r11
 

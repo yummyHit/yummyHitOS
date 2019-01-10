@@ -1,4 +1,4 @@
-all: custom.lib sample.file #TextViewer Shooter Hexa HangulViewer OneLineMemo
+all: custom.lib sample.file notepad.file #Shooter Hexa HangulViewer OneLineMemo
 
 custom.lib:
 	@echo 
@@ -22,12 +22,12 @@ sample.file:
 	@echo =============== Build Complete ===============
 	@echo 
 
-TextViewer:
+notepad.file:
 	@echo 
-	@echo ============= Build TextViewer ===============
+	@echo ============== Build Notepad =================
 	@echo 
 
-	make -C 01.TextViewer
+	make -C notepad
 
 	@echo 
 	@echo =============== Build Complete ===============
@@ -80,7 +80,7 @@ OneLineMemo:
 clean:
 	make -C custom_lib clean
 	make -C sample clean
-#	make -C 01.TextViewer clean
+	make -C notepad clean
 #	make -C 02.Shooter clean
 #	make -C 03.Hexa clean
 #	make -C 04.HangulViewer clean

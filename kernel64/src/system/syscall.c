@@ -116,7 +116,7 @@ QWORD kSysCallProc(QWORD num, PARAMTBL *param) {
 		case SYSCALL_ALTERAFFINITY:
 			return kAlterAffinity(PARAM(0), PARAM(1));
 		case SYSCALL_EXECPROGRAM:
-			return kExecProg((char*)PARAM(0), (char*)PARAM(1), (BYTE)PARAM(2));
+			return kExecFile((char*)PARAM(0), (char*)PARAM(1), (BYTE)PARAM(2));
 		case SYSCALL_CREATETHREAD:
 			return kCreateThread(PARAM(0), PARAM(1), (BYTE)PARAM(2), PARAM(3));
 

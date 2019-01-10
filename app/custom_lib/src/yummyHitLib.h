@@ -8,7 +8,6 @@
 #ifndef __YUMMYHITLIB_H__
 #define __YUMMYHITLIB_H__
 
-
 #include "types.h"
 #include "custom_lib.h"
 #include "syslib.h"

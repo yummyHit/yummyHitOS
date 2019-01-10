@@ -217,7 +217,7 @@ typedef struct {
 
 #pragma pack(pop)
 
-QWORD kExecProg(const char *fileName, const char *argv, BYTE affinity);
+QWORD kExecFile(const char *fileName, const char *argv, BYTE affinity);
 static BOOL kLoadProgReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWORD *epAddr);
 static BOOL kReloc(BYTE *buf);
 static void kAddArgvToTask(TCB *task, const char *argv);

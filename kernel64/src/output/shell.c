@@ -77,7 +77,7 @@ SHELLENTRY gs_cmdTable[] = {
 	{"changeAffinity", "### Change Task Affinity. ex)changeAffinity 1(ID) 0xFF(Affinity)", kCSChangeAffinity},
 	{"vbeModeInfo", "### Show VBE Mode Information ###", kCSVBEModeInfo},
 	{"syscallTest", "### System Call Test ###", kCSSysCall},
-	{"exec", "### Execute Application Program, ex)exec a.elf argument", kCSExecAppProg },
+	{"exec", "### Execute Application Program, ex)exec a.elf argument", kCSExecApp },
 };
 
 // 셸 메인 루프
@@ -309,14 +309,14 @@ static void kCSSetTime(const char *buf) {
 
 	// milli second 추출
 	if(kGetNextParam(&list, param) == 0) {
-		kPrintf("ex) setTime 10(ms) 1(term)\n");
+		kPrintf("ex)setTime 10(ms) 1(term)\n");
 		return;
 	}
 	v = kAtoI(param, 10);
 
 	// Periodic 추출
 	if(kGetNextParam(&list, param) == 0) {
-		kPrintf("ex) setTime 10(ms) 1(term)\n");
+		kPrintf("ex)setTime 10(ms) 1(term)\n");
 		return;
 	}
 	term = kAtoI(param, 10);
@@ -335,7 +335,7 @@ static void kCSWait(const char *buf) {
 	// 파라미터 초기화
 	kInitParam(&list, buf);
 	if(kGetNextParam(&list, param) == 0) {
-		kPrintf("ex) wait 100(ms)\n");
+		kPrintf("ex)wait 100(ms)\n");
 		return;
 	}
 	ms = kAtoI(buf, 10);
@@ -1179,7 +1179,7 @@ static void kCSRemoveFile(const char *buf) {
 static void kCSRootDir(const char *buf) {
 	DIR *dir;
 	int cnt = 0, totalCnt = 0;
-	struct dirent *entry;
+	DIRENTRY *entry;
 	char *_buf[CONSOLE_WIDTH - 5], tmp[50];	// _buf의 크기가 CONSOLE_WIDTH - 5인 이유는 현재 우리의 OS는 총 80만큼의 가로길이이고
 						// 아래 코드를 보면 미관을 위해 4칸을 띄어준 후 %s를 통해 출력하므로 5만큼 빼준다!
 	DWORD totalByte = 0, usedClusterCnt = 0;
@@ -1952,7 +1952,7 @@ static void kCSSysCall(const char *buf) {
 }
 
 // 응용프로그램 실행
-static void kCSExecAppProg(const char *buf) {
+static void kCSExecApp(const char *buf) {
 	PARAMLIST list;
 	char fileName[512], argv[1024];
 	QWORD id;
@@ -1971,6 +1971,6 @@ static void kCSExecAppProg(const char *buf) {
 	kPrintf("Execute Program... File [%s], Argument [%s]\n", fileName, argv);
 
 	// 태스크 생성
-	id = kExecProg(fileName, argv, TASK_LOADBALANCING_ID);
+	id = kExecFile(fileName, argv, TASK_LOADBALANCING_ID);
 	kPrintf("Task ID = 0x%Q\n", id);
 }

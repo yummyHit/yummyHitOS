@@ -99,6 +99,6 @@ static void kCSTaskLoadBalancing(const char *buf);
 static void kCSChangeAffinity(const char *buf);
 static void kCSVBEModeInfo(const char *buf);
 static void kCSSysCall(const char *buf);
-static void kCSExecAppProg(const char *buf);
+static void kCSExecApp(const char *buf);
 
 #endif /*__SHELL_H__*/

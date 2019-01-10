@@ -28,7 +28,7 @@ typedef struct kSysCallParamTbl {
 #pragma pack(pop)
 
 // 시스템 콜 함수
-QWORD ExecSysCall(QWORD num, PARAMTBL *param);
+QWORD syscall(QWORD num, PARAMTBL *param);
 
 // 콘솔 함수
 int printCS(const char *buf);
@@ -49,10 +49,10 @@ int fseek(FILE *file, int offset, int origin);
 int fclose(FILE *file);
 int remove(const char *file);
 DIR *opendir(const char *dir);
-struct dirent *readdir(DIR *dir);
+DIRENTRY *readdir(DIR *dir);
 BOOL rewinddir(DIR *dir);
 int closedir(DIR *dir);
-BOOL isfopen(const struct dirent *entry);
+BOOL isfopen(const DIRENTRY *entry);
 
 // 하드 디스크 관련 함수
 int readHDDSector(BOOL pri, BOOL master, DWORD lba, int sectorCnt, char *buf);
@@ -68,8 +68,8 @@ int getTaskCnt(BYTE id);
 BOOL istask(QWORD id);
 QWORD getProcLoad(BYTE id);
 BOOL alterAffinity(QWORD id, BYTE affinity);
-QWORD ExecProg(const char *fileName, const char *argv, BYTE affinity);
-QWORD CreateThread(QWORD ep, QWORD arg, BYTE affinity);
+QWORD exec(const char *fileName, const char *argv, BYTE affinity);
+QWORD createThread(QWORD ep, QWORD arg, BYTE affinity);
 
 // GUI 시스템 관련 함수
 QWORD getBackgroundID(void);

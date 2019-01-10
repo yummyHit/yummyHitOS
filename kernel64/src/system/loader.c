@@ -9,9 +9,9 @@
 #include <filesystem.h>
 #include <dynmem.h>
 
-QWORD kExecProg(const char *fileName, const char *argv, BYTE affinity) {
+QWORD kExecFile(const char *fileName, const char *argv, BYTE affinity) {
 	DIR *dir;
-	struct dirent *entry;
+	DIRENTRY *entry;
 	DWORD fileSize, readSize;
 	BYTE *tmpBuf;
 	FILE *fp;
@@ -107,7 +107,7 @@ static BOOL kLoadProgReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWOR
 	kPrintf("Section Name String Table Section Index [%d]\n", elf_h->e_shstridx);
 
 	// ELF -- id, class, encoding, type 확인해 올바른 응용프로그램인지 확인
-	if((elf_h->e_id[EI_MAG0] != ELFMAG0) || (elf_h->e_id[EI_MAG1] != ELFMAG1) || (elf_h->e_id[EI_MAG1] != ELFMAG1) || (elf_h->e_id[EI_MAG2] != ELFMAG2) || (elf_h->e_id[EI_MAG3] != ELFMAG3) || (elf_h->e_id[EI_CLASS] != ELFCLASS64) || (elf_h->e_id[EI_DATA] != ELFDATA2LSB) || (elf_h->e_type != ET_REL)) return FALSE;
+	if((elf_h->e_id[EI_MAG0] != ELFMAG0) || (elf_h->e_id[EI_MAG1] != ELFMAG1) || (elf_h->e_id[EI_MAG2] != ELFMAG2) || (elf_h->e_id[EI_MAG3] != ELFMAG3) || (elf_h->e_id[EI_CLASS] != ELFCLASS64) || (elf_h->e_id[EI_DATA] != ELFDATA2LSB) || (elf_h->e_type != ET_REL)) return FALSE;
 
 	// 모든 섹션 헤더 로딩 메모리 어드레스를 확인해 가장 마지막 섹션 찾고 섹션 정보 표시
 	for(i = 0; i < elf_h->e_shnum; i++) {

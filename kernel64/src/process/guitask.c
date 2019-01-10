@@ -783,7 +783,7 @@ static void kDrawFileName(QWORD winID, RECT *area, char *fileName, int len) {
 // JPEG 파일 읽어 새로 생성한 윈도우에 표시 후 이벤트 처리
 static BOOL kCreateImgOnWinExe(QWORD mainWinID, const char *fileName) {
 	DIR *dir;
-	struct dirent *entry;
+	DIRENTRY *entry;
 	DWORD fileSize;
 	RECT monArea;
 	QWORD winID;

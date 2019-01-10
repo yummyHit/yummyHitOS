@@ -1,5 +1,5 @@
 /*
- * Main.c
+ * app.c
  *
  *  Created on: 2018. 7. 3.
  *      Author: Yummy
@@ -41,7 +41,7 @@ int main(char *arg) {
 	// 그래픽 모드 판단. 그래픽 모드로 시작했는지 여부 확인
 	if(isGUIMode() == FALSE) {
 		printf("It is GUI Task. You must execute GUI Mode.\n");
-		return;
+		return 0;
 	}
 
 	// 윈도우 생성. 마우스 현재 위치 반환
@@ -55,7 +55,7 @@ int main(char *arg) {
 	sprintf(buf, "YummyHitOS Window %d", winCnt++);
 	id = createWin(xMouse - 10, yMouse - WINDOW_TITLE_HEIGHT / 2, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, buf);
 	// 윈도우 생성 못하면 실패
-	if(id == WINDOW_INVALID_ID) return;
+	if(id == WINDOW_INVALID_ID) return 0;
 
 	// 윈도우 매니저가 윈도우로 전송하는 이벤트 표시 영역 그림. 이벤트 정보 출력할 위치 저장
 	y = WINDOW_TITLE_HEIGHT + 10;
@@ -163,7 +163,7 @@ int main(char *arg) {
 				// 윈도우 닫기 이벤트면 윈도우 삭제 후 태스크 종료
 				if(recvEvent.type == EVENT_WINDOW_CLOSE) {
 					delWin(id);
-					return;
+					return 0;
 				}
 				break;
 			default:
