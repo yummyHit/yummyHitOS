@@ -5,67 +5,66 @@
 #      Author: Yummy
 #
 
-BINFILES = BinFiles
+BINFILES = binfiles
 
-all: BootLoader Kernel32 Kernel64 Application Utility Disk.img
+all: boot.loader kernel.32 kernel.64 app.list util.list disk.img
 
-BootLoader:
+boot.loader:
 	@echo
 	@echo =============== Build Boot Loader ===============
 	@echo
 	
-	make -C 00.BootLoader
+	make -C bootloader
 	
 	@echo
 	@echo =============== Build Complete ===============
 	@echo
 	
-Kernel32:
+kernel.32:
 	@echo
 	@echo =============== Build 32bit Kernel ===============
 	@echo
 	
-	make -C 01.Kernel32
+	make -C kernel32
 	
 	@echo
 	@echo =============== Build Complete ===============
 	@echo
-	
-Kernel64:
+
+kernel.64:
 	@echo
 	@echo =============== Build 64bit Kernel ===============
 	@echo
 	
-	make -C 02.Kernel64
+	make -C kernel64
 	
 	@echo
 	@echo =============== Build Complete ===============
 	@echo
 
-Application:
+app.list:
 	@echo 
 	@echo =========== Application Build Start ===========
 	@echo 
-
-	make -C 03.Application
-
+	
+	make -C app
+	
 	@echo 
 	@echo =========== Application Build Complete ===========
 	@echo 
 
-
-Utility: 
+util.list:
 	@echo 
 	@echo =============== Utility Build Start ===============
 	@echo 
-
-	make -C 04.Utility
-
+	
+	make -C util
+	
 	@echo 
 	@echo =============== Utility Build Complete ===============
 	@echo 
-	
-Disk.img: $(BINFILES)/BootLoader.bin $(BINFILES)/Kernel32.bin $(BINFILES)/Kernel64.bin
+
+disk.img: $(BINFILES)/bootloader.bin $(BINFILES)/kernel32.bin $(BINFILES)/kernel64.bin
 	@echo
 	@echo =============== Disk Image Build Start ===============
 	@echo
@@ -75,7 +74,7 @@ Disk.img: $(BINFILES)/BootLoader.bin $(BINFILES)/Kernel32.bin $(BINFILES)/Kernel
 	@echo
 	@echo =============== All Build Complete ===============
 	@echo
-	
+
 clean:
-	rm -f ./BinFiles/*.*
-	rm -f Disk.img
+	rm -f ./binfiles/*.*
+	rm -f disk.img
