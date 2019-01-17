@@ -9,7 +9,7 @@
 #include "notepad.h"
 
 // 응용프로그램 C언어 엔트리 포인트
-int main(char *arg) {
+int main(char *argv) {
 	QWORD winID;
 	int x, y, width, height, move;
 	TXTINFO info;
@@ -26,20 +26,20 @@ int main(char *arg) {
 	}
 
 	// 파일 내용을 파일 버퍼에 저장, 라인별 파일 오프셋 저장용 버퍼 생성
-	if(strlen(arg) == 0) {
+	if(strlen(argv) == 0) {
 		printf("ex)exec notepad.elf text.txt\n");
 		return 0;
 	}
 
 	// 파일을 찾은 후 파일의 크기만큼 메모리 할당하여 파일 저장 및 버퍼 생성
-	if(readfile(arg, &info) == FALSE) {
-		printf("%s file not found\n", arg);
+	if(readfile(argv, &info) == FALSE) {
+		printf("%s file not found\n", argv);
 		return 0;
 	}
 
 	// 윈도우와 라인 인덱스 생성 후 첫 번째 라인부터 출력
 	getMonArea(&monArea);
-	width = 500;
+	width = 644;
 	height = 500;
 	x = (getRectWidth(&monArea) - width) / 2;
 	y = (getRectHeight(&monArea) - height) / 2;
@@ -75,14 +75,14 @@ int main(char *arg) {
 						case KEY_PAGE_DOWN:
 							move = info.rowCnt;
 							break;
-						// UP, Down 키는 한 줄 단위
+							// UP, Down 키는 한 줄 단위
 						case KEY_ARROW_UP:
 							move = -1;
 							break;
 						case KEY_ARROW_DOWN:
 							move = 1;
 							break;
-						// 그 외 움직일 필요 없으면 종료
+							// 그 외 움직일 필요 없으면 종료
 						default:
 							move = 0;
 							break;
@@ -102,7 +102,7 @@ int main(char *arg) {
 				}
 				break;
 
-			// 윈도우 크기 변경 처리
+				// 윈도우 크기 변경 처리
 			case EVENT_WINDOW_RESIZE:
 				winEvent = &(recvEvent.winEvent);
 				width = getRectWidth(&(winEvent->area));
@@ -119,7 +119,7 @@ int main(char *arg) {
 				drawTextBuf(winID, &info);
 				break;
 
-			// 윈도우 닫기 버튼 처리
+				// 윈도우 닫기 버튼 처리
 			case EVENT_WINDOW_CLOSE:
 				// 윈도우 삭제 후 메모리 해제
 				delWin(winID);
@@ -128,7 +128,7 @@ int main(char *arg) {
 				return 0;
 				break;
 
-			// 그 외
+				// 그 외
 			deafult:
 				break;
 		}
@@ -143,13 +143,13 @@ BOOL readfile(const char *fileName, TXTINFO *info) {
 	FILE *fp;
 
 	// 루트 디렉터리를 열어 파일 검색
-	dir = dopen("/");
+	dir = opendir("/");
 	fileSize = 0;
 
 	// 디렉터리에서 파일 검색
 	while(1) {
 		// 디렉터리에서 엔트리 하나 읽음
-		entry = dread(dir);
+		entry = readdir(dir);
 		// 더 이상 파일 없으면 끝
 		if(entry == NULL) break;
 
@@ -161,7 +161,7 @@ BOOL readfile(const char *fileName, TXTINFO *info) {
 	}
 
 	// 디렉터리 핸들 반환.
-	dclose(dir);
+	closedir(dir);
 
 	if(fileSize == 0) {
 		printf("%s file not found or size is zero!\n");
@@ -169,7 +169,7 @@ BOOL readfile(const char *fileName, TXTINFO *info) {
 	}
 
 	// 파일 이름 저장
-	mempcy(&(info->d_name), fileName, sizeof(info->d_name));
+	memcpy(&(info->d_name), fileName, sizeof(info->d_name));
 	info->d_name[sizeof(info->d_name) - 1] = '\0';
 
 	// 파일 전체 읽는 임시 버퍼 및 라인별 오프셋 저장할 버퍼를 할당, 파일 내용 모두 저장
@@ -200,7 +200,7 @@ BOOL readfile(const char *fileName, TXTINFO *info) {
 		fclose(fp);
 		return FALSE;
 	}
-	
+
 	// 파일 크기 저장
 	info->size = fileSize;
 	return TRUE;
@@ -264,23 +264,23 @@ BOOL drawTextBuf(QWORD winID, TXTINFO *info) {
 	sprintf(buf, "File: %s, Line: %d/%d\n", info->d_name, info->nowLine + 1, info->maxLine);
 	len = strlen(buf);
 	// 저장된 정보를 파일 정보 표시 영역 가운데에 출력
-	drawText(winID, (width - len * FONT_ENG_WIDTH) / 2, WINDOW_TITLE_HEIGHT + 2, RGB(255, 255, 255), RGB(55, 215, 47), buf, strlen(buf));
+	drawText(winID, (width - (len * FONT_ENG_WIDTH)) / 2, WINDOW_TITLE_HEIGHT + 2, RGB(255, 255, 255), RGB(159, 48, 215), buf, strlen(buf));
 
 	// 파일 내용 표시 영역에 파일 내용 출력
 	// 데이터 출력할 부분 모두 흰색으로 덮어쓴 후 라인 출력
 	yOffset = (WINDOW_TITLE_HEIGHT * 2) + MARGIN;
-	drawRect(winID, xOffset, yOffset, xOffset + FONT_ENG_WIDTH * info->colCnt, yOffset + FONT_ENG_HEIGHT * info->rowCnt, RGB(255,255,255), TRUE);
+	drawRect(winID, xOffset, yOffset, xOffset + (FONT_ENG_WIDTH * info->colCnt), yOffset + (FONT_ENG_HEIGHT * info->rowCnt), RGB(255,255,255), TRUE);
 
 	// 루프 수행하며 라인 단위로 출력
 	// 현재 라인에서 남은 라인 수와 한 화면에 출력가능 라인 수 비교해 작은 것 선택
-	lineCnt = MIN(info->rowCnt, (info->maxLine - info->nowLine));
+	lineCnt = _MIN(info->rowCnt, (info->maxLine - info->nowLine));
 	for(j = 0; j < lineCnt; j++) {
 		// 출력할 라인 파일 오프셋
 		baseOffset = info->lineOffset[info->nowLine + j];
 
 		// 루프를 수행하며 현재 라인에 문자 출력
-		colCnt = MIN(info->colCnt, (info->size - baseOffset));
-		for(i = 0; (i < colCnt) && (colIdx < info->colCnt); i++) {
+		colCnt = _MIN(info->colCnt, (info->size - baseOffset));
+		for(i = 0, colIdx = 0; (i < colCnt) && (colIdx < info->colCnt); i++) {
 			tmp = info->buf[i + baseOffset];
 			// 줄바꿈 문자가 보이면 종료
 			if(tmp == '\n') break;
@@ -294,7 +294,7 @@ BOOL drawTextBuf(QWORD winID, TXTINFO *info) {
 			// 기타 문자 출력
 			else {
 				// 출력할 위치에 문자 출력 후 다음 위치로 이동
-				drawText(winID, colIdx * FONT_ENG_WIDTH + xOffset, yOffset + (j * FONT_ENG_HEIGHT), RGB(0, 0, 0), RGB(255, 255, 255), &tmp, 1);
+				drawText(winID, xOffset + (colIdx * FONT_ENG_WIDTH), yOffset + (j * FONT_ENG_HEIGHT), RGB(0, 0, 0), RGB(255, 255, 255), &tmp, 1);
 				colIdx++;
 			}
 		}

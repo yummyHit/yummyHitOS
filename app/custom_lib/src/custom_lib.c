@@ -282,7 +282,7 @@ int vsprintf(char *buf, const char *format, va_list v) {
 				}
 				buf[bufIdx + 3 + k] = '\0';
 				// 값이 저장된 길이만큼 뒤집고 길이를 증가시킴
-				kRevStr(buf + bufIdx);
+				strrev(buf + bufIdx);
 				bufIdx += 3 + k;
 				break;
 			case 'o':

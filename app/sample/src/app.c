@@ -11,7 +11,7 @@
 #define EVENT_USER_TESTMSG		0x80000001
 
 // 응용프로그램 C 언어 엔트리 포인트
-int main(char *arg) {
+int main(char *argv) {
 	QWORD id, winID;
 	int xMouse, yMouse, width, height, y, i;
 	EVENT recvEvent, sendEvent;
@@ -53,7 +53,7 @@ int main(char *arg) {
 
 	// 윈도우 생성 함수 호출. 마우스가 있던 위치를 기준으로 생성하고 번호를 추가해 윈도우마다 개별 이름 할당
 	sprintf(buf, "YummyHitOS Window %d", winCnt++);
-	id = createWin(xMouse - 10, yMouse - WINDOW_TITLE_HEIGHT / 2, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, buf);
+	id = makeWin(xMouse - 10, yMouse - WINDOW_TITLE_HEIGHT / 2, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, buf);
 	// 윈도우 생성 못하면 실패
 	if(id == WINDOW_INVALID_ID) return 0;
 
@@ -62,7 +62,7 @@ int main(char *arg) {
 
 	// 이벤트 정보 표시 영역 테두리와 윈도우 ID 표시
 	drawRect(id, 10, y + 8, width - 10, y + 70, RGB(0, 0, 0), FALSE);
-	sprintf(buf, "GUI Event Information[Window ID: 0x%Q, User Mode:%s]", id, arg);
+	sprintf(buf, "GUI Event Information[Window ID: 0x%Q, User Mode:%s]", id, argv);
 	drawText(id, 20, y, RGB(186, 140, 255), RGB(255, 255, 255), buf, strlen(buf));
 
 	// 화면 아래 이벤트 전송 버튼 그림. 버튼 영역 설정

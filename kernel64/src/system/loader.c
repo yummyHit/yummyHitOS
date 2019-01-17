@@ -63,7 +63,7 @@ QWORD kExecFile(const char *fileName, const char *argv, BYTE affinity) {
 	}
 
 	// 파일 내용 분석해 섹션 로딩 및 재배치 수행
-	if(kLoadProgReloc(tmpBuf, &appMem, &memSize, &epAddr) == FALSE) {
+	if(kLoadFileReloc(tmpBuf, &appMem, &memSize, &epAddr) == FALSE) {
 		kPrintf("%s file isn't binary file or loading failed..\n", fileName);
 		kFreeMem(tmpBuf);
 		return TASK_INVALID_ID;
@@ -81,11 +81,12 @@ QWORD kExecFile(const char *fileName, const char *argv, BYTE affinity) {
 	// 아규먼트 저장
 	kAddArgvToTask(task, argv);
 
+	kPrintf("Task ID = 0x%Q\n", task->link.id);	// return 시 task->link.id 반환이 짤림. 4바이트가 짤리고 1바이트만 넘어감. return 에 8바이트는 불가?
 	return task->link.id;
 }
 
 // 응용프로그램 섹션 로딩 및 재배치 수행
-static BOOL kLoadProgReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWORD *epAddr) {
+static BOOL kLoadFileReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWORD *epAddr) {
 	ELF64_EHDR *elf_h;
 	ELF64_SHDR *section_h, *sectionNameTbl_h;
 	ELF64_XWORD lastSectionSize = 0;
@@ -105,12 +106,14 @@ static BOOL kLoadProgReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWOR
 	kPrintf("Section Header Offset [0x%X] Size [0x%X]\n", elf_h->e_shoff, elf_h->e_shentsize);
 	kPrintf("Program Header Offset [0x%X] Size [0x%X]\n", elf_h->e_phoff, elf_h->e_phentsize);
 	kPrintf("Section Name String Table Section Index [%d]\n", elf_h->e_shstridx);
+//	kPrintf("e_type: %d, e_machine: %d, e_version: %d, e_entry: %q, e_flag: %d\n", elf_h->e_type, elf_h->e_machine, elf_h->e_version, elf_h->e_entry, elf_h->e_flag);
 
 	// ELF -- id, class, encoding, type 확인해 올바른 응용프로그램인지 확인
 	if((elf_h->e_id[EI_MAG0] != ELFMAG0) || (elf_h->e_id[EI_MAG1] != ELFMAG1) || (elf_h->e_id[EI_MAG2] != ELFMAG2) || (elf_h->e_id[EI_MAG3] != ELFMAG3) || (elf_h->e_id[EI_CLASS] != ELFCLASS64) || (elf_h->e_id[EI_DATA] != ELFDATA2LSB) || (elf_h->e_type != ET_REL)) return FALSE;
 
 	// 모든 섹션 헤더 로딩 메모리 어드레스를 확인해 가장 마지막 섹션 찾고 섹션 정보 표시
 	for(i = 0; i < elf_h->e_shnum; i++) {
+//		kPrintf("sh_name: %d, sh_type: %d, sh_flag: %q, sh_addr: %q\n", section_h[i].sh_name, section_h[i].sh_type, section_h[i].sh_flag, section_h[i].sh_addr);
 		// 가장 마지막 섹션인지 확인, 이 값으로 프로그램이 사용할 전체 메모리 크기 확인
 		if((section_h[i].sh_flag & SHF_ALLOC) && (section_h[i].sh_addr >= lastSectionAddr)) {
 			lastSectionAddr = section_h[i].sh_addr;

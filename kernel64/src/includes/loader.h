@@ -190,6 +190,7 @@ typedef struct {
 	ELF64_WORD sh_link;			// 연결된 다른 섹션
 	ELF64_WORD sh_info;			// 부가적인 정보
 	ELF64_XWORD sh_alignAddr;	// 어드레스 정렬
+	ELF64_XWORD sh_entsize;		// 섹션 헤더 엔트리 크기
 } ELF64_SHDR;
 
 // ELF64 심볼 테이블 엔트리 자료구조
@@ -218,7 +219,7 @@ typedef struct {
 #pragma pack(pop)
 
 QWORD kExecFile(const char *fileName, const char *argv, BYTE affinity);
-static BOOL kLoadProgReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWORD *epAddr);
+static BOOL kLoadFileReloc(BYTE *buf, QWORD *appMemAddr, QWORD *appMemSize, QWORD *epAddr);
 static BOOL kReloc(BYTE *buf);
 static void kAddArgvToTask(TCB *task, const char *argv);
 QWORD kCreateThread(QWORD ep, QWORD arg, BYTE affinity, QWORD exit);

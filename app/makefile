@@ -1,4 +1,4 @@
-all: custom.lib sample.file notepad.file #Shooter Hexa HangulViewer OneLineMemo
+all: custom.lib sample.file notepad.file game_bubble.file #Hexa HangulViewer OneLineMemo
 
 custom.lib:
 	@echo 
@@ -33,12 +33,12 @@ notepad.file:
 	@echo =============== Build Complete ===============
 	@echo 
 
-Shooter:
+game_bubble.file:
 	@echo 
 	@echo ============= Build Shooter ===============
 	@echo 
 
-	make -C 02.Shooter
+	make -C game_bubble
 
 	@echo 
 	@echo =============== Build Complete ===============

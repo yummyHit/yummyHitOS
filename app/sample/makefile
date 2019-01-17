@@ -3,7 +3,7 @@ GCC64 = gcc -g -std=c99 -C -m64 -ffreestanding -Wall -w -mcmodel=large -fno-comm
 LD64 = ld -elf_x86_64 -T ../linker64.x -nostdlib -e Start -Ttext 0x0000
 LDFLAGS = -lyummyHit -L../../custom_lib/tmp
 CFLAGS = -I../../custom_lib/src
-OBJCOPY64 = objcopy -j .text -j .data -j .rodata -j .bss -S #O binary
+OBJCOPY64 = objcopy -j .text -j .data -j .rodata -j .bss #-S #O binary
 
 OBJDIR = tmp
 SRCDIR = src

@@ -1955,7 +1955,7 @@ static void kCSSysCall(const char *buf) {
 static void kCSExecApp(const char *buf) {
 	PARAMLIST list;
 	char fileName[512], argv[1024];
-	QWORD id;
+//	QWORD id;
 
 	// 파라미터 추출
 	kInitParam(&list, buf);
@@ -1970,7 +1970,8 @@ static void kCSExecApp(const char *buf) {
 
 	kPrintf("Execute Program... File [%s], Argument [%s]\n", fileName, argv);
 
-	// 태스크 생성
-	id = kExecFile(fileName, argv, TASK_LOADBALANCING_ID);
-	kPrintf("Task ID = 0x%Q\n", id);
+	// 태스크 생성, return 시 8바이트 크기(QWORD)의 task->link.id 가 4바이트가 짤려 1바이트만 출력됨. 0x700000006 이면 0x6 으로 나옴.
+//	id = kExecFile(fileName, argv, TASK_LOADBALANCING_ID);
+	kExecFile(fileName, argv, TASK_LOADBALANCING_ID);
+//	kPrintf("Task ID = 0x%Q\n", id);
 }
