@@ -1,4 +1,4 @@
-all: custom.lib sample.file notepad.file game_bubble.file #Hexa HangulViewer OneLineMemo
+all: custom.lib sample.file notepad.file game_bubble.file game_hexa.file #HangulViewer OneLineMemo
 
 custom.lib:
 	@echo 
@@ -35,7 +35,7 @@ notepad.file:
 
 game_bubble.file:
 	@echo 
-	@echo ============= Build Shooter ===============
+	@echo ============= Build Bubble Pang ==============
 	@echo 
 
 	make -C game_bubble
@@ -44,12 +44,12 @@ game_bubble.file:
 	@echo =============== Build Complete ===============
 	@echo 
 
-Hexa:
+game_hexa.file:
 	@echo 
-	@echo ============= Build Hexa ===============
+	@echo ============= Build Hexa Bomb ================
 	@echo 
 
-	make -C 03.Hexa
+	make -C game_hexa
 
 	@echo 
 	@echo =============== Build Complete ===============
@@ -81,7 +81,7 @@ clean:
 	make -C custom_lib clean
 	make -C sample clean
 	make -C notepad clean
-#	make -C 02.Shooter clean
-#	make -C 03.Hexa clean
+	make -C game_bubble clean
+	make -C game_hexa clean
 #	make -C 04.HangulViewer clean
 #	make -C 05.OneLineMemo clean

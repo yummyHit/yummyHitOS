@@ -22,19 +22,19 @@ int main(char *argv) {
 	// 그래픽 모드 판단. 그래픽 모드로 시작했는지 여부 확인
 	if(isGUIMode() == FALSE) {
 		printf("It is GUI Task. You must execute GUI Mode.\n");
-		return 0;
+		return -1;
 	}
 
 	// 파일 내용을 파일 버퍼에 저장, 라인별 파일 오프셋 저장용 버퍼 생성
 	if(strlen(argv) == 0) {
 		printf("ex)exec notepad.elf text.txt\n");
-		return 0;
+		return -1;
 	}
 
 	// 파일을 찾은 후 파일의 크기만큼 메모리 할당하여 파일 저장 및 버퍼 생성
 	if(readfile(argv, &info) == FALSE) {
 		printf("%s file not found\n", argv);
-		return 0;
+		return -1;
 	}
 
 	// 윈도우와 라인 인덱스 생성 후 첫 번째 라인부터 출력
@@ -44,6 +44,11 @@ int main(char *argv) {
 	x = (getRectWidth(&monArea) - width) / 2;
 	y = (getRectHeight(&monArea) - height) / 2;
 	winID = makeWin(x, y, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, "Notepad");
+
+	if(winID == WINDOW_INVALID_ID) {
+		printf("Window create failed..\n");
+		return -1;
+	}
 
 	// 라인별 파일 오프셋 계싼 후 현재 화면에 출력하는 라인 인덱스 초기화
 	calcLineOffset(width, height, &info);

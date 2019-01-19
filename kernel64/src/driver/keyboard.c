@@ -247,7 +247,7 @@ static KEYMAPPINGENTRY gs_keyMapTable[KEY_MAPPINGTABLEMAXCNT] =
 	{ '/'			,	'?'		}, //    53
 	{ KEY_RSHIFT		,	KEY_RSHIFT	}, //    54
 	{ '*'			,	'*'		}, //    55
-	{ KEY_LART		,	KEY_LART	}, //    56
+	{ KEY_ALT		,	KEY_ALT	}, //    56
 	{ ' '			,	' '		}, //    57
 	{ KEY_CAPSLOCK		,	KEY_CAPSLOCK	}, //    58
 	{ KEY_F1		,	KEY_F1		}, //    59

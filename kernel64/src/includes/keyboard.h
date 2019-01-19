@@ -33,7 +33,7 @@
 #define KEY_LSHIFT		0x82
 #define KEY_RSHIFT		0x83
 #define KEY_PRINTSCREEN 	0x84
-#define KEY_LART		0x85
+#define KEY_ALT			0x85
 #define KEY_CAPSLOCK		0x86
 #define KEY_F1			0x87
 #define KEY_F2			0x88
