@@ -39,8 +39,8 @@ int main(char *argv) {
 
 	// 윈도우와 라인 인덱스 생성 후 첫 번째 라인부터 출력
 	getMonArea(&monArea);
-	width = 644;
-	height = 500;
+	width = 500;
+	height = 350;
 	x = (getRectWidth(&monArea) - width) / 2;
 	y = (getRectHeight(&monArea) - height) / 2;
 	winID = makeWin(x, y, width, height, WINDOW_FLAGS_DEFAULT | WINDOW_FLAGS_RESIZABLE, "Notepad");
@@ -215,9 +215,10 @@ BOOL readfile(const char *fileName, TXTINFO *info) {
 void calcLineOffset(int width, int height, TXTINFO *info) {
 	DWORD i;
 	int lineIdx = 0, colIdx = 0;
+	BOOL kor;
 
 	// 여유 공간과 제목 표시줄 높이를 고려해 라인별 문자 수와 출력가능 라인 수 계산
-	info->colCnt = (width - MARGIN * 2) / FONT_ENG_WIDTH;
+	info->colCnt = (width - (MARGIN * 2)) / FONT_ENG_WIDTH;
 	info->rowCnt = (height - (WINDOW_TITLE_HEIGHT * 2) - (MARGIN * 2)) / FONT_ENG_HEIGHT;
 
 	// 파일 처음부터 끝까지 라인 번호 계산해 오프셋 저장
@@ -228,13 +229,24 @@ void calcLineOffset(int width, int height, TXTINFO *info) {
 		else if(info->buf[i] == '\t') {
 			colIdx = colIdx + TAB_SPACE;
 			colIdx -= colIdx % TAB_SPACE;
+		} else if(info->buf[i] & 0x80) {
+			// 한글인 경우 처리
+			kor = TRUE;
+			colIdx += 2;
+			i++;
+		} else {
+			kor = FALSE;
+			colIdx++;
 		}
-		else colIdx++;
 
 		// 출력할 위치가 라인별 문자 수를 넘거나 탭 문자를 출력할 공간이 없는 경우, 또는 줄바꿈 문자가 검출되면 줄 바꿈
 		if((colIdx >= info->colCnt) || (info->buf[i] == '\n')) {
 			lineIdx++;
 			colIdx = 0;
+
+			// 현재 출력할 문자가 한글이면 다음 라인에 문자 출력
+			// UTF-8 일 때엔 i -= 2; 가 아닌 i--; 로 해야 정상 출력 되는것으로 보임.
+			if(kor == TRUE) i -= 2;
 
 			// 라인 인덱스 버퍼에 오프셋 삽입
 			if(i + 1 < info->size) info->lineOffset[lineIdx] = i + 1;
@@ -269,7 +281,7 @@ BOOL drawTextBuf(QWORD winID, TXTINFO *info) {
 	sprintf(buf, "File: %s, Line: %d/%d\n", info->d_name, info->nowLine + 1, info->maxLine);
 	len = strlen(buf);
 	// 저장된 정보를 파일 정보 표시 영역 가운데에 출력
-	drawText(winID, (width - (len * FONT_ENG_WIDTH)) / 2, WINDOW_TITLE_HEIGHT + 2, RGB(255, 255, 255), RGB(159, 48, 215), buf, strlen(buf));
+	drawText(winID, (width - (len * FONT_ENG_WIDTH)) / 2, WINDOW_TITLE_HEIGHT + 2, RGB(255, 255, 255), RGB(159, 48, 215), buf, len);
 
 	// 파일 내용 표시 영역에 파일 내용 출력
 	// 데이터 출력할 부분 모두 흰색으로 덮어쓴 후 라인 출력
@@ -298,9 +310,19 @@ BOOL drawTextBuf(QWORD winID, TXTINFO *info) {
 			else if(tmp == '\r');
 			// 기타 문자 출력
 			else {
-				// 출력할 위치에 문자 출력 후 다음 위치로 이동
-				drawText(winID, xOffset + (colIdx * FONT_ENG_WIDTH), yOffset + (j * FONT_ENG_HEIGHT), RGB(0, 0, 0), RGB(255, 255, 255), &tmp, 1);
-				colIdx++;
+				// 영문자 처리
+				if((tmp & 0x80) == 0) {
+					// 출력할 위치에 문자 출력 후 다음 위치로 이동
+					drawText(winID, xOffset + (colIdx * FONT_ENG_WIDTH), yOffset + (j * FONT_ENG_HEIGHT), RGB(0, 0, 0), RGB(255, 255, 255), &tmp, 1);
+					colIdx++;
+				}
+				// 한글 처리. 한글 출력 시 최대 컬럼 넘지 않는 경우
+				// FONT_KOR_WIDTH 로 하면 창의 크기 넘어감,,
+				else if((colIdx + 2) < info->colCnt) {
+					drawText(winID, xOffset + (colIdx * FONT_ENG_WIDTH), yOffset + (j * FONT_ENG_HEIGHT), RGB(0, 0, 0), RGB(255, 255, 255), &info->buf[i + baseOffset], 2);
+					colIdx += 2;
+					i++;
+				}
 			}
 		}
 	}

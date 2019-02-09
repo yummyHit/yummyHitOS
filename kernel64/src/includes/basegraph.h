@@ -47,6 +47,8 @@ void kInDrawLine(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, 
 void kInDrawRect(const RECT *area, COLOR *addr, int x1, int y1, int x2, int y2, COLOR color, BOOL fill);
 void kInDrawCircle(const RECT *area, COLOR *addr, int _x, int _y, int rad, COLOR color, BOOL fill);
 void kInDrawText(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len);
+void kInDrawEng(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len);
+void kInDrawKor(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len);
 
 inline BOOL kIsInRect(const RECT *area, int x, int y);
 inline int kGetRectWidth(const RECT *area);

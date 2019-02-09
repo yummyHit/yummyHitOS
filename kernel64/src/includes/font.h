@@ -20,6 +20,6 @@
 
 // 비트맵 폰트 데이터
 extern unsigned char g_engFont[];
-extern unsigned char g_korFont[];
+extern unsigned short g_korFont[];
 
 #endif /*__FONT_H__*/

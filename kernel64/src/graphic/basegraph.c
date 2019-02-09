@@ -265,6 +265,30 @@ void kInDrawCircle(const RECT *area, COLOR *addr, int x, int y, int rad, COLOR c
 
 // 문자 출력
 void kInDrawText(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len) {
+	int i, j;
+
+	for(i = 0; i < len;) {
+		// 현재 문자가 한글이 아니면 영문자가 끝나는 곳 검색
+		if((buf[i] & 0x80) == 0) {
+			// 문자열 끝까지 검색
+			for(j = i; j < len; j++)
+				if(buf[j] & 0x80) break;
+
+			// 영문자를 출력하는 함수 호출 후 현재 위치 갱신
+			kInDrawEng(area, addr, x + (i * FONT_ENG_WIDTH), y, text, background, buf + i, j - i);
+		} else {
+			// 현재 문자가 한글이면 한글 끝나는 곳 검색
+			for(j = i; j < len; j++)
+				if((buf[j] & 0x80) == 0) break;
+
+			kInDrawKor(area, addr, x + (i * FONT_ENG_WIDTH), y, text, background, buf + i, j - i);
+		}
+		i = j;
+	}
+}
+
+// 영문자 출력
+void kInDrawEng(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len) {
 	int nowX, nowY, i, j, k, bitStartIdx, areaWidth, startY, startX, crossWidth, crossHeight;
 	BYTE bit, bitMask;
 	RECT fontArea, crossArea;
@@ -322,5 +346,83 @@ void kInDrawText(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR 
 
 		// 문자 하나를 다 출력했으면 폰트 너비만큼 X좌표 이동해 다음 문자 출력
 		nowX += FONT_ENG_WIDTH;
+	}
+}
+
+// 한글 출력
+void kInDrawKor(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR background, const char *buf, int len) {
+	int nowX, nowY, bitStartIdx, areaWidth, startY, startX, crossWidth, crossHeight, i, j, k;
+	WORD kor, grpOffset, grpIdx, bit, bitMask;
+	RECT fontArea, crossArea;
+
+	// 문자 출력하는 X좌표
+	nowX = x;
+
+	// 메모리 영역 너비 계산
+	areaWidth = kGetRectWidth(area);
+
+	// 한글 문자 개수만큼 반복
+	for(k = 0; k < len; k += 2) {
+		// 문자 출력 위치 Y좌표 구함
+		nowY = y * areaWidth;
+
+		// 현재 폰트를 표시하는 영역 RECT 에 설정
+		kSetRectData(nowX, y, nowX + FONT_KOR_WIDTH - 1, y + FONT_KOR_HEIGHT - 1, &fontArea);
+
+		// 현재 그려야 할 문자가 메모리 영역과 겹치는 부분이 없으면 다음 문자로 이동
+		if(kGetRectCross(area, &fontArea, &crossArea) == FALSE) {
+			// 문자 하나를 뛰어넘었으니 폰트 너비만큼 X좌표를 이동해 다음 문자 출력
+			nowX += FONT_KOR_WIDTH;
+			continue;
+		}
+
+		// 비트맵 폰트 데이터에서 출력할 문자의 비트맵이 시작하는 위치를 계산
+		// 2바이트 * FONT_HEIGHT로 구성되어 있으므로 문자 비트맵 위치는 아래와 같이 계산
+		// UTF-8 형식으로 되어있으면 못읽음,, unicode 형식으로 읽혀서 3바이트 차지하게 됨.
+		// iconv -f UTF-8 -t EUC-KR -o iconv.txt input.txt
+		kor = ((WORD)buf[k] << 8) | (BYTE)(buf[k + 1]);
+
+		// 완성형 가~힝 까지면 자음 모음 오프셋 더해줌
+		if((0xB0A1 <= kor) && (kor <= 0xC8FE)) {
+			grpOffset = (kor - 0xB0A1) & 0xFF;
+			grpIdx = ((kor - 0xB0A1) >> 8) & 0xFF;
+			// 그룹당 94개 문자가 있고 51개는 완성형에 없는 자음 모음이 들어있으므로 그룹 인덱스에 94를 곱한 후 그룹 내 오프셋 51을 더하면 폰트 데이터에서 몇 번째인지 계산 가능
+			kor = (grpIdx * 94) + grpOffset + 51;
+			//kor = (grpIdx * 94) + grpOffset + 1; // 이면 해당 인덱스와 동일해지지만, kor.c 소스코드의 그림과는 일치해지지 않음
+		}
+		else if((0xA4A1 <= kor) && (kor <= 0xA4D3)) kor -= 0xA4A1;	// 만약 자음 모음이면 자음의 시작인 ㄱ을 빼서 오프셋 구함
+		else continue;
+
+		bitStartIdx = kor * FONT_KOR_HEIGHT;
+
+		// 문자 출력 영역과 메모리 영역 겹치는 부분을 이용해 x, y 오프셋과 출력 너비, 높이 계산
+		startX = crossArea.x1 - nowX;
+		startY = crossArea.y1 - y;
+		crossWidth = kGetRectWidth(&crossArea);
+		crossHeight = kGetRectHeight(&crossArea);
+
+		// 출력에서 제외된 y오프셋만큼 비트맵 데이터 제외
+		bitStartIdx += startY;
+
+		// 문자 출력. 겹치는 영역 y오프셋부터 높이만큼 출력
+		for(j = startY; j < crossHeight; j++) {
+			// 이 라인에서 출력할 폰트 비트맵과 비트 오프셋 계산
+			bit = g_korFont[bitStartIdx++];	// 1byte "응", 0xC0C0 (0x08, 0x00, 0x88, 0x1F, 0xC8, 0x00, 0x88, 0x1F, 0x08, 0x10, 0xC8, 0x1F, 0x08, 0x00, 0xE8, 0x7F)
+			bitMask = 0x01 << (FONT_KOR_WIDTH - 1 - startX);
+
+			// 겹치는 영역의 X오프셋부터 너비만큼 현재 라인에 출력, 비트가 설정 되어 있으면 화면에 문자색, 아니면 배경색 표시
+			for(i = startX; i < crossWidth; i++) {
+				if(bit & bitMask) addr[nowY + nowX + i] = text;
+				else addr[nowY + nowX + i] = background;
+
+				bitMask = bitMask >> 1;
+			}
+
+			// 다음 라인으로 이동해야 하니 현재 Y좌표에 화면 너비만큼 더해줌
+			nowY += areaWidth;
+		}
+
+		// 문자 하나를 다 출력했으면 폰트 넓이만큼 X좌표 이동해 다음 문자 출력
+		nowX += FONT_KOR_WIDTH;
 	}
 }
