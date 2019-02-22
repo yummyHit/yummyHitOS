@@ -264,7 +264,7 @@ static BOOL kReloc(BYTE *buf) {
 
 				// 그 외 지원하지 않으니 오류 표시 후 종료
 				default:
-					kPrintf("Un supported relocation type [%X]\n", RELOCATION_LOWER32(info));
+					kPrintf("Unsupported relocation type [%X]\n", RELOCATION_LOWER32(info));
 					return FALSE;
 					break;
 			}

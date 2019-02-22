@@ -70,6 +70,7 @@ disk.img: $(BINFILES)/bootloader.bin $(BINFILES)/kernel32.bin $(BINFILES)/kernel
 	@echo
 	
 	$(BINFILES)/ImageMaker.exe $^
+	cat disk.img pack.img > diskpack.img
 	
 	@echo
 	@echo =============== All Build Complete ===============
@@ -78,3 +79,4 @@ disk.img: $(BINFILES)/bootloader.bin $(BINFILES)/kernel32.bin $(BINFILES)/kernel
 clean:
 	rm -f ./binfiles/*.*
 	rm -f disk.img
+	rm -f diskpack.img

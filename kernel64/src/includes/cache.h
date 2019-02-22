@@ -29,7 +29,7 @@
 #pragma pack(push, 1)
 
 // 구조체, 파일 시스템 캐시를 구성하는 캐시 버퍼 구조체
-typedef struct kCacheBuf {
+typedef struct kCacheBuffer {
 	// 캐시와 대응하는 클러스터 링크 테이블 영역이나 데이터 영역 인덱스
 	DWORD tag;
 

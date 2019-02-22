@@ -53,7 +53,9 @@ RESETDISK:
 	mov es, si			; ES 세그먼트 레지스터에 값 설정
 	mov bx, 0x0000			; BX 레지스터에 0x0000을 설정하여 복사할 어드레스를 0x1000:0000(0x10000)으로 최종 설정
 
-	mov di, word [ TOTALSECTORCNT ] ; 복사할 OS 이미지의 섹터 수를 DI 레지스터에 설정
+;	19.02.23 package 추가와 함께 주석처리
+;	mov di, word [ TOTALSECTORCNT ] ; 복사할 OS 이미지의 섹터 수를 DI 레지스터에 설정
+	mov di, 1146		; OS 이미지 뒤에 패키지 파일을 로딩하기 위해 573KB(1146섹터)까지 읽도록 설정
 
 .READDATA:
 	; 모든 섹터를 다 읽었는지 확인

@@ -18,6 +18,11 @@
 // 문자열 포인터를 파라미터로 받는 함수 포인터 타입 정의
 typedef void (*CMDFunc)(const char *param);
 
+// 패키지 시그니처
+#define PACKAGE_SIGNATURE	"YUMMYHITOS_PACKAGE"
+// 파일 이름 최대 길이. 커널의 FILESYSTEM_MAXFILENAMELENGTH 와 같음
+#define FILENAME_LEN		24
+
 // 구조체, 1바이트 정렬
 #pragma pack(push, 1)
 
@@ -32,7 +37,7 @@ typedef struct kShellEntry {
 } SHELLENTRY;
 
 // 파라미터 처리를 위해 정보 저장하는 자료구조
-typedef struct kParamList {
+typedef struct kParameterList {
 	// 파라미터 버퍼 어드레스
 	const char *buf;
 	// 파라미터 길이
@@ -40,6 +45,27 @@ typedef struct kParamList {
 	// 현재 처리할 파라미터가 시작하는 위치
 	int nowPosition;
 } PARAMLIST;
+
+// 패키지 헤더 내부 각 파일 정보 구성
+typedef struct PackageItems {
+	// 파일 명
+	char name[FILENAME_LEN];
+
+	// 파일 크기
+	DWORD size;
+} PACKAGEITEM;
+
+// 패키지 헤더
+typedef struct PackageHeader {
+	// 시그니처
+	char sign[16];
+
+	// 패키지 헤더 전체 크기
+	DWORD size;
+
+	// 패키지 아이템 시작 위치
+	PACKAGEITEM item[0];
+} PACKAGEHEADER;
 
 #pragma pack(pop)
 
@@ -100,5 +126,6 @@ static void kCSChangeAffinity(const char *buf);
 static void kCSVBEModeInfo(const char *buf);
 static void kCSSysCall(const char *buf);
 static void kCSExecApp(const char *buf);
+static void kCSPackInstall(const char *buf);
 
 #endif /*__SHELL_H__*/

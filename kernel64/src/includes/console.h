@@ -62,7 +62,7 @@
 #pragma pack(push, 1)
 
 // 콘솔에 대한 정보 저장 자료구조
-typedef struct kCSManager {
+typedef struct kConsoleManager {
 	// 문자, 커서 출력 위치
 	int nowPrintOffset;
 

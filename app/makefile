@@ -1,4 +1,4 @@
-all: custom.lib sample.file notepad.file game_bubble.file game_hexa.file #OneLineMemo
+all: custom.lib sample.file notepad.file game_bubble.file game_hexa.file writer.file
 
 custom.lib:
 	@echo 
@@ -55,12 +55,12 @@ game_hexa.file:
 	@echo =============== Build Complete ===============
 	@echo 
 
-OneLineMemo:
+writer.file:
 	@echo 
 	@echo ============= Build OneLineMemo ===============
 	@echo 
 
-	make -C 05.OneLineMemo
+	make -C writer
 
 	@echo 
 	@echo =============== Build Complete ===============

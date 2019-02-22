@@ -37,7 +37,7 @@
 #pragma pack(push, 1)
 
 // 물방울 정보 저장하는 구조체
-typedef struct HexaInfo {
+typedef struct hexaInfo {
 	// 블록 종류에 따른 색깔(내부 색/테두리 색)
 	COLOR color[BLOCK_ITEMS + 1];
 	COLOR edge[BLOCK_ITEMS + 1];

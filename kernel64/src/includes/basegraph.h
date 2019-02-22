@@ -21,7 +21,7 @@ typedef WORD		COLOR;
 #pragma pack(push, 1)
 
 // 구조체. 사각형의 정보를 담는 자료구조
-typedef struct kRect {
+typedef struct kRectangular {
 	// 왼쪽 위(시작점) X좌표
 	int x1;
 	// 왼쪽 위(시작점) Y좌표

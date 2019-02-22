@@ -78,6 +78,7 @@ SHELLENTRY gs_cmdTable[] = {
 	{"vbeModeInfo", "### Show VBE Mode Information ###", kCSVBEModeInfo},
 	{"syscallTest", "### System Call Test ###", kCSSysCall},
 	{"exec", "### Execute Application Program, ex)exec a.elf argument", kCSExecApp },
+	{"install", "### Install Package to HDD, ex)install a.elf b.elf c.txt ..", kCSPackInstall },
 };
 
 // 셸 메인 루프
@@ -1974,4 +1975,66 @@ static void kCSExecApp(const char *buf) {
 //	id = kExecFile(fileName, argv, TASK_LOADBALANCING_ID);
 	kExecFile(fileName, argv, TASK_LOADBALANCING_ID);
 //	kPrintf("Task ID = 0x%Q\n", id);
+}
+
+static void kCSPackInstall(const char *buf) {
+	PACKAGEHEADER *header;
+	PACKAGEITEM *item;
+	WORD sectorCnt;
+	int i;
+	FILE *fp;
+	QWORD addr;
+
+	kPrintf("Package Install Start...\n");
+
+	// 부트로더가 로딩된 0x7C05 주소에서 보호 모드 커널과 IA-32e 모드 커널 합한 섹터 수 읽음
+	sectorCnt = *((WORD*)0x7C05);
+
+	// 디스크 이미지는 0x10000 주소에 로딩되니 이를 기준으로 커널 섹터 수만큼 떨어진 곳에 패키지 헤더 존재
+	header = (PACKAGEHEADER*)((QWORD)0x10000 + (sectorCnt * 512));
+
+	// 시그니처 확인
+	if(kMemCmp(header->sign, PACKAGE_SIGNATURE, sizeof(header->sign)) != 0) {
+		kPrintf("Package Signature Check failed...\n");
+		return;
+	}
+
+	// 패키지 데이터 시작 주소
+	addr = (QWORD)header + header->size;
+	// 패키지 헤더 첫 번째 파일 데이터
+	item = header->item;
+
+	// 패키지에 포함된 모든 파일 찾아서 복사
+	for(i = 0; i < (header->size / sizeof(PACKAGEITEM)); i++) {
+		kPrintf("[%d] file: %s, size: %d bytes\n", i + 1, item[i].name, item[i].size);
+
+		// 패키지에 포함된 파일 이름으로 파일 생성
+		fp = fopen(item[i].name, "w");
+		if(fp == NULL) {
+			kPrintf("%s File Create failed...\n");
+			return;
+		}
+
+		// 패키지 데이터 부분에 포함된 파일 내용을 하드 디스크로 복사
+		if(fwrite((BYTE*)addr, 1, item[i].size, fp) != item[i].size) {
+			kPrintf("Write failed...\n");
+
+			// 파일 닫고 파일 시스템 캐시 내보냄
+			fclose(fp);
+			kFlushFileSystemCache();
+
+			return;
+		}
+
+		// 파일 닫음
+		fclose(fp);
+
+		// 다음 파일이 저장된 위치로 이동
+		addr += item[i].size;
+	}
+
+	kPrintf("Package Install Complete!\n");
+
+	// 파일 시스템 캐시를 내보냄
+	kFlushFileSystemCache();
 }

@@ -33,7 +33,7 @@
 #pragma pack(push, 1)
 
 // 물방울 정보 저장하는 구조체
-typedef struct Bubble {
+typedef struct bubble {
 	QWORD x;
 	QWORD y;
 
@@ -48,7 +48,7 @@ typedef struct Bubble {
 } BUBBLE;
 
 // 게임 정보 저장하는 구조체
-typedef struct BubbleInfo {
+typedef struct bubbleInfo {
 	// 물방울 정보 저장 버퍼
 	BUBBLE *buf;
 

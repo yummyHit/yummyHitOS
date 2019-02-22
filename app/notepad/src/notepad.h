@@ -22,7 +22,7 @@
 #pragma pack(push, 1)
 
 // 텍스트 정보를 저장하는 구조체
-typedef struct TextInfo {
+typedef struct textInfo {
 	// 파일 버퍼와 파일 크기
 	BYTE *buf;
 	DWORD size;

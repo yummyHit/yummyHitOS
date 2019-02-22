@@ -15,7 +15,7 @@
 
 #pragma pack(push, 1)
 // 시스템 콜을 호출할 때 전달하는 파라미터를 관리하는 자료구조
-typedef struct kSysCallParamTbl {
+typedef struct kSystemCallParameterTable {
 	QWORD val[SYSCALL_MAXPARAMCNT];
 } PARAMTBL;
 #pragma pack(pop)

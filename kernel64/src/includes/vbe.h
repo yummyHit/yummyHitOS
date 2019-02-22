@@ -21,7 +21,7 @@
 #pragma pack(push, 1)
 
 // VBE에서 정의한 모드 정보 블록 자료구조, 256바이트
-typedef struct kVbeModeInfo {
+typedef struct kVbeModeInformation {
 	// 모든 VBE 버전에 공통 부분
 	WORD modeAttr;			// 모드 속성
 	BYTE winOneAttr;		// 윈도우 1의 속성

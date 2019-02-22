@@ -388,7 +388,6 @@ void kInDrawKor(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR b
 			grpIdx = ((kor - 0xB0A1) >> 8) & 0xFF;
 			// 그룹당 94개 문자가 있고 51개는 완성형에 없는 자음 모음이 들어있으므로 그룹 인덱스에 94를 곱한 후 그룹 내 오프셋 51을 더하면 폰트 데이터에서 몇 번째인지 계산 가능
 			kor = (grpIdx * 94) + grpOffset + 51;
-			//kor = (grpIdx * 94) + grpOffset + 1; // 이면 해당 인덱스와 동일해지지만, kor.c 소스코드의 그림과는 일치해지지 않음
 		}
 		else if((0xA4A1 <= kor) && (kor <= 0xA4D3)) kor -= 0xA4A1;	// 만약 자음 모음이면 자음의 시작인 ㄱ을 빼서 오프셋 구함
 		else continue;
@@ -407,7 +406,7 @@ void kInDrawKor(const RECT *area, COLOR *addr, int x, int y, COLOR text, COLOR b
 		// 문자 출력. 겹치는 영역 y오프셋부터 높이만큼 출력
 		for(j = startY; j < crossHeight; j++) {
 			// 이 라인에서 출력할 폰트 비트맵과 비트 오프셋 계산
-			bit = g_korFont[bitStartIdx++];	// 1byte "응", 0xC0C0 (0x08, 0x00, 0x88, 0x1F, 0xC8, 0x00, 0x88, 0x1F, 0x08, 0x10, 0xC8, 0x1F, 0x08, 0x00, 0xE8, 0x7F)
+			bit = g_korFont[bitStartIdx++];
 			bitMask = 0x01 << (FONT_KOR_WIDTH - 1 - startX);
 
 			// 겹치는 영역의 X오프셋부터 너비만큼 현재 라인에 출력, 비트가 설정 되어 있으면 화면에 문자색, 아니면 배경색 표시

@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-#define BYTESOFSECTOR 512
+#define SECTOR_BYTES 512
 
 // 함수 선언
 int sectorSize(int fd, int srcSize);
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// disk.img 파일을 생성
-	if((targetFd = open("disk.img", O_RDWR | O_CREAT | O_TRUNC)) == -1) { // , S_IREAD | S_IWRITE
+	if((targetFd = open("disk.img", O_RDWR | O_CREAT | O_TRUNC)) == -1) { // O_BINARY, S_IREAD, S_IWRITE 제외
 		fprintf(stderr, "[ERROR] disk.img open fail.\n");
 		exit(-1);
 	}
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 int sectorSize(int fd, int srcSize) {
 	int i, sector_size, ch, sectorCnt;
 
-	sector_size = srcSize % BYTESOFSECTOR;
+	sector_size = srcSize % SECTOR_BYTES;
 	ch = 0x00;
 
 	if(sector_size != 0) {
@@ -111,7 +111,7 @@ int sectorSize(int fd, int srcSize) {
 	else printf("[INFO] File size is aligned 512 byte\n");
 
 	// 섹터 수를 되돌려줌
-	sectorCnt = (srcSize + sector_size) / BYTESOFSECTOR;
+	sectorCnt = (srcSize + sector_size) / SECTOR_BYTES;
 	return sectorCnt;
 }
 
@@ -139,7 +139,7 @@ void writeInfo(int targetFd, int totalSectorCnt, int lowSectorCnt) {
 // 소스 파일(Source FD)의 내용을 목표 파일(Target FD)에 복사하고 그 크기를 되돌려줌
 int copyFile(int srcFd, int targetFd) {
 	int srcSize, r, w;
-	char buf[BYTESOFSECTOR];
+	char buf[SECTOR_BYTES];
 
 	srcSize = 0;
 	while(1) {
@@ -147,7 +147,7 @@ int copyFile(int srcFd, int targetFd) {
 		w = write(targetFd, buf, r);
 
 		if(r != w) {
-			fprintf(stderr, "[ERROR] iRead != iWrite.. \n");
+			fprintf(stderr, "[ERROR] r != w.. \n");
 			exit(-1);
 		}
 		srcSize += r;
@@ -156,4 +156,3 @@ int copyFile(int srcFd, int targetFd) {
 	}
 	return srcSize;
 }
-
